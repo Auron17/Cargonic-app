@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
   },
   createdDateText: {
     fontSize: 12,
-    color: colors.slate400,
+    color: colors.textMuted,
   },
   routeContainer: {
     marginBottom: 10,

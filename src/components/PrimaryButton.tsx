@@ -40,32 +40,32 @@ export function PrimaryButton({
   const getContainerStyle = () => {
     switch (variant) {
       case 'accent':
-        return [styles.accentButton, isDisabled && styles.disabledAccent];
+        return styles.accentButton;
       case 'secondary':
-        return [styles.secondaryButton, isDisabled && styles.disabledSecondary];
+        return styles.secondaryButton;
       case 'danger':
-        return [styles.dangerButton, isDisabled && styles.disabledDanger];
+        return styles.dangerButton;
       case 'outline':
-        return [styles.outlineButton, isDisabled && styles.disabledOutline];
+        return styles.outlineButton;
       case 'primary':
       default:
-        return [styles.primaryButton, isDisabled && styles.disabledPrimary];
+        return styles.primaryButton;
     }
   };
 
   const getTextStyle = () => {
     switch (variant) {
       case 'accent':
-        return [styles.accentText, isDisabled && styles.disabledAccentText];
+        return styles.accentText;
       case 'secondary':
-        return [styles.secondaryText, isDisabled && styles.disabledSecondaryText];
+        return styles.secondaryText;
       case 'danger':
-        return [styles.dangerText, isDisabled && styles.disabledDangerText];
+        return styles.dangerText;
       case 'outline':
-        return [styles.outlineText, isDisabled && styles.disabledOutlineText];
+        return styles.outlineText;
       case 'primary':
       default:
-        return [styles.primaryText, isDisabled && styles.disabledPrimaryText];
+        return styles.primaryText;
     }
   };
 
@@ -115,6 +115,7 @@ export function PrimaryButton({
         styles.baseButton,
         getSizeStyle(),
         getContainerStyle(),
+        isDisabled && styles.disabledDim,
         pressed && !isDisabled && styles.pressed,
         style,
       ]}
@@ -164,39 +165,26 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   primaryButton: {
-    backgroundColor: colors.primary, // Highway Cobalt #1D4ED8
-  },
-  disabledPrimary: {
-    backgroundColor: '#93C5FD',
+    backgroundColor: colors.primary,
   },
   accentButton: {
-    backgroundColor: colors.accentDark, // Safety Amber #D97706
-  },
-  disabledAccent: {
-    backgroundColor: '#FDE68A',
+    backgroundColor: colors.accentDark,
   },
   secondaryButton: {
     backgroundColor: colors.slate100,
     borderWidth: 1,
     borderColor: colors.slate200,
   },
-  disabledSecondary: {
-    backgroundColor: colors.slate50,
-    borderColor: colors.slate100,
-  },
   outlineButton: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
     borderColor: colors.primary,
   },
-  disabledOutline: {
-    borderColor: colors.slate300,
-  },
   dangerButton: {
     backgroundColor: colors.dangerDark,
   },
-  disabledDanger: {
-    backgroundColor: '#FCA5A5',
+  disabledDim: {
+    opacity: 0.4,
   },
   pressed: {
     opacity: 0.9,
@@ -217,33 +205,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   primaryText: {
-    color: '#FFFFFF',
-  },
-  disabledPrimaryText: {
-    color: '#FFFFFF',
+    color: colors.textWhite,
   },
   accentText: {
-    color: '#FFFFFF',
-  },
-  disabledAccentText: {
-    color: '#FFFFFF',
+    color: colors.textWhite,
   },
   secondaryText: {
     color: colors.slate800,
   },
-  disabledSecondaryText: {
-    color: colors.slate400,
-  },
   outlineText: {
     color: colors.primary,
   },
-  disabledOutlineText: {
-    color: colors.slate400,
-  },
   dangerText: {
-    color: '#FFFFFF',
-  },
-  disabledDangerText: {
-    color: '#FFFFFF',
+    color: colors.textWhite,
   },
 });

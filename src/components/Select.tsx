@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   placeholderText: {
-    color: colors.slate400,
+    color: colors.textMuted,
   },
   errorText: {
     fontSize: 13,

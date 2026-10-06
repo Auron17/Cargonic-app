@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "462378736935",
+    "project_id": "cargonic-d46d1",
+    "storage_bucket": "cargonic-d46d1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:462378736935:android:d3dfa90e46c2af83855d02",
+        "android_client_info": {
+          "package_name": "uz.cargonic.driver"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDA1E1g9z7ZHKBGAM6twGS0_AcuMLi4RQ8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

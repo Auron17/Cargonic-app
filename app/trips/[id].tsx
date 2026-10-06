@@ -508,6 +508,7 @@ export default function TripDetailScreen() {
                         <AuthImage
                           fileKey={ev.photoKey}
                           style={styles.timelineImage}
+                          accessibilityLabel={uz.tripView.eventsHistory}
                         />
                       </View>
                     ) : null}

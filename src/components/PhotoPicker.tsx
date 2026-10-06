@@ -157,6 +157,7 @@ export function PhotoPicker({
             fileKey={currentFileKey}
             style={styles.previewImage}
             containerStyle={styles.imageBox}
+            accessibilityLabel={label}
           />
 
           <View style={styles.previewControls}>

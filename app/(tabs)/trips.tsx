@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
   routeLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: colors.slate400,
+    color: colors.textMuted,
     textTransform: 'uppercase',
   },
   routeValue: {
@@ -628,7 +628,7 @@ const styles = StyleSheet.create({
   historyPriceLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: colors.slate400,
+    color: colors.textMuted,
     textTransform: 'uppercase',
   },
   detailsBtn: {

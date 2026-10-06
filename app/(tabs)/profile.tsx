@@ -91,6 +91,7 @@ export default function ProfileTabScreen() {
               fileKey={driverPhotoDoc.fileKey}
               style={styles.avatarImage}
               containerStyle={styles.avatarContainer}
+              accessibilityLabel={uz.docTypes.DRIVER_PHOTO}
             />
           ) : (
             <View style={styles.avatarPlaceholder}>

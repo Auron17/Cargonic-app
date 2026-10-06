@@ -52,7 +52,7 @@ export function TextField({
 
         <TextInput
           style={[styles.input, style]}
-          placeholderTextColor={colors.slate400}
+          placeholderTextColor={colors.textMuted}
           onFocus={(e) => {
             setIsFocused(true);
             onFocus?.(e);
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   },
   hintText: {
     fontSize: 13,
-    color: colors.slate500,
+    color: colors.textMuted,
     marginTop: 5,
   },
 });

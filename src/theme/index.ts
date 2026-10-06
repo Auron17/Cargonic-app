@@ -53,8 +53,8 @@ export const colors = {
   // Text
   textPrimary: '#0F172A',
   textSecondary: '#475569',
-  textMuted: '#64748B',
-  textLight: '#94A3B8',
+  textMuted: '#475569',
+  textLight: '#64748B',
   textWhite: '#FFFFFF',
 } as const;
 

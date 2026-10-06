@@ -149,6 +149,8 @@ export const uz = {
     tons: 't',
     m3: 'm³',
     km: 'km',
+    image: 'Rasm',
+    imageUnavailable: 'Rasm yuklanmadi',
   },
   status: {
     load: {

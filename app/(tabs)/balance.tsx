@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
   },
   entryDate: {
     fontSize: 12,
-    color: colors.slate400,
+    color: colors.textMuted,
   },
   entryRight: {
     alignItems: 'flex-end',

@@ -84,6 +84,8 @@ export default function PhoneScreen() {
         <Image
           source={require('../../assets/logo.png')}
           style={styles.brandLogo}
+          accessible
+          accessibilityRole="image"
           accessibilityLabel={uz.app.name}
         />
         <Text style={styles.brandTitle}>{uz.app.name}</Text>
@@ -133,7 +135,7 @@ const styles = StyleSheet.create({
   },
   brandTagline: {
     fontSize: 14,
-    color: colors.slate500,
+    color: colors.textMuted,
     fontWeight: '500',
   },
   card: {
@@ -158,7 +160,7 @@ const styles = StyleSheet.create({
   },
   termsNotice: {
     fontSize: 12,
-    color: colors.slate400,
+    color: colors.textMuted,
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 16,
