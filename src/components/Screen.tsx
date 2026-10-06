@@ -2,8 +2,10 @@ import React, { ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
+  RefreshControlProps,
   ScrollView,
   StatusBar,
+  StyleProp,
   StyleSheet,
   View,
   ViewStyle,
@@ -13,10 +15,11 @@ import { SafeAreaView, Edge } from 'react-native-safe-area-context';
 interface ScreenProps {
   children: ReactNode;
   scrollable?: boolean;
-  style?: ViewStyle;
-  contentContainerStyle?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
+  contentContainerStyle?: StyleProp<ViewStyle>;
   bottomAction?: ReactNode;
   edges?: Edge[];
+  refreshControl?: React.ReactElement<RefreshControlProps>;
 }
 
 export function Screen({
@@ -26,6 +29,7 @@ export function Screen({
   contentContainerStyle,
   bottomAction,
   edges = ['top', 'left', 'right', 'bottom'],
+  refreshControl,
 }: ScreenProps) {
   return (
     <SafeAreaView edges={edges} style={[styles.container, style]}>
@@ -40,6 +44,7 @@ export function Screen({
             contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            refreshControl={refreshControl}
           >
             {children}
           </ScrollView>

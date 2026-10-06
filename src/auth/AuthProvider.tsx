@@ -150,7 +150,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!profile || profile.verificationStatus !== 'APPROVED') {
       // Needs onboarding
       if (!inOnboardingGroup) {
-        router.replace('/(onboarding)/status');
+        if (!profile) {
+          router.replace('/(onboarding)/profile');
+        } else if (!profile.vehicle) {
+          router.replace('/(onboarding)/vehicle');
+        } else {
+          router.replace('/(onboarding)/status');
+        }
       }
     } else {
       // Approved carrier
@@ -158,7 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.replace('/(tabs)');
       }
     }
-  }, [isLoading, isAuthenticated, isCarrier, profile?.verificationStatus, segments]);
+  }, [isLoading, isAuthenticated, isCarrier, profile, segments]);
 
   return (
     <AuthContext.Provider
