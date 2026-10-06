@@ -19,8 +19,10 @@ import {
   ErrorBanner,
   Money,
   PrimaryButton,
+  SAFE_EDGES_WITH_HEADER,
   Screen,
   StatusBadge,
+  SuccessBanner,
   TextField,
 } from '../src/components';
 import { formatDate, formatDateTime } from '../src/utils/format';
@@ -35,6 +37,7 @@ export default function MyBidsScreen() {
   const [editPriceInput, setEditPriceInput] = useState('');
   const [editCommentInput, setEditCommentInput] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const {
     data: bids,
@@ -55,7 +58,7 @@ export default function MyBidsScreen() {
       setErrorMessage(null);
       queryClient.invalidateQueries({ queryKey: ['myBids'] });
       queryClient.invalidateQueries({ queryKey: ['feed'] });
-      Alert.alert('Muvaffaqiyatli', uz.loadDetails.successBidUpdated);
+      setSuccessMessage(uz.loadDetails.successBidUpdated);
     },
     onError: (err: unknown) => {
       const errorObj = err as { message?: string };
@@ -68,11 +71,11 @@ export default function MyBidsScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myBids'] });
       queryClient.invalidateQueries({ queryKey: ['feed'] });
-      Alert.alert('Muvaffaqiyatli', uz.loadDetails.successBidWithdrawn);
+      setSuccessMessage(uz.loadDetails.successBidWithdrawn);
     },
     onError: (err: unknown) => {
       const errorObj = err as { message?: string };
-      Alert.alert('Xatolik', errorObj?.message || uz.loadDetails.errors.GENERIC);
+      setErrorMessage(errorObj?.message || uz.loadDetails.errors.GENERIC);
     },
   });
 
@@ -142,7 +145,7 @@ export default function MyBidsScreen() {
         >
           <View style={styles.routeRow}>
             <View style={[styles.routeDot, styles.dotPickup]} />
-            <Text style={styles.addressText} numberOfLines={2}>
+            <Text style={styles.addressText} numberOfLines={2} selectable>
               {item.pickupAddress}
             </Text>
           </View>
@@ -151,7 +154,7 @@ export default function MyBidsScreen() {
 
           <View style={styles.routeRow}>
             <View style={[styles.routeDot, styles.dotDropoff]} />
-            <Text style={styles.addressText} numberOfLines={2}>
+            <Text style={styles.addressText} numberOfLines={2} selectable>
               {item.dropoffAddress}
             </Text>
           </View>
@@ -215,26 +218,19 @@ export default function MyBidsScreen() {
   };
 
   return (
-    <Screen style={styles.screen}>
-      {/* Top Header */}
-      <View style={styles.navHeader}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backButton}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel={uz.common.back}
-        >
-          <Ionicons name="arrow-back" size={20} color={colors.slate800} />
-        </Pressable>
-        <Text style={styles.screenTitle}>{uz.bidsScreen.title}</Text>
-        <View style={styles.navRightPlaceholder} />
-      </View>
-
-      {error ? (
+    <Screen edges={SAFE_EDGES_WITH_HEADER} style={styles.screen}>
+      <SuccessBanner
+        message={successMessage}
+        onDismiss={() => setSuccessMessage(null)}
+      />
+      {error || errorMessage ? (
         <ErrorBanner
-          message={error instanceof Error ? error.message : uz.common.networkError}
-          onRetry={refetch}
+          message={
+            errorMessage ||
+            (error instanceof Error ? error.message : uz.common.networkError)
+          }
+          onRetry={error && !errorMessage ? refetch : undefined}
+          onDismiss={errorMessage ? () => setErrorMessage(null) : undefined}
         />
       ) : null}
 
@@ -468,6 +464,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.slate100,
     paddingHorizontal: 12,
     paddingVertical: 7,
+    minHeight: 44,
     borderRadius: radii.sm,
   },
   viewLoadBtnText: {
@@ -481,6 +478,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary50,
     paddingHorizontal: 12,
     paddingVertical: 7,
+    minHeight: 44,
     borderRadius: radii.sm,
   },
   editBtnText: {
@@ -489,6 +487,8 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   withdrawBtn: {
+    minWidth: 44,
+    minHeight: 44,
     padding: 6,
     justifyContent: 'center',
     alignItems: 'center',

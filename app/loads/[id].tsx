@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { bidsApi, carrierApi, loadsApi } from '../../src/api/client';
 import { MyBid } from '../../src/api/types';
@@ -17,8 +17,10 @@ import {
   ErrorBanner,
   Money,
   PrimaryButton,
+  SAFE_EDGES_WITH_HEADER,
   Screen,
   StatusBadge,
+  SuccessBanner,
   TextField,
 } from '../../src/components';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,6 +42,7 @@ export default function LoadDetailsScreen() {
   const [bidCommentInput, setBidCommentInput] = useState('');
   const [isEditingBid, setIsEditingBid] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // 1. Fetch load details
   const {
@@ -93,7 +96,7 @@ export default function LoadDetailsScreen() {
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       queryClient.invalidateQueries({ queryKey: ['myBids'] });
       refetchLoad();
-      Alert.alert('Muvaffaqiyatli', uz.loadDetails.successBidPlaced);
+      setSuccessMessage(uz.loadDetails.successBidPlaced);
     },
     onError: (err: unknown) => {
       handleApiError(err);
@@ -113,7 +116,7 @@ export default function LoadDetailsScreen() {
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       queryClient.invalidateQueries({ queryKey: ['myBids'] });
       refetchLoad();
-      Alert.alert('Muvaffaqiyatli', uz.loadDetails.successBidUpdated);
+      setSuccessMessage(uz.loadDetails.successBidUpdated);
     },
     onError: (err: unknown) => {
       handleApiError(err);
@@ -128,7 +131,7 @@ export default function LoadDetailsScreen() {
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       queryClient.invalidateQueries({ queryKey: ['myBids'] });
       refetchLoad();
-      Alert.alert('Muvaffaqiyatli', uz.loadDetails.successBidWithdrawn);
+      setSuccessMessage(uz.loadDetails.successBidWithdrawn);
     },
     onError: (err: unknown) => {
       handleApiError(err);
@@ -223,7 +226,7 @@ export default function LoadDetailsScreen() {
 
   if (isLoadingLoad) {
     return (
-      <Screen style={styles.loadingContainer}>
+      <Screen edges={SAFE_EDGES_WITH_HEADER} style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#1a56db" />
         <Text style={styles.loadingText}>{uz.common.loading}</Text>
       </Screen>
@@ -232,17 +235,7 @@ export default function LoadDetailsScreen() {
 
   if (loadError || !load) {
     return (
-      <Screen style={styles.screen}>
-        <View style={styles.navHeader}>
-          <Pressable
-            onPress={() => router.back()}
-            style={styles.backButton}
-            accessibilityRole="button"
-            accessibilityLabel={uz.common.back}
-          >
-            <Ionicons name="arrow-back" size={20} color={colors.slate800} />
-          </Pressable>
-        </View>
+      <Screen edges={SAFE_EDGES_WITH_HEADER} style={styles.screen}>
         <ErrorBanner
           message={loadError instanceof Error ? loadError.message : uz.loadDetails.errors.GENERIC}
           onRetry={refetchLoad}
@@ -256,26 +249,25 @@ export default function LoadDetailsScreen() {
   const estimatedCommission = isFixed && load.price ? Math.round(load.price * 0.03) : null;
 
   return (
-    <Screen style={styles.screen}>
-      {/* Top Header */}
-      <View style={styles.navHeader}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backButton}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel={uz.common.back}
-        >
-          <Ionicons name="arrow-back" size={20} color={colors.slate800} />
-        </Pressable>
-
-        <StatusBadge kind="load" status={load.status} />
-      </View>
+    <Screen edges={SAFE_EDGES_WITH_HEADER} style={styles.screen}>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <View style={{ paddingRight: 8 }}>
+              <StatusBadge kind="load" status={load.status} />
+            </View>
+          ),
+        }}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <SuccessBanner
+          message={successMessage}
+          onDismiss={() => setSuccessMessage(null)}
+        />
         {errorMessage ? (
           <ErrorBanner
             message={errorMessage}
@@ -326,7 +318,9 @@ export default function LoadDetailsScreen() {
               <View style={[styles.routeDot, styles.dotPickup]} />
               <View style={styles.routeTextWrap}>
                 <Text style={styles.addressRoleLabel}>{uz.loadDetails.pickupAddress}</Text>
-                <Text style={styles.addressValueText}>{load.pickupAddress}</Text>
+                <Text style={styles.addressValueText} selectable>
+                  {load.pickupAddress}
+                </Text>
               </View>
             </View>
 
@@ -336,7 +330,9 @@ export default function LoadDetailsScreen() {
               <View style={[styles.routeDot, styles.dotDropoff]} />
               <View style={styles.routeTextWrap}>
                 <Text style={styles.addressRoleLabel}>{uz.loadDetails.dropoffAddress}</Text>
-                <Text style={styles.addressValueText}>{load.dropoffAddress}</Text>
+                <Text style={styles.addressValueText} selectable>
+                  {load.dropoffAddress}
+                </Text>
               </View>
             </View>
           </View>
@@ -464,22 +460,25 @@ export default function LoadDetailsScreen() {
           </View>
         ) : isFixed ? (
           <PrimaryButton
-            title={`🚚 ${uz.loadDetails.bookButton}`}
+            title={uz.loadDetails.bookButton}
+            icon={<Ionicons name="cube" size={18} color="#FFFFFF" />}
             onPress={() => setShowConfirmBookModal(true)}
             loading={bookMutation.isPending}
             accessibilityLabel={uz.loadDetails.bookButton}
           />
         ) : !existingBid ? (
           <PrimaryButton
-            title={`💬 ${uz.loadDetails.placeBidButton}`}
+            title={uz.loadDetails.placeBidButton}
+            icon={<Ionicons name="chatbubble-ellipses" size={18} color="#FFFFFF" />}
             onPress={handleOpenPlaceBid}
             loading={placeBidMutation.isPending}
             accessibilityLabel={uz.loadDetails.placeBidButton}
           />
         ) : (
           <PrimaryButton
-            title={`✏️ ${uz.loadDetails.editBid}`}
+            title={uz.loadDetails.editBid}
             variant="outline"
+            icon={<Ionicons name="pencil" size={18} color={colors.primary} />}
             onPress={handleOpenEditBid}
             accessibilityLabel={uz.loadDetails.editBid}
           />
@@ -842,11 +841,14 @@ const styles = StyleSheet.create({
   },
   editBidButton: {
     flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
     backgroundColor: '#ffffff',
     borderWidth: 1.5,
     borderColor: '#16a34a',
     borderRadius: 10,
     paddingVertical: 10,
+    minHeight: 44,
     alignItems: 'center',
   },
   editBidButtonText: {
@@ -856,11 +858,14 @@ const styles = StyleSheet.create({
   },
   withdrawBidButton: {
     flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
     backgroundColor: '#ffffff',
     borderWidth: 1.5,
     borderColor: '#dc2626',
     borderRadius: 10,
     paddingVertical: 10,
+    minHeight: 44,
     alignItems: 'center',
   },
   withdrawBidButtonText: {

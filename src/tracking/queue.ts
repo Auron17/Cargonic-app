@@ -3,7 +3,8 @@ import { tripsApi } from '../api/client';
 import { LocationPoint } from '../api/types';
 
 export const QUEUE_STORAGE_PREFIX = '@yuk_tracking_queue_';
-export const MIN_BATCH_SIZE = 5;
+/** Zavod jonli ko‘rsin: bitta nuqta ham darhol yuboriladi. Offline qolganda navbat yig‘iladi. */
+export const MIN_BATCH_SIZE = 1;
 export const MAX_BATCH_SIZE = 100;
 
 export function getQueueStorageKey(tripId: string): string {
@@ -147,7 +148,7 @@ export async function enqueueLocations(
 }
 
 /**
- * Navbatdagi nuqtalarni serverga yuborish (kamida 5 ta bo'lsa yoki force bo'lsa).
+ * Navbatdagi nuqtalarni serverga yuborish (bitta nuqta ham, yoki force).
  * 100 tadan bo'lib yuboriladi va muvaffaqiyatli qabul qilinganlari navbatdan o'chiriladi.
  */
 export async function flushQueue(
@@ -164,7 +165,6 @@ export async function flushQueue(
   let totalSent = 0;
 
   while (queue.length > 0) {
-    // Agar force bo'lmasa va 5 tadan kam qolgan bo'lsa, to'xtatamiz
     if (!force && queue.length < MIN_BATCH_SIZE) {
       break;
     }

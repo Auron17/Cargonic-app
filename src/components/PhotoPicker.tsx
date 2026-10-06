@@ -10,9 +10,12 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { filesApi } from '../api/client';
+import { uz } from '../i18n/uz';
+import { colors } from '../theme';
 import { AuthImage } from './AuthImage';
 
 interface PhotoPickerProps {
@@ -134,9 +137,9 @@ export function PhotoPicker({
       );
     } else {
       Alert.alert(label, 'Rasmni qayerdan yuklamoqchisiz?', [
-        { text: 'Bekor qilish', style: 'cancel' },
-        { text: '📷 Kamera', onPress: handlePickCamera },
-        { text: '🖼️ Galereya', onPress: handlePickGallery },
+        { text: uz.common.cancel, style: 'cancel' },
+        { text: uz.common.camera, onPress: handlePickCamera },
+        { text: uz.common.gallery, onPress: handlePickGallery },
       ]);
     }
   };
@@ -171,7 +174,8 @@ export function PhotoPicker({
               accessibilityRole="button"
               accessibilityLabel="Rasmni almashtirish"
             >
-              <Text style={styles.changeButtonText}>🔄 Almashtirish</Text>
+              <Ionicons name="refresh" size={16} color="#1f2937" style={{ marginRight: 6 }} />
+              <Text style={styles.changeButtonText}>{uz.common.changePhoto}</Text>
             </Pressable>
           </View>
         </View>
@@ -193,8 +197,8 @@ export function PhotoPicker({
             </View>
           ) : (
             <View style={styles.uploadPrompt}>
-              <Text style={styles.cameraIcon}>📸</Text>
-              <Text style={styles.uploadTitle}>Rasm yuklash</Text>
+              <Ionicons name="camera-outline" size={34} color={colors.primary} style={styles.cameraIcon} />
+              <Text style={styles.uploadTitle}>{uz.common.uploadPhoto}</Text>
               <Text style={styles.uploadSub}>Kameradan yoki galereyadan</Text>
             </View>
           )}
@@ -243,7 +247,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cameraIcon: {
-    fontSize: 34,
     marginBottom: 6,
   },
   uploadTitle: {
@@ -288,8 +291,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   changeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 8,
+    minHeight: 44,
     borderRadius: 8,
     backgroundColor: '#f3f4f6',
   },

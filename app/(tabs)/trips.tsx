@@ -19,7 +19,7 @@ import {
   Money,
   Screen,
   StatusBadge,
-  TAB_EDGES_NO_HEADER,
+  TAB_EDGES_WITH_HEADER,
 } from '../../src/components';
 import { uz } from '../../src/i18n/uz';
 import { isTrackingActive } from '../../src/tracking/backgroundTask';
@@ -64,7 +64,7 @@ export default function TripsTabScreen() {
 
   if (isLoading && !trips) {
     return (
-      <Screen edges={TAB_EDGES_NO_HEADER} style={styles.centerContainer}>
+      <Screen edges={TAB_EDGES_WITH_HEADER} style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>{uz.common.loading}</Text>
       </Screen>
@@ -73,7 +73,7 @@ export default function TripsTabScreen() {
 
   if (error && !trips) {
     return (
-      <Screen edges={TAB_EDGES_NO_HEADER} style={styles.screen}>
+      <Screen edges={TAB_EDGES_WITH_HEADER} style={styles.screen}>
         <ErrorBanner
           message={error instanceof Error ? error.message : uz.common.networkError}
           onRetry={refetch}
@@ -126,8 +126,8 @@ export default function TripsTabScreen() {
             <Money amount={item.agreedPrice} size="md" color={colors.slate900} weight="800" />
           </View>
           <View style={styles.detailsBtn}>
-            <Text style={styles.detailsBtnText}>Batafsil</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+            <Text style={styles.detailsBtnText}>{uz.common.details}</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
           </View>
         </View>
       </Pressable>
@@ -137,8 +137,6 @@ export default function TripsTabScreen() {
   const renderHeader = () => {
     return (
       <View style={styles.headerContainer}>
-        <Text style={styles.screenTitle}>{uz.tripsScreen.title}</Text>
-
         {/* Faol reys kartasi */}
         {activeTrip ? (
           <View style={styles.activeSection}>
@@ -264,10 +262,9 @@ export default function TripsTabScreen() {
   const hasNoTrips = !activeTrip && historyTrips.length === 0;
 
   return (
-    <Screen edges={TAB_EDGES_NO_HEADER} style={styles.screen}>
+    <Screen edges={TAB_EDGES_WITH_HEADER} style={styles.screen}>
       {hasNoTrips ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.screenTitle}>{uz.tripsScreen.title}</Text>
           <EmptyState
             iconName="navigate-outline"
             title={uz.tripsScreen.emptyTitle}
@@ -323,13 +320,6 @@ const styles = StyleSheet.create({
   emptyContainer: {
     flex: 1,
     padding: 16,
-  },
-  screenTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.slate900,
-    letterSpacing: -0.4,
-    marginBottom: 16,
   },
   listContent: {
     padding: 16,
@@ -635,6 +625,8 @@ const styles = StyleSheet.create({
   detailsBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 44,
+    paddingLeft: 8,
   },
   detailsBtnText: {
     fontSize: 13.5,

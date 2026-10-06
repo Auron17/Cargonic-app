@@ -81,12 +81,8 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
     recordedAt: new Date(loc.timestamp).toISOString(),
   }));
 
-  const updatedQueue = await enqueueLocations(activeTripId, points);
-
-  // Kamida 5 ta nuqta yig'ilganda serverga yuborish
-  if (updatedQueue.length >= 5) {
-    await flushQueue(activeTripId, false);
-  }
+  await enqueueLocations(activeTripId, points);
+  await flushQueue(activeTripId, true);
 });
 
 /**
@@ -95,6 +91,7 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
 export async function checkLocationPermissions(): Promise<{
   foreground: boolean;
   background: boolean;
+  canAskForegroundAgain: boolean;
 }> {
   try {
     const fg = await Location.getForegroundPermissionsAsync();
@@ -102,10 +99,11 @@ export async function checkLocationPermissions(): Promise<{
     return {
       foreground: fg.status === 'granted',
       background: bg.status === 'granted',
+      canAskForegroundAgain: fg.canAskAgain,
     };
   } catch (err) {
     console.warn('Failed to check location permissions', err);
-    return { foreground: false, background: false };
+    return { foreground: false, background: false, canAskForegroundAgain: true };
   }
 }
 
@@ -115,6 +113,7 @@ export async function checkLocationPermissions(): Promise<{
 export async function requestLocationPermissions(): Promise<{
   foreground: boolean;
   background: boolean;
+  canAskForegroundAgain: boolean;
 }> {
   try {
     let fg = await Location.getForegroundPermissionsAsync();
@@ -123,7 +122,11 @@ export async function requestLocationPermissions(): Promise<{
     }
 
     if (fg.status !== 'granted') {
-      return { foreground: false, background: false };
+      return {
+        foreground: false,
+        background: false,
+        canAskForegroundAgain: fg.canAskAgain,
+      };
     }
 
     let bg = await Location.getBackgroundPermissionsAsync();
@@ -134,10 +137,11 @@ export async function requestLocationPermissions(): Promise<{
     return {
       foreground: fg.status === 'granted',
       background: bg.status === 'granted',
+      canAskForegroundAgain: fg.canAskAgain,
     };
   } catch (err) {
     console.warn('Failed to request location permissions', err);
-    return { foreground: false, background: false };
+    return { foreground: false, background: false, canAskForegroundAgain: true };
   }
 }
 
@@ -172,8 +176,8 @@ export async function startTracking(tripId: string): Promise<boolean> {
     if (!isStarted) {
       await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
         accuracy: Location.Accuracy.High,
-        timeInterval: 30000, // har 30 soniya
-        distanceInterval: 200, // yoki 200 metr
+        timeInterval: 15_000,
+        distanceInterval: 50,
         foregroundService: {
           notificationTitle: 'Cargonic',
           notificationBody: 'Reys kuzatilmoqda',
@@ -206,6 +210,7 @@ export async function startTracking(tripId: string): Promise<boolean> {
             recordedAt: new Date(current.timestamp).toISOString(),
           },
         ]);
+        await flushQueue(tripId, true);
       }
     } catch (posErr) {
       console.warn('Could not record initial tracking point', posErr);

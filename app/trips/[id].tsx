@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Linking,
   Modal,
   Pressable,
@@ -11,7 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { tripsApi } from '../../src/api/client';
@@ -21,8 +20,10 @@ import {
   Money,
   PhotoPicker,
   PrimaryButton,
+  SAFE_EDGES_WITH_HEADER,
   Screen,
   StatusBadge,
+  SuccessBanner,
 } from '../../src/components';
 import { uz } from '../../src/i18n/uz';
 import {
@@ -45,7 +46,6 @@ import { colors } from '../../src/theme';
 
 export default function TripDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   const tripId = Array.isArray(id) ? id[0] : id;
@@ -55,8 +55,13 @@ export default function TripDetailScreen() {
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
-  const [permissionsGranted, setPermissionsGranted] = useState(true);
+  const [foregroundGranted, setForegroundGranted] = useState(true);
+  const [backgroundGranted, setBackgroundGranted] = useState(true);
+  const [canAskForegroundAgain, setCanAskForegroundAgain] = useState(true);
   const [isGpsActive, setIsGpsActive] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [cancelReasonError, setCancelReasonError] = useState<string | null>(null);
 
   const {
     data: trip,
@@ -77,7 +82,9 @@ export default function TripDetailScreen() {
       const perms = await checkLocationPermissions();
       const active = await isTrackingActive();
       if (isMounted) {
-        setPermissionsGranted(perms.foreground && perms.background);
+        setForegroundGranted(perms.foreground);
+        setBackgroundGranted(perms.background);
+        setCanAskForegroundAgain(perms.canAskForegroundAgain);
         setIsGpsActive(active);
       }
     }
@@ -93,25 +100,43 @@ export default function TripDetailScreen() {
 
   // Agar reys ASSIGNED yoki undan keyingi faol holatda bo'lsa va tracking hali boshlanmagan bo'lsa, boshlashga urinish
   useEffect(() => {
-    if (trip && isActiveTrip(trip.status) && !isGpsActive && permissionsGranted) {
+    if (trip && isActiveTrip(trip.status) && !isGpsActive && foregroundGranted) {
       startTracking(trip.id).then((started) => {
         if (started) setIsGpsActive(true);
       });
     }
-  }, [trip, isGpsActive, permissionsGranted]);
+  }, [trip, isGpsActive, foregroundGranted]);
+
+  const applyPermissionResult = (res: {
+    foreground: boolean;
+    background: boolean;
+    canAskForegroundAgain: boolean;
+  }) => {
+    setForegroundGranted(res.foreground);
+    setBackgroundGranted(res.background);
+    setCanAskForegroundAgain(res.canAskForegroundAgain);
+  };
 
   const handleGrantPermissions = async () => {
     const res = await requestLocationPermissions();
-    setPermissionsGranted(res.foreground && res.background);
-    if (res.foreground && res.background && trip) {
+    applyPermissionResult(res);
+    if (res.foreground && trip) {
       const started = await startTracking(trip.id);
       setIsGpsActive(started);
+      return;
     }
+    if (!res.canAskForegroundAgain) {
+      await Linking.openSettings();
+    }
+  };
+
+  const handleOpenAppSettings = () => {
+    Linking.openSettings();
   };
 
   const handleCallShipper = () => {
     if (!trip?.shipperPhone) {
-      Alert.alert('Aloqa', 'Logist telefon raqami mavjud emas');
+      setErrorMessage(uz.tripView.noShipperPhone);
       return;
     }
     Linking.openURL(`tel:${trip.shipperPhone}`);
@@ -150,8 +175,7 @@ export default function TripDetailScreen() {
 
     const photoRequired = requiresPhoto(nextStatus);
     if (photoRequired && !uploadedPhotoKey) {
-      Alert.alert(
-        'Fotosurat majburiy',
+      setErrorMessage(
         nextStatus === 'LOADED'
           ? uz.tripView.photoRequiredLoaded
           : uz.tripView.photoRequiredDelivered
@@ -200,7 +224,7 @@ export default function TripDetailScreen() {
     } catch (err: unknown) {
       console.error('Failed to update trip status', err);
       const apiErr = err as { message?: string };
-      Alert.alert(uz.common.errorTitle, apiErr.message || 'Holatni yangilashda xatolik');
+      setErrorMessage(apiErr.message || uz.tripView.statusUpdateError);
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -209,9 +233,10 @@ export default function TripDetailScreen() {
   const handleCancelTrip = async () => {
     if (!trip) return;
     if (!cancelReason.trim()) {
-      Alert.alert('Sabab kerak', uz.tripView.cancelReasonLabel);
+      setCancelReasonError(uz.tripView.cancelReasonLabel);
       return;
     }
+    setCancelReasonError(null);
 
     setIsCancelling(true);
     try {
@@ -222,11 +247,11 @@ export default function TripDetailScreen() {
       await queryClient.invalidateQueries({ queryKey: ['trip', trip.id] });
       await queryClient.invalidateQueries({ queryKey: ['trips'] });
       refetch();
-      Alert.alert('Reys bekor qilindi', 'Reys muvaffaqiyatli bekor qilindi.');
+      setSuccessMessage(uz.tripView.cancelSuccess);
     } catch (err: unknown) {
       console.error('Failed to cancel trip', err);
       const apiErr = err as { message?: string };
-      Alert.alert(uz.common.errorTitle, apiErr.message || 'Reysni bekor qilishda xatolik');
+      setErrorMessage(apiErr.message || uz.tripView.cancelTrip);
     } finally {
       setIsCancelling(false);
     }
@@ -234,7 +259,7 @@ export default function TripDetailScreen() {
 
   if (isLoading) {
     return (
-      <Screen style={styles.centerContainer}>
+      <Screen edges={SAFE_EDGES_WITH_HEADER} style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#1a56db" />
         <Text style={styles.loadingText}>{uz.common.loading}</Text>
       </Screen>
@@ -243,17 +268,7 @@ export default function TripDetailScreen() {
 
   if (error || !trip) {
     return (
-      <Screen style={styles.screen}>
-        <View style={styles.navHeader}>
-          <Pressable
-            onPress={() => router.back()}
-            style={styles.backButton}
-            accessibilityRole="button"
-            accessibilityLabel={uz.common.back}
-          >
-            <Text style={styles.backButtonText}>← {uz.common.back}</Text>
-          </Pressable>
-        </View>
+      <Screen edges={SAFE_EDGES_WITH_HEADER} style={styles.screen}>
         <ErrorBanner
           message={error instanceof Error ? error.message : uz.common.networkError}
           onRetry={refetch}
@@ -268,21 +283,31 @@ export default function TripDetailScreen() {
   const canCancel = cancellableByCarrier(trip.status);
 
   return (
-    <Screen style={styles.screen}>
-      {/* Tepagi navigatsiya paneli */}
-      <View style={styles.navHeader}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backButton}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel={uz.common.back}
-        >
-          <Ionicons name="arrow-back" size={20} color={colors.slate800} />
-        </Pressable>
+    <Screen edges={SAFE_EDGES_WITH_HEADER} style={styles.screen}>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <View style={{ paddingRight: 8 }}>
+              <StatusBadge kind="trip" status={trip.status} />
+            </View>
+          ),
+        }}
+      />
 
-        <View style={styles.headerRight}>
-          {isActiveTrip(trip.status) ? (
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <SuccessBanner
+          message={successMessage}
+          onDismiss={() => setSuccessMessage(null)}
+        />
+        {errorMessage ? (
+          <ErrorBanner
+            message={errorMessage}
+            onDismiss={() => setErrorMessage(null)}
+          />
+        ) : null}
+
+        {isActiveTrip(trip.status) ? (
+          <View style={styles.workPanel} accessibilityLabel={uz.tripView.workPanel}>
             <View
               style={[
                 styles.gpsBadge,
@@ -291,7 +316,7 @@ export default function TripDetailScreen() {
             >
               <Ionicons
                 name={isGpsActive ? 'navigate' : 'navigate-outline'}
-                size={12}
+                size={14}
                 color={isGpsActive ? colors.successDark : colors.slate500}
                 style={{ marginRight: 4 }}
               />
@@ -304,14 +329,38 @@ export default function TripDetailScreen() {
                 {isGpsActive ? uz.tripsScreen.trackingActive : uz.tripsScreen.trackingInactive}
               </Text>
             </View>
-          ) : null}
-          <StatusBadge kind="trip" status={trip.status} />
-        </View>
-      </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* GPS ruxsati banneri */}
-        {isActiveTrip(trip.status) && !permissionsGranted ? (
+            <View style={styles.workActions}>
+              <Pressable
+                onPress={handleOpenNavigator}
+                style={({ pressed }) => [styles.workNavBtn, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={uz.tripView.openInYandexNavi}
+              >
+                <Ionicons name="navigate" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={styles.workBtnText}>{uz.tripView.openInYandexNavi}</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleCallShipper}
+                disabled={!trip.shipperPhone}
+                style={({ pressed }) => [
+                  styles.workCallBtn,
+                  !trip.shipperPhone && styles.disabledBtn,
+                  pressed && trip.shipperPhone && styles.pressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={uz.tripView.callLogistics}
+                accessibilityState={{ disabled: !trip.shipperPhone }}
+              >
+                <Ionicons name="call" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={styles.workBtnText}>{uz.tripView.callShort}</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+
+        {/* GPS ruxsati banneri — foreground yetarli, Always ixtiyoriy */}
+        {isActiveTrip(trip.status) && !foregroundGranted ? (
           <View style={styles.permissionBanner}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
               <Ionicons name="warning" size={18} color={colors.dangerDark} style={{ marginRight: 6 }} />
@@ -326,10 +375,40 @@ export default function TripDetailScreen() {
               onPress={handleGrantPermissions}
               style={styles.permissionButton}
               accessibilityRole="button"
-              accessibilityLabel={uz.tripView.grantPermission}
+              accessibilityLabel={
+                canAskForegroundAgain
+                  ? uz.tripView.grantPermission
+                  : uz.tripView.openAppSettings
+              }
             >
               <Text style={styles.permissionButtonText}>
-                {uz.tripView.grantPermission}
+                {canAskForegroundAgain
+                  ? uz.tripView.grantPermission
+                  : uz.tripView.openAppSettings}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {isActiveTrip(trip.status) && foregroundGranted && !backgroundGranted ? (
+          <View style={styles.permissionBanner}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <Ionicons name="navigate" size={18} color={colors.dangerDark} style={{ marginRight: 6 }} />
+              <Text style={styles.permissionTitle}>
+                {uz.tripView.backgroundPermissionTitle}
+              </Text>
+            </View>
+            <Text style={styles.permissionDesc}>
+              {uz.tripView.backgroundPermissionDesc}
+            </Text>
+            <Pressable
+              onPress={handleOpenAppSettings}
+              style={styles.permissionButton}
+              accessibilityRole="button"
+              accessibilityLabel={uz.tripView.openAppSettings}
+            >
+              <Text style={styles.permissionButtonText}>
+                {uz.tripView.openAppSettings}
               </Text>
             </Pressable>
           </View>
@@ -374,21 +453,21 @@ export default function TripDetailScreen() {
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Ionicons name="call-outline" size={14} color={colors.slate600} style={{ marginRight: 6 }} />
-                <Text style={styles.contactPhone}>
+                <Text style={styles.contactPhone} selectable>
                   {trip.shipperPhone || 'Raqam kiritilmagan'}
                 </Text>
               </View>
             </View>
 
-            {trip.shipperPhone ? (
+            {trip.shipperPhone && !isActiveTrip(trip.status) ? (
               <Pressable
                 onPress={handleCallShipper}
                 style={styles.callButton}
                 accessibilityRole="button"
                 accessibilityLabel={uz.tripView.callLogistics}
               >
-                <Ionicons name="call" size={14} color="#FFFFFF" style={{ marginRight: 5 }} />
-                <Text style={styles.callButtonText}>Qo‘ng‘iroq</Text>
+                <Ionicons name="call" size={16} color="#FFFFFF" style={{ marginRight: 5 }} />
+                <Text style={styles.callButtonText}>{uz.tripView.callShort}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -398,15 +477,15 @@ export default function TripDetailScreen() {
         <View style={styles.card}>
           <View style={styles.cardTitleRow}>
             <Text style={styles.cardTitle}>{uz.tripView.routeSection}</Text>
-            {isActiveTrip(trip.status) ? (
+            {!isActiveTrip(trip.status) ? (
               <Pressable
                 onPress={handleOpenNavigator}
                 style={styles.naviButton}
                 accessibilityRole="button"
-                accessibilityLabel={uz.tripView.openInYandexNavi}
+                accessibilityLabel={uz.tripView.openInMaps}
               >
                 <Text style={styles.naviButtonText}>
-                  {uz.tripView.openInYandexNavi}
+                  {uz.tripView.openInMaps}
                 </Text>
               </Pressable>
             ) : null}
@@ -417,7 +496,9 @@ export default function TripDetailScreen() {
               <View style={[styles.routeDot, styles.dotPickup]} />
               <View style={styles.routeTextWrap}>
                 <Text style={styles.label}>{uz.tripView.pickupAddress}</Text>
-                <Text style={styles.valueText}>{trip.load?.pickupAddress}</Text>
+                <Text style={styles.valueText} selectable>
+                  {trip.load?.pickupAddress}
+                </Text>
               </View>
             </View>
 
@@ -427,7 +508,9 @@ export default function TripDetailScreen() {
               <View style={[styles.routeDot, styles.dotDropoff]} />
               <View style={styles.routeTextWrap}>
                 <Text style={styles.label}>{uz.tripView.dropoffAddress}</Text>
-                <Text style={styles.valueText}>{trip.load?.dropoffAddress}</Text>
+                <Text style={styles.valueText} selectable>
+                  {trip.load?.dropoffAddress}
+                </Text>
               </View>
             </View>
           </View>
@@ -470,14 +553,14 @@ export default function TripDetailScreen() {
         {/* Fotosurat yuklash (agar keyingi bosqichda rasm talab qilinsa) */}
         {isPhotoRequired ? (
           <View style={styles.photoUploadCard}>
-            <Text style={styles.photoSectionTitle}>📸 Fotosurat majburiy</Text>
+            <Text style={styles.photoSectionTitle}>{uz.tripView.photoRequiredTitle}</Text>
             <Text style={styles.photoSectionDesc}>
               {nextStatus === 'LOADED'
                 ? uz.tripView.photoRequiredLoaded
                 : uz.tripView.photoRequiredDelivered}
             </Text>
             <PhotoPicker
-              label="Holatni tasdiqlovchi rasm"
+              label={uz.tripView.photoConfirmLabel}
               required
               value={uploadedPhotoKey}
               onUploaded={(key) => setUploadedPhotoKey(key)}
@@ -528,8 +611,9 @@ export default function TripDetailScreen() {
               accessibilityRole="button"
               accessibilityLabel={uz.tripView.cancelTrip}
             >
+              <Ionicons name="warning-outline" size={16} color="#b91c1c" style={{ marginRight: 6 }} />
               <Text style={styles.cancelTripButtonText}>
-                ⚠️ {uz.tripView.cancelTrip}
+                {uz.tripView.cancelTrip}
               </Text>
             </Pressable>
           </View>
@@ -538,14 +622,16 @@ export default function TripDetailScreen() {
         {/* Yakunlangan yoki bekor qilingan xabarnoma */}
         {trip.status === 'COMPLETED' ? (
           <View style={styles.completedBanner}>
+            <Ionicons name="checkmark-circle" size={20} color="#065f46" style={{ marginBottom: 6 }} />
             <Text style={styles.completedText}>
-              ✅ {uz.tripView.completedNotice}
+              {uz.tripView.completedNotice}
             </Text>
           </View>
         ) : trip.status === 'CANCELLED' ? (
           <View style={styles.cancelledBanner}>
+            <Ionicons name="close-circle" size={20} color="#991b1b" style={{ marginBottom: 6 }} />
             <Text style={styles.cancelledText}>
-              ❌ {uz.tripView.cancelledNotice}
+              {uz.tripView.cancelledNotice}
             </Text>
             {trip.cancelReason ? (
               <Text style={styles.cancelReasonDisplay}>
@@ -585,13 +671,19 @@ export default function TripDetailScreen() {
             </Text>
             <TextInput
               value={cancelReason}
-              onChangeText={setCancelReason}
+              onChangeText={(text) => {
+                setCancelReason(text);
+                if (cancelReasonError) setCancelReasonError(null);
+              }}
               placeholder={uz.tripView.cancelReasonPlaceholder}
               placeholderTextColor="#9ca3af"
               style={styles.modalTextInput}
               multiline
               numberOfLines={3}
             />
+            {cancelReasonError ? (
+              <Text style={styles.cancelReasonError}>{cancelReasonError}</Text>
+            ) : null}
 
             <View style={styles.modalActions}>
               <Pressable
@@ -670,9 +762,52 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1f2937',
   },
+  workPanel: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    gap: 12,
+  },
+  workActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  workNavBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1a56db',
+    borderRadius: 12,
+    minHeight: 48,
+    paddingHorizontal: 12,
+  },
+  workCallBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#16a34a',
+    borderRadius: 12,
+    minHeight: 48,
+    paddingHorizontal: 12,
+  },
+  workBtnText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  pressed: {
+    opacity: 0.9,
+  },
   gpsBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 12,
   },
   gpsBadgeActive: {
@@ -719,6 +854,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#d97706',
     borderRadius: 8,
     paddingVertical: 8,
+    minHeight: 44,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   permissionButtonText: {
@@ -805,10 +942,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   callButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#16a34a',
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
+    minHeight: 44,
   },
   callButtonText: {
     color: '#ffffff',
@@ -822,6 +962,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 6,
     paddingHorizontal: 12,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   naviButtonText: {
     fontSize: 13,
@@ -943,8 +1085,11 @@ const styles = StyleSheet.create({
     marginVertical: 6,
   },
   cancelTripButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 20,
+    minHeight: 44,
     borderRadius: 12,
     backgroundColor: '#fee2e2',
   },
@@ -1042,7 +1187,13 @@ const styles = StyleSheet.create({
     color: '#111827',
     textAlignVertical: 'top',
     minHeight: 80,
-    marginBottom: 18,
+    marginBottom: 8,
+  },
+  cancelReasonError: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#b91c1c',
+    marginBottom: 12,
   },
   modalActions: {
     flexDirection: 'row',
@@ -1052,6 +1203,8 @@ const styles = StyleSheet.create({
   modalCancelBtn: {
     paddingVertical: 10,
     paddingHorizontal: 16,
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: 10,
     backgroundColor: '#f3f4f6',
   },

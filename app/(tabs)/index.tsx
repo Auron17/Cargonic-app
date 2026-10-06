@@ -17,7 +17,7 @@ import {
   ErrorBanner,
   Money,
   Screen,
-  TAB_EDGES_NO_HEADER,
+  TAB_EDGES_WITH_HEADER,
 } from '../../src/components';
 import { formatDate } from '../../src/utils/format';
 import { uz } from '../../src/i18n/uz';
@@ -43,10 +43,6 @@ export default function LoadsFeedScreen() {
       pathname: '/loads/[id]',
       params: { id: loadId },
     });
-  };
-
-  const handleOpenBids = () => {
-    router.push('/bids');
   };
 
   const renderFeedCard = ({ item }: { item: FeedItem }) => {
@@ -95,10 +91,13 @@ export default function LoadsFeedScreen() {
               <Text style={styles.addressCity} numberOfLines={1}>
                 {item.pickupAddress}
               </Text>
-              <Text style={styles.dateSubtext}>
-                📅 {formatDate(item.pickupDate)}
-                {item.pickupTimeFrom && item.pickupTimeTo ? ` (${item.pickupTimeFrom}–${item.pickupTimeTo})` : ''}
-              </Text>
+              <View style={styles.dateRow}>
+                <Ionicons name="calendar-outline" size={13} color={colors.textMuted} />
+                <Text style={styles.dateSubtext}>
+                  {formatDate(item.pickupDate)}
+                  {item.pickupTimeFrom && item.pickupTimeTo ? ` (${item.pickupTimeFrom}–${item.pickupTimeTo})` : ''}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -172,11 +171,9 @@ export default function LoadsFeedScreen() {
             )}
           </View>
 
-          <View style={[styles.actionBtn, isFixed ? styles.actionBtnFixed : styles.actionBtnBid]}>
-            <Text style={styles.actionBtnText}>
-              {isFixed ? uz.loadDetails.bookButton : uz.loadDetails.placeBidButton}
-            </Text>
-            <Ionicons name="arrow-forward" size={15} color="#FFFFFF" style={styles.actionBtnIcon} />
+          <View style={styles.detailsHint}>
+            <Text style={styles.detailsHintText}>{uz.common.details}</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
           </View>
         </View>
       </Pressable>
@@ -184,29 +181,10 @@ export default function LoadsFeedScreen() {
   };
 
   return (
-    <Screen edges={TAB_EDGES_NO_HEADER} style={styles.screen}>
-      {/* Top Header Bar */}
-      <View style={styles.topBar}>
-        <View>
-          <Text style={styles.screenTitle}>{uz.loadsTab.title}</Text>
-          <View style={styles.liveIndicator}>
-            <View style={styles.liveDot} />
-            <Text style={styles.screenSubtitle}>Jonli lentalar • Har daqiqa yangilanadi</Text>
-          </View>
-        </View>
-
-        <Pressable
-          onPress={handleOpenBids}
-          style={({ pressed }) => [
-            styles.bidsButton,
-            pressed && styles.bidsButtonPressed,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={uz.loadsTab.myBids}
-        >
-          <Ionicons name="receipt-outline" size={16} color={colors.primary} style={styles.bidsIcon} />
-          <Text style={styles.bidsButtonText}>{uz.loadsTab.myBids}</Text>
-        </Pressable>
+    <Screen edges={TAB_EDGES_WITH_HEADER} style={styles.screen}>
+      <View style={styles.liveIndicator} accessibilityRole="text">
+        <View style={styles.liveDot} />
+        <Text style={styles.screenSubtitle}>{uz.loadsTab.autoRefreshInfo}</Text>
       </View>
 
       {error ? (
@@ -254,23 +232,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 6,
   },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-    paddingVertical: 4,
-  },
-  screenTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.slate900,
-    letterSpacing: -0.4,
-  },
   liveIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 3,
+    marginBottom: 12,
   },
   liveDot: {
     width: 6,
@@ -282,29 +247,7 @@ const styles = StyleSheet.create({
   screenSubtitle: {
     fontSize: 12,
     fontWeight: '500',
-    color: colors.slate500,
-  },
-  bidsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary50,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    borderRadius: radii.md,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minHeight: 38,
-  },
-  bidsButtonPressed: {
-    backgroundColor: '#DBEAFE',
-  },
-  bidsIcon: {
-    marginRight: 5,
-  },
-  bidsButtonText: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: colors.primary,
+    color: colors.textMuted,
   },
   listContent: {
     paddingBottom: 28,
@@ -431,11 +374,16 @@ const styles = StyleSheet.create({
     color: colors.slate900,
     lineHeight: 20,
   },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    gap: 4,
+  },
   dateSubtext: {
     fontSize: 12,
     fontWeight: '500',
-    color: colors.slate500,
-    marginTop: 2,
+    color: colors.textMuted,
   },
   chipsRow: {
     flexDirection: 'row',
@@ -513,27 +461,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.accentDark,
   },
-  actionBtn: {
+  detailsHint: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: radii.md,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    minHeight: 40,
+    minHeight: 44,
+    paddingLeft: 8,
   },
-  actionBtnFixed: {
-    backgroundColor: colors.primary,
-  },
-  actionBtnBid: {
-    backgroundColor: colors.accentDark,
-  },
-  actionBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13.5,
+  detailsHintText: {
+    color: colors.primary,
+    fontSize: 14,
     fontWeight: '700',
-    marginRight: 4,
-  },
-  actionBtnIcon: {
-    marginLeft: 2,
+    marginRight: 2,
   },
 });

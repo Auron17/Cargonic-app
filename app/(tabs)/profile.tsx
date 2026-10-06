@@ -12,9 +12,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/auth/AuthProvider';
 import {
   AuthImage,
+  ErrorBanner,
   PrimaryButton,
   Screen,
   StatusBadge,
+  SuccessBanner,
   TAB_EDGES_WITH_HEADER,
 } from '../../src/components';
 import { useOta } from '../../src/updates';
@@ -28,6 +30,8 @@ export default function ProfileTabScreen() {
   const ota = useOta();
   const [refreshing, setRefreshing] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [otaMessage, setOtaMessage] = useState<string | null>(null);
+  const [otaError, setOtaError] = useState<string | null>(null);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -37,18 +41,19 @@ export default function ProfileTabScreen() {
 
   const handleCheckForUpdate = async () => {
     setCheckingUpdate(true);
+    setOtaMessage(null);
+    setOtaError(null);
     try {
       const hasUpdate = await ota.checkForUpdate(true);
       if (!ota.isEnabled) {
-        Alert.alert(
-          'OTA Yangilanish',
-          'Siz hozir ishlab chiqish (Development) rejimidasiz. OTA yangilanishlar mustaqil production yoki preview buildlarida to‘liq ishlaydi. Sinov uchun pastdagi "Sinov yangilanishini ko‘rish" tugmasidan foydalanishingiz mumkin.'
+        setOtaMessage(
+          'OTA yangilanishlar preview yoki production buildda ishlaydi.'
         );
       } else if (!hasUpdate) {
-        Alert.alert('Yangilanish', 'Sizda eng so‘nggi talqin o‘rnatilgan!');
+        setOtaMessage('Sizda eng so‘nggi talqin o‘rnatilgan.');
       }
     } catch {
-      Alert.alert('Xatolik', 'Yangilanishlarni tekshirishda xatolik yuz berdi.');
+      setOtaError('Yangilanishlarni tekshirishda xatolik yuz berdi.');
     } finally {
       setCheckingUpdate(false);
     }
@@ -104,7 +109,7 @@ export default function ProfileTabScreen() {
             <Text style={styles.driverName}>
               {profile?.fullName || user?.fullName || 'Tashuvchi'}
             </Text>
-            <Text style={styles.driverPhone}>
+            <Text style={styles.driverPhone} selectable>
               {user?.phone ? formatPhoneDisplay(user.phone) : '—'}
             </Text>
             {profile?.verificationStatus ? (
@@ -162,6 +167,14 @@ export default function ProfileTabScreen() {
           Ilova ishlatilayotgan paytda yangilanishlar avtomatik tekshirilib turiladi. App Store yoki Google Play’siz darhol yangilanadi.
         </Text>
 
+        <SuccessBanner
+          message={otaMessage}
+          onDismiss={() => setOtaMessage(null)}
+        />
+        {otaError ? (
+          <ErrorBanner message={otaError} onDismiss={() => setOtaError(null)} />
+        ) : null}
+
         <View style={styles.otaStatusBox}>
           <View style={styles.otaStatusLeft}>
             <View
@@ -218,7 +231,7 @@ export default function ProfileTabScreen() {
             style={styles.otaCheckBtn}
           />
 
-          {!ota.isEnabled && !ota.isUpdateReady ? (
+          {__DEV__ && !ota.isEnabled && !ota.isUpdateReady ? (
             <Pressable
               onPress={ota.simulateUpdateReadyForTesting}
               style={styles.simulateBtn}
@@ -263,12 +276,16 @@ export default function ProfileTabScreen() {
 
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>STIR (INN):</Text>
-          <Text style={styles.infoValue}>{profile?.stir || '—'}</Text>
+          <Text style={styles.infoValue} selectable>
+            {profile?.stir || '—'}
+          </Text>
         </View>
 
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Litsenziya raqami:</Text>
-          <Text style={styles.infoValue}>{profile?.licenseNumber || '—'}</Text>
+          <Text style={styles.infoValue} selectable>
+            {profile?.licenseNumber || '—'}
+          </Text>
         </View>
 
         <View style={styles.infoRow}>
@@ -304,7 +321,9 @@ export default function ProfileTabScreen() {
             <View style={styles.plateRow}>
               <View style={styles.plateBadge}>
                 <Ionicons name="car" size={14} color={colors.slate800} style={styles.plateIcon} />
-                <Text style={styles.plateText}>{vehicle.plateNumber}</Text>
+                <Text style={styles.plateText} selectable>
+                  {vehicle.plateNumber}
+                </Text>
               </View>
               <StatusBadge kind="verification" status={vehicle.verificationStatus} />
             </View>
@@ -578,6 +597,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 7,
+    minHeight: 44,
     borderRadius: radii.sm,
   },
   otaApplyIcon: {
@@ -596,8 +616,10 @@ const styles = StyleSheet.create({
   },
   simulateBtn: {
     alignSelf: 'center',
-    paddingVertical: 6,
+    paddingVertical: 10,
     paddingHorizontal: 12,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   simulateBtnText: {
     fontSize: 12,
@@ -606,8 +628,10 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   editLink: {
-    paddingVertical: 2,
-    paddingHorizontal: 6,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
   },
   editLinkText: {
     fontSize: 13.5,

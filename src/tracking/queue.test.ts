@@ -150,6 +150,10 @@ describe('Tracking queue logic', () => {
       expect(isSendableQueue(10, 5, false)).toBe(true);
     });
 
+    it('sends a single point with the default live-track threshold', () => {
+      expect(isSendableQueue(1)).toBe(true);
+    });
+
     it('returns true for any non-empty queue when force is true', () => {
       expect(isSendableQueue(1, 5, true)).toBe(true);
       expect(isSendableQueue(3, 5, true)).toBe(true);
@@ -210,15 +214,17 @@ describe('Tracking queue logic', () => {
     });
 
     describe('flushQueue', () => {
-      it('does not send if queue is smaller than 5 and force is false', async () => {
-        await saveQueue(testTripId, [p1, p2]);
+      it('sends a single point without force so the company sees live position', async () => {
+        await saveQueue(testTripId, [p1]);
         const mockApi: Pick<typeof tripsApi, 'sendLocations'> = {
-          sendLocations: jest.fn().mockResolvedValue({ accepted: 2 }),
+          sendLocations: jest.fn().mockResolvedValue({ accepted: 1 }),
         };
 
         const result = await flushQueue(testTripId, false, mockApi);
-        expect(result).toEqual({ sentCount: 0, remainingCount: 2 });
-        expect(mockApi.sendLocations).not.toHaveBeenCalled();
+        expect(result).toEqual({ sentCount: 1, remainingCount: 0 });
+        expect(mockApi.sendLocations).toHaveBeenCalledWith(testTripId, {
+          points: [p1],
+        });
       });
 
       it('sends points when force is true even if smaller than 5', async () => {

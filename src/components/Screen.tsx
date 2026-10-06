@@ -13,9 +13,10 @@ import {
 import { SafeAreaView, Edge } from 'react-native-safe-area-context';
 import { colors } from '../theme';
 
-// Tab ekranlari: pastki chegarani tab paneli, yuqorisini (bo'lsa) navigatsiya sarlavhasi egallaydi.
+// Native header yoki tab sarlavhasi yuqorini egallaganda SafeArea faqat yonlardan.
+export const SAFE_EDGES_WITH_HEADER: Edge[] = ['left', 'right'];
 export const TAB_EDGES_NO_HEADER: Edge[] = ['top', 'left', 'right'];
-export const TAB_EDGES_WITH_HEADER: Edge[] = ['left', 'right'];
+export const TAB_EDGES_WITH_HEADER: Edge[] = SAFE_EDGES_WITH_HEADER;
 
 interface ScreenProps {
   children: ReactNode;
@@ -41,7 +42,7 @@ export function Screen({
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {scrollable ? (
           <ScrollView

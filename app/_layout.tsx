@@ -6,6 +6,8 @@ import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
 import { OtaProvider } from '../src/updates';
 import { usePushNotifications } from '../src/notifications/usePushNotifications';
 import { useForegroundLocation } from '../src/tracking/useForegroundLocation';
+import { uz } from '../src/i18n/uz';
+import { colors } from '../src/theme';
 import '../src/i18n';
 
 export { AppErrorBoundary as ErrorBoundary } from '../src/components/AppErrorBoundary';
@@ -41,9 +43,42 @@ function RootNavigator() {
       </Stack.Protected>
       <Stack.Protected guard={showApp}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="loads/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="bids" options={{ headerShown: false }} />
-        <Stack.Screen name="trips/[id]" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="loads/[id]"
+          options={{
+            headerShown: true,
+            title: uz.loadDetails.title,
+            headerBackTitle: uz.common.back,
+            headerTintColor: colors.slate900,
+            headerStyle: { backgroundColor: '#FFFFFF' },
+            headerTitleStyle: { fontSize: 17, fontWeight: '800', color: colors.slate900 },
+            headerShadowVisible: false,
+          }}
+        />
+        <Stack.Screen
+          name="bids"
+          options={{
+            headerShown: true,
+            title: uz.bidsScreen.title,
+            headerBackTitle: uz.common.back,
+            headerTintColor: colors.slate900,
+            headerStyle: { backgroundColor: '#FFFFFF' },
+            headerTitleStyle: { fontSize: 17, fontWeight: '800', color: colors.slate900 },
+            headerShadowVisible: false,
+          }}
+        />
+        <Stack.Screen
+          name="trips/[id]"
+          options={{
+            headerShown: true,
+            title: uz.tripView.title,
+            headerBackTitle: uz.common.back,
+            headerTintColor: colors.slate900,
+            headerStyle: { backgroundColor: '#FFFFFF' },
+            headerTitleStyle: { fontSize: 17, fontWeight: '800', color: colors.slate900 },
+            headerShadowVisible: false,
+          }}
+        />
       </Stack.Protected>
       <Stack.Protected guard={showOnboarding}>
         <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />

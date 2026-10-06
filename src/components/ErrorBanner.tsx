@@ -97,6 +97,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerDark,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: radii.sm,
     marginRight: 6,
   },
@@ -106,7 +108,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   dismissButton: {
-    padding: 3,
+    padding: 6,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pressed: {
     opacity: 0.85,

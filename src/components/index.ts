@@ -5,6 +5,7 @@ export * from './Select';
 export * from './StatusBadge';
 export * from './Money';
 export * from './ErrorBanner';
+export * from './SuccessBanner';
 export * from './EmptyState';
 export * from './AuthImage';
 export * from './PhotoPicker';

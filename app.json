@@ -33,7 +33,7 @@
     },
     "android": {
       "package": "uz.cargonic.driver",
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#111B2C"
@@ -45,7 +45,10 @@
         "CAMERA",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
       ],
       "googleServicesFile": "./google-services.json"
     },
@@ -60,8 +63,9 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Reys vaqtida yuk harakatini kuzatish uchun joylashuv ruxsati kerak.",
-          "isAndroidBackgroundLocationEnabled": false,
-          "isAndroidForegroundServiceEnabled": false
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "locationAlwaysAndWhenInUsePermission": "Reys davomida yuk joylashuvini zavodga ko'rsatish uchun ilova yopiq bo'lganda ham joylashuv kerak."
         }
       ],
       [
