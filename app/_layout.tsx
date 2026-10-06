@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../src/auth/AuthProvider';
 import { usePushNotifications } from '../src/notifications/usePushNotifications';
 import { useForegroundLocation } from '../src/tracking/useForegroundLocation';
+import '../src/tracking/backgroundTask';
 import '../src/i18n';
 
 function AppServices() {
