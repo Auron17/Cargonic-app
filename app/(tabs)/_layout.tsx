@@ -1,11 +1,17 @@
 import React from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { uz } from '../../src/i18n/uz';
 import { colors } from '../../src/theme';
 
 export default function TabLayout() {
+  // Android edge-to-edge rejimida tizim tugmalari (yoki gesture paneli) ilova ustida turadi,
+  // shuning uchun tab paneli pastki chegaraga qarab balandlashadi.
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'ios' ? 20 : 8);
+
   return (
     <Tabs
       screenOptions={{
@@ -22,7 +28,7 @@ export default function TabLayout() {
           letterSpacing: -0.3,
         },
         headerShadowVisible: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { height: 60 + bottomInset, paddingBottom: bottomInset }],
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: styles.tabBarLabel,
@@ -94,8 +100,6 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    height: Platform.OS === 'ios' ? 88 : 66,
-    paddingBottom: Platform.OS === 'ios' ? 28 : 10,
     paddingTop: 8,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
