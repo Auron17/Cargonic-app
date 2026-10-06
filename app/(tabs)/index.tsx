@@ -17,6 +17,7 @@ import {
   ErrorBanner,
   Money,
   Screen,
+  TAB_EDGES_NO_HEADER,
 } from '../../src/components';
 import { formatDate } from '../../src/utils/format';
 import { uz } from '../../src/i18n/uz';
@@ -183,7 +184,7 @@ export default function LoadsFeedScreen() {
   };
 
   return (
-    <Screen style={styles.screen}>
+    <Screen edges={TAB_EDGES_NO_HEADER} style={styles.screen}>
       {/* Top Header Bar */}
       <View style={styles.topBar}>
         <View>

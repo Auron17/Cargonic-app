@@ -15,6 +15,7 @@ import {
   PrimaryButton,
   Screen,
   StatusBadge,
+  TAB_EDGES_WITH_HEADER,
 } from '../../src/components';
 import { useOta } from '../../src/updates';
 import { uz } from '../../src/i18n/uz';
@@ -58,7 +59,7 @@ export default function ProfileTabScreen() {
   const driverPhotoDoc = documents.find((d) => d.docType === 'DRIVER_PHOTO');
 
   return (
-    <Screen
+    <Screen edges={TAB_EDGES_WITH_HEADER}
       scrollable
       refreshControl={
         <RefreshControl

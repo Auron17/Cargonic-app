@@ -17,6 +17,7 @@ import {
   ErrorBanner,
   Money,
   Screen,
+  TAB_EDGES_WITH_HEADER,
 } from '../../src/components';
 import { uz } from '../../src/i18n/uz';
 import { formatDateTime, formatMoney } from '../../src/utils/format';
@@ -213,7 +214,7 @@ export default function BalanceTabScreen() {
 
   if (loading && !wallet) {
     return (
-      <Screen style={styles.centerContainer}>
+      <Screen edges={TAB_EDGES_WITH_HEADER} style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>{uz.common.loading}</Text>
       </Screen>
@@ -221,7 +222,7 @@ export default function BalanceTabScreen() {
   }
 
   return (
-    <Screen style={styles.screen}>
+    <Screen edges={TAB_EDGES_WITH_HEADER} style={styles.screen}>
       {error && !wallet ? (
         <ErrorBanner message={error} onRetry={fetchWallet} />
       ) : null}

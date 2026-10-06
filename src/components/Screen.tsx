@@ -13,6 +13,10 @@ import {
 import { SafeAreaView, Edge } from 'react-native-safe-area-context';
 import { colors } from '../theme';
 
+// Tab ekranlari: pastki chegarani tab paneli, yuqorisini (bo'lsa) navigatsiya sarlavhasi egallaydi.
+export const TAB_EDGES_NO_HEADER: Edge[] = ['top', 'left', 'right'];
+export const TAB_EDGES_WITH_HEADER: Edge[] = ['left', 'right'];
+
 interface ScreenProps {
   children: ReactNode;
   scrollable?: boolean;

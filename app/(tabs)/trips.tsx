@@ -19,6 +19,7 @@ import {
   Money,
   Screen,
   StatusBadge,
+  TAB_EDGES_NO_HEADER,
 } from '../../src/components';
 import { uz } from '../../src/i18n/uz';
 import { isTrackingActive } from '../../src/tracking/backgroundTask';
@@ -63,7 +64,7 @@ export default function TripsTabScreen() {
 
   if (isLoading && !trips) {
     return (
-      <Screen style={styles.centerContainer}>
+      <Screen edges={TAB_EDGES_NO_HEADER} style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>{uz.common.loading}</Text>
       </Screen>
@@ -72,7 +73,7 @@ export default function TripsTabScreen() {
 
   if (error && !trips) {
     return (
-      <Screen style={styles.screen}>
+      <Screen edges={TAB_EDGES_NO_HEADER} style={styles.screen}>
         <ErrorBanner
           message={error instanceof Error ? error.message : uz.common.networkError}
           onRetry={refetch}
@@ -263,7 +264,7 @@ export default function TripsTabScreen() {
   const hasNoTrips = !activeTrip && historyTrips.length === 0;
 
   return (
-    <Screen style={styles.screen}>
+    <Screen edges={TAB_EDGES_NO_HEADER} style={styles.screen}>
       {hasNoTrips ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.screenTitle}>{uz.tripsScreen.title}</Text>
