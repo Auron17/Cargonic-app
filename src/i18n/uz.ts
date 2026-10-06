@@ -1,6 +1,6 @@
 export const uz = {
   app: {
-    name: 'Yuk platforma',
+    name: 'Cargonic',
     tagline: 'Haydovchi va tashuvchilar uchun yuklar',
   },
   nav: {

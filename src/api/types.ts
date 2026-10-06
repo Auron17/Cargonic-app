@@ -1,4 +1,4 @@
-/** DTO turlar — `docs/superpowers/plans/2026-10-05-yuk-platforma-backend.md` Java recordlaridan. */
+/** DTO turlar — `docs/superpowers/plans/2026-10-05-cargonic-backend.md` Java recordlaridan. */
 
 export type Role = 'SHIPPER' | 'CARRIER' | 'ADMIN'
 export type UserStatus = 'ACTIVE' | 'BLOCKED'

@@ -1,4 +1,4 @@
-# yuk-platforma Mobile (Haydovchi va Tashuvchi ilovasi)
+# Cargonic Mobile (Haydovchi va Tashuvchi ilovasi)
 
 O‘zbekistondagi zavod va ishlab chiqaruvchilarni litsenziyali yuk tashuvchilar bilan bog‘laydigan B2B marketplace uchun mobil ilova (Android APK).
 Ilova haydovchi va tashuvchilar (`CARRIER`) uchun mo‘ljallangan: "Yandex Go haydovchi ilovasi" kabi, faqat yuk mashinalari uchun.

@@ -175,7 +175,7 @@ export async function startTracking(tripId: string): Promise<boolean> {
         timeInterval: 30000, // har 30 soniya
         distanceInterval: 200, // yoki 200 metr
         foregroundService: {
-          notificationTitle: 'yuk-platforma',
+          notificationTitle: 'Cargonic',
           notificationBody: 'Reys kuzatilmoqda',
           notificationColor: '#1a56db',
           killServiceOnDestroy: false,

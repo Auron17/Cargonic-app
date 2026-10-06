@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "yuk-platforma",
-    "slug": "yuk-platforma",
-    "scheme": "yukplatforma",
+    "name": "Cargonic",
+    "slug": "cargonic",
+    "scheme": "cargonic",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -31,7 +31,7 @@
       }
     },
     "android": {
-      "package": "uz.yukplatforma.driver",
+      "package": "uz.cargonic.driver",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
