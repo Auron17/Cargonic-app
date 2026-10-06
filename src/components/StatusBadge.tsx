@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { uz } from '../i18n/uz';
+import { getCopy, useCopy } from '../i18n';
 import { radii } from '../theme';
 
 export type StatusKind = 'verification' | 'load' | 'trip' | 'bid' | 'user';
@@ -52,12 +52,14 @@ const COLOR_BY_STATUS: Record<string, BadgeColors> = {
 };
 
 export function statusBadgeLabel(status: string, kind: StatusKind): string {
-  const table = uz.status[kind] as Record<string, string>;
+  const table = getCopy().status[kind] as Record<string, string>;
   return table[status] ?? status;
 }
 
 export function StatusBadge({ status, kind, size = 'md', style }: StatusBadgeProps) {
-  const label = statusBadgeLabel(status, kind);
+  const uz = useCopy();
+  const table = uz.status[kind] as Record<string, string>;
+  const label = table[status] ?? status;
   const palette = COLOR_BY_STATUS[status] ?? PALETTE.muted;
   const isSm = size === 'sm';
 
@@ -70,7 +72,7 @@ export function StatusBadge({ status, kind, size = 'md', style }: StatusBadgePro
         style,
       ]}
       accessibilityRole="text"
-      accessibilityLabel={`Holat: ${label}`}
+      accessibilityLabel={uz.common.statusA11y.replace('{{status}}', label)}
     >
       <View
         style={[styles.dot, isSm && styles.dotSm, { backgroundColor: palette.dot }]}

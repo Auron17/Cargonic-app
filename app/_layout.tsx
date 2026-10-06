@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -6,9 +6,9 @@ import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
 import { OtaProvider } from '../src/updates';
 import { usePushNotifications } from '../src/notifications/usePushNotifications';
 import { useForegroundLocation } from '../src/tracking/useForegroundLocation';
-import { uz } from '../src/i18n/uz';
+import { HeaderBackButton } from '../src/components/HeaderBackButton';
+import { loadSavedLanguage, useCopy } from '../src/i18n';
 import { colors } from '../src/theme';
-import '../src/i18n';
 
 export { AppErrorBoundary as ErrorBoundary } from '../src/components/AppErrorBoundary';
 
@@ -19,6 +19,7 @@ function AppServices() {
 }
 
 function RootNavigator() {
+  const uz = useCopy();
   const { isLoading, isAuthenticated, isCarrier, profile } = useAuth();
   const showAuth = isLoading || !isAuthenticated || !isCarrier;
   const showApp =
@@ -35,7 +36,7 @@ function RootNavigator() {
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
-        contentStyle: { backgroundColor: '#F8FAFC' },
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
       <Stack.Protected guard={showAuth}>
@@ -48,9 +49,10 @@ function RootNavigator() {
           options={{
             headerShown: true,
             title: uz.loadDetails.title,
-            headerBackTitle: uz.common.back,
+            headerBackVisible: false,
+            headerLeft: () => <HeaderBackButton />,
             headerTintColor: colors.slate900,
-            headerStyle: { backgroundColor: '#FFFFFF' },
+            headerStyle: { backgroundColor: colors.background },
             headerTitleStyle: { fontSize: 17, fontWeight: '800', color: colors.slate900 },
             headerShadowVisible: false,
           }}
@@ -60,9 +62,10 @@ function RootNavigator() {
           options={{
             headerShown: true,
             title: uz.bidsScreen.title,
-            headerBackTitle: uz.common.back,
+            headerBackVisible: false,
+            headerLeft: () => <HeaderBackButton />,
             headerTintColor: colors.slate900,
-            headerStyle: { backgroundColor: '#FFFFFF' },
+            headerStyle: { backgroundColor: colors.background },
             headerTitleStyle: { fontSize: 17, fontWeight: '800', color: colors.slate900 },
             headerShadowVisible: false,
           }}
@@ -72,9 +75,10 @@ function RootNavigator() {
           options={{
             headerShown: true,
             title: uz.tripView.title,
-            headerBackTitle: uz.common.back,
+            headerBackVisible: false,
+            headerLeft: () => <HeaderBackButton fallback="/(tabs)/trips" />,
             headerTintColor: colors.slate900,
-            headerStyle: { backgroundColor: '#FFFFFF' },
+            headerStyle: { backgroundColor: colors.background },
             headerTitleStyle: { fontSize: 17, fontWeight: '800', color: colors.slate900 },
             headerShadowVisible: false,
           }}
@@ -100,11 +104,15 @@ export default function RootLayout() {
       })
   );
 
+  useEffect(() => {
+    void loadSavedLanguage();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <OtaProvider>
+          <OtaProvider key="ota-preview-primary">
             <AppServices />
             <RootNavigator />
           </OtaProvider>

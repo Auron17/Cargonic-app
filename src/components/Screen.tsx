@@ -10,12 +10,14 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { SafeAreaView, Edge } from 'react-native-safe-area-context';
+import { SafeAreaView, Edge, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme';
 
 // Native header yoki tab sarlavhasi yuqorini egallaganda SafeArea faqat yonlardan.
 export const SAFE_EDGES_WITH_HEADER: Edge[] = ['left', 'right'];
 export const TAB_EDGES_NO_HEADER: Edge[] = ['top', 'left', 'right'];
+/** Native header bor, tab paneli yo'q: pastki chegara (home indicator) hisobga olinadi */
+export const DETAIL_EDGES: Edge[] = ['left', 'right', 'bottom'];
 export const TAB_EDGES_WITH_HEADER: Edge[] = SAFE_EDGES_WITH_HEADER;
 
 interface ScreenProps {
@@ -37,8 +39,13 @@ export function Screen({
   edges = ['top', 'left', 'right', 'bottom'],
   refreshControl,
 }: ScreenProps) {
+  const insets = useSafeAreaInsets();
+  // Pastki panel bo'lsa, u ekranning eng pastigacha oq bo'lib cho'ziladi:
+  // pastki chegarani SafeAreaView emas, panelning o'zi hisobga oladi.
+  const barOwnsBottom = Boolean(bottomAction) && edges.includes('bottom');
+  const safeEdges = barOwnsBottom ? edges.filter((e) => e !== 'bottom') : edges;
   return (
-    <SafeAreaView edges={edges} style={[styles.container, style]}>
+    <SafeAreaView edges={safeEdges} style={[styles.container, style]}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
@@ -59,7 +66,9 @@ export function Screen({
         )}
 
         {bottomAction ? (
-          <View style={styles.bottomBar}>{bottomAction}</View>
+          <View style={[styles.bottomBar, barOwnsBottom && { paddingBottom: Math.max(insets.bottom, 12) + 4 }]}>
+            {bottomAction}
+          </View>
         ) : null}
       </KeyboardAvoidingView>
     </SafeAreaView>

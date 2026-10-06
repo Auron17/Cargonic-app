@@ -1,31 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Linking,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { tripsApi } from '../../src/api/client';
 import {
   AuthImage,
+  BottomSheet,
+  Card,
+  DETAIL_EDGES,
   ErrorBanner,
+  HeaderBackButton,
   Money,
   PhotoPicker,
+  Pill,
   PrimaryButton,
-  SAFE_EDGES_WITH_HEADER,
+  RouteLine,
   Screen,
-  StatusBadge,
+  SectionTitle,
+  SkeletonCard,
   SuccessBanner,
+  TextField,
+  pillToneForStatus,
+  statusBadgeLabel,
 } from '../../src/components';
-import { uz } from '../../src/i18n/uz';
+import { TripStatus } from '../../src/api/types';
+import { getCopy, useCopy } from '../../src/i18n';
 import {
   checkLocationPermissions,
   isTrackingActive,
@@ -41,10 +41,11 @@ import {
   requiresPhoto,
 } from '../../src/trips/nextStatus';
 import { Ionicons } from '@expo/vector-icons';
-import { formatDate, formatDateTime, formatMoney } from '../../src/utils/format';
-import { colors } from '../../src/theme';
+import { formatDateTime, formatMoney, formatPickupWindow } from '../../src/utils/format';
+import { colors, ink } from '../../src/theme';
 
 export default function TripDetailScreen() {
+  const uz = useCopy();
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
 
@@ -259,20 +260,18 @@ export default function TripDetailScreen() {
 
   if (isLoading) {
     return (
-      <Screen edges={SAFE_EDGES_WITH_HEADER} style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#1a56db" />
-        <Text style={styles.loadingText}>{uz.common.loading}</Text>
+      <Screen edges={DETAIL_EDGES} contentContainerStyle={styles.pad}>
+        <SkeletonCard />
+        <View style={styles.gap} />
+        <SkeletonCard />
       </Screen>
     );
   }
 
   if (error || !trip) {
     return (
-      <Screen edges={SAFE_EDGES_WITH_HEADER} style={styles.screen}>
-        <ErrorBanner
-          message={error instanceof Error ? error.message : uz.common.networkError}
-          onRetry={refetch}
-        />
+      <Screen edges={DETAIL_EDGES} contentContainerStyle={styles.pad}>
+        <ErrorBanner message={error instanceof Error ? error.message : uz.common.networkError} onRetry={refetch} />
       </Screen>
     );
   }
@@ -281,283 +280,130 @@ export default function TripDetailScreen() {
   const nextActionLabel = getStatusActionLabel(nextStatus);
   const isPhotoRequired = nextStatus ? requiresPhoto(nextStatus) : false;
   const canCancel = cancellableByCarrier(trip.status);
+  const active = isActiveTrip(trip.status);
+  const headingToPickup = trip.status === 'ASSIGNED' || trip.status === 'EN_ROUTE_TO_PICKUP' || trip.status === 'AT_PICKUP';
+  const targetAddress = headingToPickup ? trip.load?.pickupAddress : trip.load?.dropoffAddress;
+  const stepIndex = STEPS.indexOf(trip.status);
+
+  const bottomAction = nextStatus ? (
+    <PrimaryButton
+      title={nextActionLabel}
+      onPress={handleNextStatus}
+      loading={isUpdatingStatus}
+      disabled={isPhotoRequired && !uploadedPhotoKey}
+      size="lg"
+      accessibilityLabel={nextActionLabel}
+    />
+  ) : undefined;
 
   return (
-    <Screen edges={SAFE_EDGES_WITH_HEADER} style={styles.screen}>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <View style={{ paddingRight: 8 }}>
-              <StatusBadge kind="trip" status={trip.status} />
-            </View>
-          ),
-        }}
-      />
+    <Screen edges={DETAIL_EDGES} scrollable contentContainerStyle={styles.pad} bottomAction={bottomAction}>
+      <Stack.Screen options={{ title: '', headerLeft: () => <HeaderBackButton fallback="/(tabs)/trips" /> }} />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <SuccessBanner
-          message={successMessage}
-          onDismiss={() => setSuccessMessage(null)}
-        />
-        {errorMessage ? (
-          <ErrorBanner
-            message={errorMessage}
-            onDismiss={() => setErrorMessage(null)}
-          />
-        ) : null}
+      <SuccessBanner message={successMessage} onDismiss={() => setSuccessMessage(null)} />
+      {errorMessage ? <ErrorBanner message={errorMessage} onDismiss={() => setErrorMessage(null)} /> : null}
 
-        {isActiveTrip(trip.status) ? (
-          <View style={styles.workPanel} accessibilityLabel={uz.tripView.workPanel}>
-            <View
-              style={[
-                styles.gpsBadge,
-                isGpsActive ? styles.gpsBadgeActive : styles.gpsBadgeInactive,
-              ]}
-            >
-              <Ionicons
-                name={isGpsActive ? 'navigate' : 'navigate-outline'}
-                size={14}
-                color={isGpsActive ? colors.successDark : colors.slate500}
-                style={{ marginRight: 4 }}
-              />
-              <Text
-                style={[
-                  styles.gpsBadgeText,
-                  isGpsActive ? styles.gpsTextActive : styles.gpsTextInactive,
-                ]}
-              >
-                {isGpsActive ? uz.tripsScreen.trackingActive : uz.tripsScreen.trackingInactive}
-              </Text>
+      {/* Holat va narx */}
+      <View style={styles.hero}>
+        <View style={styles.heroTop}>
+          <Pill tone={pillToneForStatus(trip.status)} label={statusBadgeLabel(trip.status, 'trip')} />
+          {active ? (
+            <View style={styles.gps}>
+              <View style={[styles.gpsDot, isGpsActive && styles.gpsDotOn]} />
+              <Text style={styles.gpsText}>{isGpsActive ? 'GPS yozilmoqda' : 'GPS o‘chiq'}</Text>
             </View>
+          ) : null}
+        </View>
+        <Money amount={trip.agreedPrice} size="xl" weight="800" style={styles.heroPrice} />
+        <Text style={styles.heroMeta} numberOfLines={1}>
+          {[trip.companyName, trip.commissionAmount != null ? `komissiya ${formatMoney(trip.commissionAmount)}` : null]
+            .filter(Boolean)
+            .join(' · ')}
+        </Text>
+      </View>
 
-            <View style={styles.workActions}>
-              <Pressable
-                onPress={handleOpenNavigator}
-                style={({ pressed }) => [styles.workNavBtn, pressed && styles.pressed]}
-                accessibilityRole="button"
-                accessibilityLabel={uz.tripView.openInYandexNavi}
-              >
-                <Ionicons name="navigate" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={styles.workBtnText}>{uz.tripView.openInYandexNavi}</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleCallShipper}
-                disabled={!trip.shipperPhone}
-                style={({ pressed }) => [
-                  styles.workCallBtn,
-                  !trip.shipperPhone && styles.disabledBtn,
-                  pressed && trip.shipperPhone && styles.pressed,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel={uz.tripView.callLogistics}
-                accessibilityState={{ disabled: !trip.shipperPhone }}
-              >
-                <Ionicons name="call" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={styles.workBtnText}>{uz.tripView.callShort}</Text>
-              </Pressable>
-            </View>
-          </View>
-        ) : null}
-
-        {/* GPS ruxsati banneri — foreground yetarli, Always ixtiyoriy */}
-        {isActiveTrip(trip.status) && !foregroundGranted ? (
-          <View style={styles.permissionBanner}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-              <Ionicons name="warning" size={18} color={colors.dangerDark} style={{ marginRight: 6 }} />
-              <Text style={styles.permissionTitle}>
-                {uz.tripView.locationPermissionBannerTitle}
-              </Text>
-            </View>
-            <Text style={styles.permissionDesc}>
-              {uz.tripView.locationPermissionBannerDesc}
-            </Text>
+      {/* Joriy maqsad: navigator va qo'ng'iroq */}
+      {active && targetAddress ? (
+        <View style={styles.target}>
+          <Text style={styles.targetLabel}>{headingToPickup ? 'Ortish joyiga' : 'Topshirish manziliga'}</Text>
+          <Text style={styles.targetAddress} selectable>
+            {targetAddress}
+          </Text>
+          <View style={styles.targetActions}>
             <Pressable
-              onPress={handleGrantPermissions}
-              style={styles.permissionButton}
+              onPress={handleOpenNavigator}
+              style={({ pressed }) => [styles.navBtn, pressed && styles.pressed]}
               accessibilityRole="button"
-              accessibilityLabel={
-                canAskForegroundAgain
-                  ? uz.tripView.grantPermission
-                  : uz.tripView.openAppSettings
-              }
+              accessibilityLabel={uz.tripView.openInYandexNavi}
             >
-              <Text style={styles.permissionButtonText}>
-                {canAskForegroundAgain
-                  ? uz.tripView.grantPermission
-                  : uz.tripView.openAppSettings}
+              <Ionicons name="navigate" size={18} color="#FFFFFF" />
+              <Text style={styles.navBtnText}>Yo‘lni ochish</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleCallShipper}
+              disabled={!trip.shipperPhone}
+              style={({ pressed }) => [styles.callBtn, !trip.shipperPhone && styles.disabled, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel={uz.tripView.callLogistics}
+            >
+              <Ionicons name="call" size={18} color={ink[900]} />
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      {/* Jarayon */}
+      {trip.status !== 'CANCELLED' ? (
+        <View style={styles.stepper} accessibilityLabel={`Bosqich: ${statusBadgeLabel(trip.status, 'trip')}`}>
+          {STEPS.map((st, i) => {
+            const done = stepIndex >= 0 && i <= stepIndex;
+            return (
+              <View key={st} style={styles.step}>
+                <View style={[styles.stepBar, done && styles.stepBarDone, i === stepIndex && styles.stepBarCurrent]} />
+                <Text style={[styles.stepText, done && styles.stepTextDone]} numberOfLines={1}>
+                  {uz.tripView.stepShort[st as keyof typeof uz.tripView.stepShort] ?? st}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
+
+      {/* GPS ruxsatlari */}
+      {active && !foregroundGranted ? (
+        <View style={[styles.notice, styles.noticeDanger]}>
+          <Ionicons name="location" size={20} color={colors.dangerDark} />
+          <View style={styles.noticeTexts}>
+            <Text style={styles.noticeTitle}>{uz.tripView.locationPermissionBannerTitle}</Text>
+            <Text style={styles.noticeBody}>{uz.tripView.locationPermissionBannerDesc}</Text>
+            <Pressable onPress={handleGrantPermissions} accessibilityRole="button" style={styles.noticeAction}>
+              <Text style={styles.noticeActionText}>
+                {canAskForegroundAgain ? uz.tripView.grantPermission : uz.tripView.openAppSettings}
               </Text>
             </Pressable>
           </View>
-        ) : null}
-
-        {isActiveTrip(trip.status) && foregroundGranted && !backgroundGranted ? (
-          <View style={styles.permissionBanner}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-              <Ionicons name="navigate" size={18} color={colors.dangerDark} style={{ marginRight: 6 }} />
-              <Text style={styles.permissionTitle}>
-                {uz.tripView.backgroundPermissionTitle}
-              </Text>
-            </View>
-            <Text style={styles.permissionDesc}>
-              {uz.tripView.backgroundPermissionDesc}
-            </Text>
-            <Pressable
-              onPress={handleOpenAppSettings}
-              style={styles.permissionButton}
-              accessibilityRole="button"
-              accessibilityLabel={uz.tripView.openAppSettings}
-            >
-              <Text style={styles.permissionButtonText}>
-                {uz.tripView.openAppSettings}
-              </Text>
+        </View>
+      ) : null}
+      {active && foregroundGranted && !backgroundGranted ? (
+        <View style={[styles.notice, styles.noticeWarn]}>
+          <Ionicons name="navigate-circle" size={20} color="#9A5B00" />
+          <View style={styles.noticeTexts}>
+            <Text style={styles.noticeTitle}>{uz.tripView.backgroundPermissionTitle}</Text>
+            <Text style={styles.noticeBody}>{uz.tripView.backgroundPermissionDesc}</Text>
+            <Pressable onPress={handleOpenAppSettings} accessibilityRole="button" style={styles.noticeAction}>
+              <Text style={styles.noticeActionText}>{uz.tripView.openAppSettings}</Text>
             </Pressable>
           </View>
-        ) : null}
-
-        {/* Reys ma'lumotlari va narxi */}
-        <View style={styles.card}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-            <Ionicons name="business-outline" size={17} color={colors.slate700} style={{ marginRight: 6 }} />
-            <Text style={styles.companyName}>
-              {trip.companyName || uz.tripView.companySection}
-            </Text>
-          </View>
-
-          <View style={styles.priceRow}>
-            <View>
-              <Text style={styles.label}>{uz.tripView.agreedPrice}</Text>
-              <Money amount={trip.agreedPrice} size="xl" color={colors.primary} weight="800" />
-            </View>
-
-            {trip.commissionAmount != null ? (
-              <View style={styles.commissionBox}>
-                <Text style={styles.commissionLabel}>{uz.tripView.commission}</Text>
-                <Text style={styles.commissionValue}>
-                  {formatMoney(trip.commissionAmount)}
-                </Text>
-              </View>
-            ) : null}
-          </View>
         </View>
+      ) : null}
 
-        {/* Logist bilan aloqa kartasi */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{uz.tripView.shipperContact}</Text>
-          <View style={styles.contactRow}>
-            <View style={styles.contactInfo}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                <Ionicons name="person-outline" size={14} color={colors.slate600} style={{ marginRight: 6 }} />
-                <Text style={styles.contactName}>
-                  {trip.shipperContactName || 'Zavod logisti'}
-                </Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Ionicons name="call-outline" size={14} color={colors.slate600} style={{ marginRight: 6 }} />
-                <Text style={styles.contactPhone} selectable>
-                  {trip.shipperPhone || 'Raqam kiritilmagan'}
-                </Text>
-              </View>
-            </View>
-
-            {trip.shipperPhone && !isActiveTrip(trip.status) ? (
-              <Pressable
-                onPress={handleCallShipper}
-                style={styles.callButton}
-                accessibilityRole="button"
-                accessibilityLabel={uz.tripView.callLogistics}
-              >
-                <Ionicons name="call" size={16} color="#FFFFFF" style={{ marginRight: 5 }} />
-                <Text style={styles.callButtonText}>{uz.tripView.callShort}</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        </View>
-
-        {/* Marshrut va Navigatsiya */}
-        <View style={styles.card}>
-          <View style={styles.cardTitleRow}>
-            <Text style={styles.cardTitle}>{uz.tripView.routeSection}</Text>
-            {!isActiveTrip(trip.status) ? (
-              <Pressable
-                onPress={handleOpenNavigator}
-                style={styles.naviButton}
-                accessibilityRole="button"
-                accessibilityLabel={uz.tripView.openInMaps}
-              >
-                <Text style={styles.naviButtonText}>
-                  {uz.tripView.openInMaps}
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
-
-          <View style={styles.routeContainer}>
-            <View style={styles.routeRow}>
-              <View style={[styles.routeDot, styles.dotPickup]} />
-              <View style={styles.routeTextWrap}>
-                <Text style={styles.label}>{uz.tripView.pickupAddress}</Text>
-                <Text style={styles.valueText} selectable>
-                  {trip.load?.pickupAddress}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.routeLine} />
-
-            <View style={styles.routeRow}>
-              <View style={[styles.routeDot, styles.dotDropoff]} />
-              <View style={styles.routeTextWrap}>
-                <Text style={styles.label}>{uz.tripView.dropoffAddress}</Text>
-                <Text style={styles.valueText} selectable>
-                  {trip.load?.dropoffAddress}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Yuk parametrlari */}
-        {trip.load ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{uz.tripView.cargoSection}</Text>
-            <View style={styles.grid}>
-              <View style={styles.gridItem}>
-                <Text style={styles.label}>{uz.tripView.cargoType}</Text>
-                <Text style={styles.valueText}>{trip.load.cargoType}</Text>
-              </View>
-
-              <View style={styles.gridItem}>
-                <Text style={styles.label}>{uz.tripView.weight}</Text>
-                <Text style={styles.valueText}>
-                  {trip.load.weightTons} {uz.common.tons}
-                </Text>
-              </View>
-
-              <View style={styles.gridItem}>
-                <Text style={styles.label}>{uz.tripView.pickupDate}</Text>
-                <Text style={styles.valueText}>
-                  {formatDate(trip.load.pickupDate)}
-                </Text>
-              </View>
-
-              <View style={styles.gridItem}>
-                <Text style={styles.label}>{uz.tripView.routeLength}</Text>
-                <Text style={styles.valueText}>
-                  {Math.round(trip.load.routeKm)} {uz.common.km}
-                </Text>
-              </View>
-            </View>
-          </View>
-        ) : null}
-
-        {/* Fotosurat yuklash (agar keyingi bosqichda rasm talab qilinsa) */}
-        {isPhotoRequired ? (
-          <View style={styles.photoUploadCard}>
-            <Text style={styles.photoSectionTitle}>{uz.tripView.photoRequiredTitle}</Text>
-            <Text style={styles.photoSectionDesc}>
-              {nextStatus === 'LOADED'
-                ? uz.tripView.photoRequiredLoaded
-                : uz.tripView.photoRequiredDelivered}
+      {/* Keyingi bosqich uchun rasm */}
+      {isPhotoRequired ? (
+        <>
+          <SectionTitle title={uz.tripView.photoRequiredTitle} />
+          <Card>
+            <Text style={styles.photoHint}>
+              {nextStatus === 'LOADED' ? uz.tripView.photoRequiredLoaded : uz.tripView.photoRequiredDelivered}
             </Text>
             <PhotoPicker
               label={uz.tripView.photoConfirmLabel}
@@ -565,668 +411,259 @@ export default function TripDetailScreen() {
               value={uploadedPhotoKey}
               onUploaded={(key) => setUploadedPhotoKey(key)}
             />
-          </View>
-        ) : null}
+          </Card>
+        </>
+      ) : null}
 
-        {/* Reys hodisalari tarixi */}
-        {trip.events && trip.events.length > 0 ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{uz.tripView.eventsHistory}</Text>
-            <View style={styles.timeline}>
-              {trip.events.map((ev, index) => (
-                <View key={index} style={styles.timelineItem}>
-                  <View style={styles.timelineMarker} />
-                  <View style={styles.timelineContent}>
-                    <View style={styles.timelineHeader}>
-                      <Text style={styles.timelineType}>{ev.type}</Text>
-                      <Text style={styles.timelineTime}>
-                        {formatDateTime(ev.occurredAt)}
-                      </Text>
-                    </View>
-                    {ev.comment ? (
-                      <Text style={styles.timelineComment}>{ev.comment}</Text>
-                    ) : null}
-                    {ev.photoKey ? (
-                      <View style={styles.timelineImageBox}>
-                        <AuthImage
-                          fileKey={ev.photoKey}
-                          style={styles.timelineImage}
-                          accessibilityLabel={uz.tripView.eventsHistory}
-                        />
-                      </View>
-                    ) : null}
-                  </View>
-                </View>
-              ))}
-            </View>
+      {/* Yakuniy holat */}
+      {trip.status === 'COMPLETED' ? (
+        <View style={[styles.notice, styles.noticeSuccess]}>
+          <Ionicons name="checkmark-circle" size={20} color="#0F7A45" />
+          <Text style={[styles.noticeBody, styles.flex]}>{uz.tripView.completedNotice}</Text>
+        </View>
+      ) : null}
+      {trip.status === 'CANCELLED' ? (
+        <View style={[styles.notice, styles.noticeDanger]}>
+          <Ionicons name="close-circle" size={20} color={colors.dangerDark} />
+          <View style={styles.noticeTexts}>
+            <Text style={styles.noticeTitle}>{uz.tripView.cancelledNotice}</Text>
+            {trip.cancelReason ? <Text style={styles.noticeBody}>Sabab: {trip.cancelReason}</Text> : null}
           </View>
-        ) : null}
-
-        {/* Bekor qilish tugmasi (LOADED gacha) */}
-        {canCancel ? (
-          <View style={styles.cancelWrap}>
-            <Pressable
-              onPress={() => setCancelModalVisible(true)}
-              style={styles.cancelTripButton}
-              accessibilityRole="button"
-              accessibilityLabel={uz.tripView.cancelTrip}
-            >
-              <Ionicons name="warning-outline" size={16} color="#b91c1c" style={{ marginRight: 6 }} />
-              <Text style={styles.cancelTripButtonText}>
-                {uz.tripView.cancelTrip}
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {/* Yakunlangan yoki bekor qilingan xabarnoma */}
-        {trip.status === 'COMPLETED' ? (
-          <View style={styles.completedBanner}>
-            <Ionicons name="checkmark-circle" size={20} color="#065f46" style={{ marginBottom: 6 }} />
-            <Text style={styles.completedText}>
-              {uz.tripView.completedNotice}
-            </Text>
-          </View>
-        ) : trip.status === 'CANCELLED' ? (
-          <View style={styles.cancelledBanner}>
-            <Ionicons name="close-circle" size={20} color="#991b1b" style={{ marginBottom: 6 }} />
-            <Text style={styles.cancelledText}>
-              {uz.tripView.cancelledNotice}
-            </Text>
-            {trip.cancelReason ? (
-              <Text style={styles.cancelReasonDisplay}>
-                Sabab: {trip.cancelReason}
-              </Text>
-            ) : null}
-          </View>
-        ) : null}
-      </ScrollView>
-
-      {/* Ekranning eng pastida bitta katta amal tugmasi */}
-      {nextStatus ? (
-        <View style={styles.bottomBar}>
-          <PrimaryButton
-            title={nextActionLabel}
-            onPress={handleNextStatus}
-            loading={isUpdatingStatus}
-            accessibilityLabel={nextActionLabel}
-          />
         </View>
       ) : null}
 
-      {/* Bekor qilish modali */}
-      <Modal
-        visible={cancelModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setCancelModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>{uz.tripView.cancelModalTitle}</Text>
-            <Text style={styles.modalDesc}>{uz.tripView.cancelModalDesc}</Text>
-
-            <Text style={styles.modalInputLabel}>
-              {uz.tripView.cancelReasonLabel} *
+      {/* Marshrut */}
+      <SectionTitle
+        title={uz.tripView.routeSection}
+        right={
+          !active ? (
+            <Pressable onPress={handleOpenNavigator} accessibilityRole="button" hitSlop={8}>
+              <Text style={styles.link}>{uz.tripView.openInMaps}</Text>
+            </Pressable>
+          ) : undefined
+        }
+      />
+      <Card>
+        <RouteLine
+          lines={3}
+          from={trip.load?.pickupAddress ?? '—'}
+          to={trip.load?.dropoffAddress ?? '—'}
+          fromHint={trip.load ? formatPickupWindow(trip.load.pickupDate, trip.load.pickupTimeFrom, trip.load.pickupTimeTo) : undefined}
+          toHint={trip.load ? `${Math.round(trip.load.routeKm)} ${uz.common.km} yo‘l` : undefined}
+        />
+        {trip.load ? (
+          <View style={styles.cargo}>
+            <Text style={styles.cargoText}>
+              {[trip.load.cargoType, `${trip.load.weightTons} ${uz.common.tons}`, uz.bodyType[trip.load.requiredBodyType]]
+                .filter(Boolean)
+                .join(' · ')}
             </Text>
-            <TextInput
-              value={cancelReason}
-              onChangeText={(text) => {
-                setCancelReason(text);
-                if (cancelReasonError) setCancelReasonError(null);
-              }}
-              placeholder={uz.tripView.cancelReasonPlaceholder}
-              placeholderTextColor="#9ca3af"
-              style={styles.modalTextInput}
-              multiline
-              numberOfLines={3}
-            />
-            {cancelReasonError ? (
-              <Text style={styles.cancelReasonError}>{cancelReasonError}</Text>
-            ) : null}
-
-            <View style={styles.modalActions}>
-              <Pressable
-                onPress={() => setCancelModalVisible(false)}
-                style={styles.modalCancelBtn}
-                accessibilityRole="button"
-                accessibilityLabel={uz.common.cancel}
-              >
-                <Text style={styles.modalCancelBtnText}>{uz.common.cancel}</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={handleCancelTrip}
-                disabled={isCancelling}
-                style={[
-                  styles.modalConfirmBtn,
-                  isCancelling && styles.disabledBtn,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel={uz.tripView.confirmCancelAction}
-              >
-                {isCancelling ? (
-                  <ActivityIndicator color="#ffffff" size="small" />
-                ) : (
-                  <Text style={styles.modalConfirmBtnText}>
-                    {uz.tripView.confirmCancelAction}
-                  </Text>
-                )}
-              </Pressable>
-            </View>
           </View>
+        ) : null}
+      </Card>
+
+      {/* Logist */}
+      <SectionTitle title={uz.tripView.shipperContact} />
+      <Card style={styles.contactCard}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{(trip.shipperContactName || 'Z').charAt(0).toUpperCase()}</Text>
         </View>
-      </Modal>
+        <View style={styles.flex}>
+          <Text style={styles.contactName}>{trip.shipperContactName || 'Zavod logisti'}</Text>
+          <Text style={styles.contactPhone} selectable>
+            {trip.shipperPhone || 'Raqam kiritilmagan'}
+          </Text>
+        </View>
+        {trip.shipperPhone ? (
+          <Pressable
+            onPress={handleCallShipper}
+            style={({ pressed }) => [styles.roundCall, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={uz.tripView.callLogistics}
+          >
+            <Ionicons name="call" size={18} color="#FFFFFF" />
+          </Pressable>
+        ) : null}
+      </Card>
+
+      {/* Tarix */}
+      {trip.events && trip.events.length > 0 ? (
+        <>
+          <SectionTitle title={uz.tripView.eventsHistory} />
+          <Card>
+            {trip.events.map((ev, index) => (
+              <View key={index} style={styles.event}>
+                <View style={styles.eventRail}>
+                  <View style={[styles.eventDot, index === trip.events.length - 1 && styles.eventDotLast]} />
+                  {index < trip.events.length - 1 ? <View style={styles.eventLine} /> : null}
+                </View>
+                <View style={styles.eventBody}>
+                  <View style={styles.eventHead}>
+                    <Text style={styles.eventTitle}>{eventLabel(ev.type)}</Text>
+                    <Text style={styles.eventTime}>{formatDateTime(ev.occurredAt)}</Text>
+                  </View>
+                  {ev.comment ? <Text style={styles.eventComment}>{ev.comment}</Text> : null}
+                  {ev.photoKey ? (
+                    <AuthImage fileKey={ev.photoKey} style={styles.eventImage} accessibilityLabel={eventLabel(ev.type)} />
+                  ) : null}
+                </View>
+              </View>
+            ))}
+          </Card>
+        </>
+      ) : null}
+
+      {canCancel ? (
+        <Pressable
+          onPress={() => setCancelModalVisible(true)}
+          style={styles.cancelLink}
+          accessibilityRole="button"
+          accessibilityLabel={uz.tripView.cancelTrip}
+        >
+          <Text style={styles.cancelLinkText}>{uz.tripView.cancelTrip}</Text>
+        </Pressable>
+      ) : null}
+
+      <BottomSheet
+        visible={cancelModalVisible}
+        onClose={() => setCancelModalVisible(false)}
+        locked={isCancelling}
+        title={uz.tripView.cancelModalTitle}
+        subtitle={uz.tripView.cancelModalDesc}
+      >
+        <TextField
+          label={`${uz.tripView.cancelReasonLabel} *`}
+          placeholder={uz.tripView.cancelReasonPlaceholder}
+          value={cancelReason}
+          onChangeText={(text) => {
+            setCancelReason(text);
+            if (cancelReasonError) setCancelReasonError(null);
+          }}
+          error={cancelReasonError ?? undefined}
+          multiline
+          numberOfLines={3}
+        />
+        <PrimaryButton
+          title={uz.tripView.confirmCancelAction}
+          variant="danger"
+          onPress={handleCancelTrip}
+          loading={isCancelling}
+          size="lg"
+        />
+        <PrimaryButton
+          title={uz.common.cancel}
+          variant="secondary"
+          onPress={() => setCancelModalVisible(false)}
+          disabled={isCancelling}
+        />
+      </BottomSheet>
     </Screen>
   );
 }
 
+const STEPS: TripStatus[] = ['ASSIGNED', 'EN_ROUTE_TO_PICKUP', 'AT_PICKUP', 'LOADED', 'DELIVERED'];
+
+function eventLabel(type: string): string {
+  const uz = getCopy();
+  const events = uz.tripView.events as Record<string, string>;
+  return events[type] ?? statusBadgeLabel(type, 'trip');
+}
+
 const styles = StyleSheet.create({
-  screen: {
-    paddingHorizontal: 0,
-    backgroundColor: '#f9fafb',
-  },
-  centerContainer: {
+  pad: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 },
+  gap: { height: 12 },
+  flex: { flex: 1 },
+  pressed: { opacity: 0.8 },
+  disabled: { opacity: 0.4 },
+  hero: { paddingTop: 4, paddingBottom: 16 },
+  heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  heroPrice: { marginTop: 10, fontSize: 34, letterSpacing: -1 },
+  heroMeta: { marginTop: 2, fontSize: 14, color: colors.textMuted },
+  gps: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  gpsDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.slate400 },
+  gpsDotOn: { backgroundColor: '#22C55E' },
+  gpsText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
+
+  target: { backgroundColor: ink[900], borderRadius: 22, padding: 18 },
+  targetLabel: { fontSize: 13, fontWeight: '600', color: ink.muted, textTransform: 'uppercase', letterSpacing: 0.6 },
+  targetAddress: { marginTop: 6, fontSize: 20, fontWeight: '700', color: '#FFFFFF', letterSpacing: -0.3, lineHeight: 26 },
+  targetActions: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  navBtn: {
+    flex: 1,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#4b5563',
-  },
-  navHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
   },
-  backButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    backgroundColor: '#f3f4f6',
-  },
-  backButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1f2937',
-  },
-  workPanel: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    gap: 12,
-  },
-  workActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  workNavBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#1a56db',
-    borderRadius: 12,
-    minHeight: 48,
-    paddingHorizontal: 12,
-  },
-  workCallBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#16a34a',
-    borderRadius: 12,
-    minHeight: 48,
-    paddingHorizontal: 12,
-  },
-  workBtnText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  pressed: {
-    opacity: 0.9,
-  },
-  gpsBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  gpsBadgeActive: {
-    backgroundColor: '#dcfce7',
-  },
-  gpsBadgeInactive: {
-    backgroundColor: '#fee2e2',
-  },
-  gpsBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  gpsTextActive: {
-    color: '#166534',
-  },
-  gpsTextInactive: {
-    color: '#991b1b',
-  },
-  scrollContent: {
-    padding: 16,
-    gap: 14,
-    paddingBottom: 110,
-  },
-  permissionBanner: {
-    backgroundColor: '#fffbeb',
-    borderColor: '#fde68a',
-    borderWidth: 1,
+  navBtnText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  callBtn: {
+    width: 50,
+    height: 50,
     borderRadius: 14,
-    padding: 14,
-  },
-  permissionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#92400e',
-    marginBottom: 4,
-  },
-  permissionDesc: {
-    fontSize: 13,
-    color: '#b45309',
-    lineHeight: 18,
-    marginBottom: 10,
-  },
-  permissionButton: {
-    backgroundColor: '#d97706',
-    borderRadius: 8,
-    paddingVertical: 8,
-    minHeight: 44,
-    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
-  },
-  permissionButtonText: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  companyName: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#1f2937',
-    marginBottom: 10,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  label: {
-    fontSize: 12,
-    color: '#6b7280',
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  valueText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  commissionBox: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    alignItems: 'flex-end',
-  },
-  commissionLabel: {
-    fontSize: 11,
-    color: '#6b7280',
-    fontWeight: '600',
-  },
-  commissionValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#374151',
-  },
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 12,
-  },
-  cardTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  contactRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  contactInfo: {
-    flex: 1,
-    marginRight: 10,
-  },
-  contactName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  contactPhone: {
-    fontSize: 14,
-    color: '#4b5563',
-    fontWeight: '600',
-  },
-  callButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#16a34a',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    minHeight: 44,
-  },
-  callButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  naviButton: {
-    backgroundColor: '#eff6ff',
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    borderRadius: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    minHeight: 44,
     justifyContent: 'center',
   },
-  naviButtonText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1a56db',
-  },
-  routeContainer: {
-    marginBottom: 4,
-  },
-  routeRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  routeDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 10,
-    marginTop: 4,
-  },
-  dotPickup: {
-    backgroundColor: '#16a34a',
-  },
-  dotDropoff: {
-    backgroundColor: '#dc2626',
-  },
-  routeLine: {
-    width: 2,
-    height: 18,
-    backgroundColor: '#d1d5db',
-    marginLeft: 5,
-    marginVertical: 2,
-  },
-  routeTextWrap: {
-    flex: 1,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  gridItem: {
-    width: '47%',
-  },
-  photoUploadCard: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
-  },
-  photoSectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#1e40af',
-    marginBottom: 4,
-  },
-  photoSectionDesc: {
-    fontSize: 13,
-    color: '#1e3a8a',
-    marginBottom: 12,
-  },
-  timeline: {
-    paddingLeft: 4,
-  },
-  timelineItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 14,
-  },
-  timelineMarker: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#1a56db',
-    marginTop: 5,
-    marginRight: 12,
-  },
-  timelineContent: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-    borderRadius: 10,
-    padding: 10,
-  },
-  timelineHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+
+  stepper: { flexDirection: 'row', gap: 6, marginTop: 16 },
+  step: { flex: 1 },
+  stepBar: { height: 5, borderRadius: 3, backgroundColor: colors.slate200 },
+  stepBarDone: { backgroundColor: colors.slate900 },
+  stepBarCurrent: { backgroundColor: colors.accent },
+  stepText: { marginTop: 6, fontSize: 11.5, fontWeight: '600', color: colors.slate400 },
+  stepTextDone: { color: colors.slate800 },
+
+  notice: { flexDirection: 'row', gap: 12, marginTop: 14, padding: 14, borderRadius: 16 },
+  noticeDanger: { backgroundColor: '#FDECEC' },
+  noticeWarn: { backgroundColor: '#FFF4E0' },
+  noticeSuccess: { backgroundColor: '#E8F7EF', alignItems: 'center' },
+  noticeTexts: { flex: 1 },
+  noticeTitle: { fontSize: 15, fontWeight: '700', color: colors.slate900 },
+  noticeBody: { marginTop: 3, fontSize: 14, lineHeight: 20, color: colors.slate700 },
+  noticeAction: { marginTop: 10, alignSelf: 'flex-start' },
+  noticeActionText: { fontSize: 15, fontWeight: '700', color: colors.primary },
+
+  photoHint: { fontSize: 14, lineHeight: 20, color: colors.slate700, marginBottom: 12 },
+  link: { fontSize: 15, fontWeight: '600', color: colors.primary },
+  cargo: { marginTop: 14, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.slate200 },
+  cargoText: { fontSize: 14, fontWeight: '500', color: colors.slate700 },
+
+  contactCard: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.slate100,
     alignItems: 'center',
-    marginBottom: 2,
-  },
-  timelineType: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1f2937',
-  },
-  timelineTime: {
-    fontSize: 11,
-    color: '#6b7280',
-    fontWeight: '600',
-  },
-  timelineComment: {
-    fontSize: 13,
-    color: '#4b5563',
-    marginTop: 4,
-  },
-  timelineImageBox: {
-    marginTop: 8,
-    width: 120,
-    height: 80,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  timelineImage: {
-    width: '100%',
-    height: '100%',
-  },
-  cancelWrap: {
-    alignItems: 'center',
-    marginVertical: 6,
-  },
-  cancelTripButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    minHeight: 44,
-    borderRadius: 12,
-    backgroundColor: '#fee2e2',
-  },
-  cancelTripButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#b91c1c',
-  },
-  completedBanner: {
-    backgroundColor: '#ecfdf5',
-    borderWidth: 1,
-    borderColor: '#a7f3d0',
-    borderRadius: 14,
-    padding: 16,
-    alignItems: 'center',
-  },
-  completedText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#065f46',
-  },
-  cancelledBanner: {
-    backgroundColor: '#fef2f2',
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    borderRadius: 14,
-    padding: 16,
-    alignItems: 'center',
-  },
-  cancelledText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#991b1b',
-    marginBottom: 4,
-  },
-  cancelReasonDisplay: {
-    fontSize: 13,
-    color: '#7f1d1d',
-  },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 28,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 8,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
+  },
+  avatarText: { fontSize: 18, fontWeight: '700', color: colors.slate700 },
+  contactName: { fontSize: 16, fontWeight: '600', color: colors.slate900 },
+  contactPhone: { marginTop: 2, fontSize: 14, color: colors.textMuted },
+  roundCall: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#16A34A',
     alignItems: 'center',
-    padding: 20,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 400,
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 6,
-  },
-  modalDesc: {
-    fontSize: 13,
-    color: '#4b5563',
-    lineHeight: 18,
-    marginBottom: 16,
-  },
-  modalInputLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#374151',
-    marginBottom: 6,
-  },
-  modalTextInput: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 14,
-    color: '#111827',
-    textAlignVertical: 'top',
-    minHeight: 80,
-    marginBottom: 8,
-  },
-  cancelReasonError: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#b91c1c',
-    marginBottom: 12,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-  },
-  modalCancelBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    minHeight: 44,
     justifyContent: 'center',
-    borderRadius: 10,
-    backgroundColor: '#f3f4f6',
   },
-  modalCancelBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#4b5563',
-  },
-  modalConfirmBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    backgroundColor: '#dc2626',
-    minWidth: 130,
-    alignItems: 'center',
-  },
-  modalConfirmBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  disabledBtn: {
-    opacity: 0.6,
-  },
+
+  event: { flexDirection: 'row' },
+  eventRail: { width: 18, alignItems: 'center' },
+  eventDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.slate300, marginTop: 5 },
+  eventDotLast: { backgroundColor: colors.slate900 },
+  eventLine: { flex: 1, width: 2, backgroundColor: colors.slate200, marginVertical: 3 },
+  eventBody: { flex: 1, paddingLeft: 8, paddingBottom: 16 },
+  eventHead: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  eventTitle: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.slate900 },
+  eventTime: { fontSize: 13, color: colors.textMuted },
+  eventComment: { marginTop: 3, fontSize: 14, color: colors.slate700 },
+  eventImage: { marginTop: 8, width: '100%', height: 160, borderRadius: 12 },
+
+  cancelLink: { alignSelf: 'center', marginTop: 24, paddingVertical: 8, paddingHorizontal: 16 },
+  cancelLinkText: { fontSize: 15, fontWeight: '600', color: colors.danger },
 });

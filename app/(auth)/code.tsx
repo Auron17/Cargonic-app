@@ -5,11 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { authApi } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { ErrorBanner, PrimaryButton, Screen, TextField } from '../../src/components';
-import { uz } from '../../src/i18n/uz';
+import { useCopy } from '../../src/i18n';
 import { formatPhoneDisplay } from '../../src/utils/format';
-import { colors, radii, shadows } from '../../src/theme';
+import { colors } from '../../src/theme';
 
 export default function CodeScreen() {
+  const uz = useCopy();
   const { phone } = useLocalSearchParams<{ phone: string }>();
   const [code, setCode] = useState('');
   const [timer, setTimer] = useState(60);
@@ -66,7 +67,7 @@ export default function CodeScreen() {
     } catch (err: unknown) {
       console.error('Failed to verify OTP', err);
       const apiErr = err as { message?: string };
-      setError(apiErr?.message || 'Kod noto‘g‘ri yoki muddati o‘tgan.');
+      setError(apiErr?.message || uz.auth.invalidCode);
     } finally {
       setIsLoading(false);
     }
@@ -105,7 +106,10 @@ export default function CodeScreen() {
             {uz.auth.wrongRoleLead}
           </Text>
           <Text style={styles.wrongRoleSub}>
-            Tizimga {wrongRoleUser === 'SHIPPER' ? 'Zavod' : 'Administrator'} sifatida kiritilgan.
+            {uz.auth.wrongRoleAs.replace(
+              '{{role}}',
+              wrongRoleUser === 'SHIPPER' ? uz.auth.roleShipper : uz.auth.roleAdmin
+            )}
           </Text>
         </View>
       </Screen>
@@ -123,154 +127,60 @@ export default function CodeScreen() {
           onPress={handleVerify}
           loading={isLoading}
           disabled={code.length !== 6}
-          icon={<Ionicons name="shield-checkmark-outline" size={18} color="#FFFFFF" />}
           accessibilityLabel={uz.auth.verify}
         />
       }
     >
-      <View style={styles.container}>
-        <View style={styles.card}>
-          <Text style={styles.title}>{uz.auth.codeTitle}</Text>
-          <Text style={styles.lead}>
-            {uz.auth.codeLead.replace('{{phone}}', formattedPhone)}
-          </Text>
+      <Text style={styles.title} accessibilityRole="header">
+        {uz.auth.codeTitle}
+      </Text>
+      <Text style={styles.lead}>{uz.auth.codeLead.replace('{{phone}}', formattedPhone)}</Text>
 
-          <ErrorBanner message={error} onDismiss={() => setError(null)} />
+      <ErrorBanner message={error} onDismiss={() => setError(null)} />
 
-          <TextField
-            label=""
-            placeholder={uz.auth.codePlaceholder}
-            value={code}
-            onChangeText={handleCodeChange}
-            keyboardType="number-pad"
-            maxLength={6}
-            autoFocus
-            autoComplete="sms-otp"
-            textContentType="oneTimeCode"
-            style={styles.codeInput}
-          />
+      <TextField
+        label=""
+        placeholder="••••••"
+        value={code}
+        onChangeText={handleCodeChange}
+        keyboardType="number-pad"
+        maxLength={6}
+        autoFocus
+        autoComplete="sms-otp"
+        textContentType="oneTimeCode"
+        style={styles.codeInput}
+      />
 
-          <View style={styles.timerRow}>
-            {timer > 0 ? (
-              <View style={styles.timerPill}>
-                <Ionicons name="time-outline" size={14} color={colors.slate500} style={styles.timerIcon} />
-                <Text style={styles.timerText}>
-                  {uz.auth.resendIn.replace('{{seconds}}', timer.toString())}
-                </Text>
-              </View>
-            ) : (
-              <Pressable
-                onPress={handleResend}
-                disabled={isLoading}
-                style={({ pressed }) => [styles.resendBtn, pressed && styles.pressed]}
-                accessibilityRole="button"
-                accessibilityLabel={uz.auth.resend}
-              >
-                <Ionicons name="refresh" size={15} color={colors.primary} style={styles.timerIcon} />
-                <Text style={styles.resendButtonText}>{uz.auth.resend}</Text>
-              </Pressable>
-            )}
-          </View>
-
+      <View style={styles.actions}>
+        {timer > 0 ? (
+          <Text style={styles.timerText}>{uz.auth.resendIn.replace('{{seconds}}', timer.toString())}</Text>
+        ) : (
           <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+            onPress={handleResend}
+            disabled={isLoading}
+            hitSlop={8}
+            style={({ pressed }) => pressed && styles.pressed}
             accessibilityRole="button"
-            accessibilityLabel={uz.auth.changePhone}
+            accessibilityLabel={uz.auth.resend}
           >
-            <Ionicons name="arrow-back" size={15} color={colors.slate600} style={styles.backIcon} />
-            <Text style={styles.backButtonText}>{uz.auth.changePhone}</Text>
+            <Text style={styles.link}>{uz.auth.resend}</Text>
           </Pressable>
-        </View>
+        )}
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={8}
+          style={({ pressed }) => pressed && styles.pressed}
+          accessibilityRole="button"
+          accessibilityLabel={uz.auth.changePhone}
+        >
+          <Text style={styles.linkMuted}>{uz.auth.changePhone}</Text>
+        </Pressable>
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingVertical: 16,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: radii.xl,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.slate200,
-    ...shadows.card,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.slate900,
-    marginBottom: 6,
-    letterSpacing: -0.3,
-  },
-  lead: {
-    fontSize: 14.5,
-    color: colors.slate600,
-    lineHeight: 21,
-    marginBottom: 20,
-  },
-  codeInput: {
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: 10,
-    textAlign: 'center',
-    height: 60,
-    color: colors.primary,
-  },
-  timerRow: {
-    alignItems: 'center',
-    marginVertical: 14,
-  },
-  timerPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.slate100,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radii.full,
-  },
-  timerIcon: {
-    marginRight: 5,
-  },
-  timerText: {
-    fontSize: 13,
-    color: colors.slate600,
-    fontWeight: '600',
-  },
-  resendBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary50,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: radii.full,
-  },
-  resendButtonText: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    marginTop: 6,
-  },
-  backIcon: {
-    marginRight: 6,
-  },
-  backButtonText: {
-    fontSize: 14,
-    color: colors.slate600,
-    fontWeight: '600',
-  },
-  pressed: {
-    opacity: 0.7,
-  },
   wrongRoleContainer: {
     flex: 1,
     alignItems: 'center',
@@ -306,4 +216,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
+  title: { marginTop: 12, fontSize: 30, fontWeight: '800', color: colors.slate900, letterSpacing: -0.8 },
+  lead: { marginTop: 8, marginBottom: 24, fontSize: 16, lineHeight: 22, color: colors.textMuted },
+  codeInput: { fontSize: 30, fontWeight: '800', letterSpacing: 14, textAlign: 'center', height: 64, color: colors.slate900 },
+  actions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  timerText: { fontSize: 14.5, color: colors.textMuted, fontVariant: ['tabular-nums'] },
+  link: { fontSize: 15, fontWeight: '700', color: colors.primary },
+  linkMuted: { fontSize: 15, fontWeight: '600', color: colors.slate700 },
+  pressed: { opacity: 0.6 },
 });

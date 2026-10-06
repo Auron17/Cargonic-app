@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { filesApi } from '../api/client';
-import { uz } from '../i18n/uz';
+import { useCopy } from '../i18n';
 import { colors } from '../theme';
 import { AuthImage } from './AuthImage';
 
@@ -35,6 +35,7 @@ export function PhotoPicker({
   required = false,
   style,
 }: PhotoPickerProps) {
+  const uz = useCopy();
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentFileKey, setCurrentFileKey] = useState<string | null>(value || null);
   const [error, setError] = useState<string | null>(null);
@@ -192,7 +193,7 @@ export function PhotoPicker({
         >
           {isProcessing ? (
             <View style={styles.processingBox}>
-              <ActivityIndicator color="#1a56db" size="large" />
+              <ActivityIndicator color={colors.primary} size="large" />
               <Text style={styles.processingText}>Rasm yuklanmoqda…</Text>
             </View>
           ) : (
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
   uploadTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1a56db',
+    color: colors.primary,
     marginBottom: 2,
   },
   uploadSub: {
@@ -264,7 +265,7 @@ const styles = StyleSheet.create({
   },
   processingText: {
     fontSize: 14,
-    color: '#1a56db',
+    color: colors.primary,
     fontWeight: '600',
     marginTop: 8,
   },

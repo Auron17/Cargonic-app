@@ -17,20 +17,21 @@ import {
   SelectOption,
   TextField,
 } from '../../src/components';
-import { uz } from '../../src/i18n/uz';
-
-const BODY_TYPE_OPTIONS: SelectOption<BodyType>[] = [
-  { label: uz.bodyType.TENT, value: 'TENT', subtitle: 'Tentli yarim tirkama yoki yuk mashinasi' },
-  { label: uz.bodyType.REFRIGERATOR, value: 'REFRIGERATOR', subtitle: 'Muzlatkichli / harorat nazorati' },
-  { label: uz.bodyType.FLATBED, value: 'FLATBED', subtitle: 'Ochiq bortli platforma' },
-  { label: uz.bodyType.ISOTHERMAL, value: 'ISOTHERMAL', subtitle: 'Termo izolyatsiyalangan furgon' },
-  { label: uz.bodyType.TIPPER, value: 'TIPPER', subtitle: 'Ag‘darma kuzov (samosval)' },
-  { label: uz.bodyType.CONTAINER, value: 'CONTAINER', subtitle: 'Konteyner tashuvchi platforma' },
-];
+import { useCopy } from '../../src/i18n';
+import { colors } from '../../src/theme';
 
 export default function OnboardingVehicleScreen() {
+  const uz = useCopy();
   const router = useRouter();
   const { profile, refreshProfile } = useAuth();
+  const BODY_TYPE_OPTIONS: SelectOption<BodyType>[] = [
+    { label: uz.bodyType.TENT, value: 'TENT', subtitle: uz.bodyTypeHint.TENT },
+    { label: uz.bodyType.REFRIGERATOR, value: 'REFRIGERATOR', subtitle: uz.bodyTypeHint.REFRIGERATOR },
+    { label: uz.bodyType.FLATBED, value: 'FLATBED', subtitle: uz.bodyTypeHint.FLATBED },
+    { label: uz.bodyType.ISOTHERMAL, value: 'ISOTHERMAL', subtitle: uz.bodyTypeHint.ISOTHERMAL },
+    { label: uz.bodyType.TIPPER, value: 'TIPPER', subtitle: uz.bodyTypeHint.TIPPER },
+    { label: uz.bodyType.CONTAINER, value: 'CONTAINER', subtitle: uz.bodyTypeHint.CONTAINER },
+  ];
   const existingVehicle = profile?.vehicle;
 
   const [plateNumber, setPlateNumber] = useState(existingVehicle?.plateNumber || '');
@@ -53,37 +54,37 @@ export default function OnboardingVehicleScreen() {
     const newErrors: Record<string, string> = {};
 
     if (!plateNumber.trim()) {
-      newErrors.plateNumber = 'Davlat raqamini kiriting';
+      newErrors.plateNumber = uz.onboarding.errors.plateRequired;
     } else if (plateNumber.trim().length < 5) {
-      newErrors.plateNumber = 'Davlat raqamini to‘liq kiriting (masalan: 01 A 777 AA)';
+      newErrors.plateNumber = uz.onboarding.errors.plateInvalid;
     }
 
     if (!bodyType) {
-      newErrors.bodyType = 'Mashina turini tanlang';
+      newErrors.bodyType = uz.onboarding.errors.bodyTypeRequired;
     }
 
     const capNum = parseFloat(capacityTons.replace(',', '.'));
     if (!capacityTons.trim() || isNaN(capNum)) {
-      newErrors.capacityTons = 'Yuk ko‘tarish sig‘imini kiriting (tonna)';
+      newErrors.capacityTons = uz.onboarding.errors.capacityRequired;
     } else if (capNum < 0.5) {
-      newErrors.capacityTons = 'Sig‘im kamida 0.5 tonna bo‘lishi kerak';
+      newErrors.capacityTons = uz.onboarding.errors.capacityMin;
     } else if (capNum > 60) {
-      newErrors.capacityTons = 'Sig‘im ko‘pi bilan 60 tonna bo‘lishi kerak';
+      newErrors.capacityTons = uz.onboarding.errors.capacityMax;
     }
 
     if (volumeM3.trim()) {
       const volNum = parseFloat(volumeM3.replace(',', '.'));
       if (isNaN(volNum)) {
-        newErrors.volumeM3 = 'Hajmni to‘g‘ri son bilan kiriting';
+        newErrors.volumeM3 = uz.onboarding.errors.volumeInvalid;
       } else if (volNum < 1) {
-        newErrors.volumeM3 = 'Hajm kamida 1 m³ bo‘lishi kerak';
+        newErrors.volumeM3 = uz.onboarding.errors.volumeMin;
       } else if (volNum > 150) {
-        newErrors.volumeM3 = 'Hajm ko‘pi bilan 150 m³ bo‘lishi kerak';
+        newErrors.volumeM3 = uz.onboarding.errors.volumeMax;
       }
     }
 
     if (!licenseCardNumber.trim()) {
-      newErrors.licenseCardNumber = 'Litsenziya kartochkasi raqamini kiriting';
+      newErrors.licenseCardNumber = uz.onboarding.errors.licenseCardRequired;
     }
 
     setErrors(newErrors);
@@ -122,7 +123,7 @@ export default function OnboardingVehicleScreen() {
       }
     } catch (err: unknown) {
       const apiErr = err as { message?: string };
-      setServerError(apiErr?.message || 'Mashina ma’lumotlarini saqlashda xatolik yuz berdi.');
+      setServerError(apiErr?.message || uz.onboarding.errors.vehicleSaveError);
     } finally {
       setLoading(false);
     }
@@ -155,20 +156,20 @@ export default function OnboardingVehicleScreen() {
           hitSlop={12}
           style={styles.backButton}
           accessibilityRole="button"
-          accessibilityLabel="Ortga qaytish"
+          accessibilityLabel={uz.common.back}
         >
-          <Text style={styles.backButtonText}>← Ortga</Text>
+          <Text style={styles.backButtonText}>← {uz.common.back}</Text>
         </Pressable>
       </View>
 
       <View style={styles.header}>
         <View style={styles.stepBadge}>
-          <Text style={styles.stepBadgeText}>2 / 3-qadam</Text>
+          <Text style={styles.stepBadgeText}>
+            {uz.onboarding.stepOf.replace('{{current}}', '2').replace('{{total}}', '3')}
+          </Text>
         </View>
         <Text style={styles.title}>{uz.onboarding.vehicleTitle}</Text>
-        <Text style={styles.lead}>
-          Yuklarni qabul qilish uchun asosiy yuk mashinangiz ma’lumotlarini kiriting.
-        </Text>
+        <Text style={styles.lead}>{uz.onboarding.vehicleLead}</Text>
       </View>
 
       <ErrorBanner message={serverError} onDismiss={() => setServerError(null)} />
@@ -184,13 +185,13 @@ export default function OnboardingVehicleScreen() {
         }}
         error={errors.plateNumber}
         autoCapitalize="characters"
-        hint="Masalan: 01 A 777 AA yoki 10 123 ABC"
+        hint={uz.onboarding.plateHint}
       />
 
       {/* Body Type */}
       <Select<BodyType>
         label={uz.onboarding.bodyType}
-        placeholder="Mashina turini tanlang"
+        placeholder={uz.onboarding.bodyTypePlaceholder}
         value={bodyType}
         options={BODY_TYPE_OPTIONS}
         onChange={(val) => {
@@ -198,7 +199,7 @@ export default function OnboardingVehicleScreen() {
           if (errors.bodyType) setErrors((prev) => ({ ...prev, bodyType: '' }));
         }}
         error={errors.bodyType}
-        hint="Yuk buyurtmalari kuzov turiga qarab moslashtiriladi"
+        hint={uz.onboarding.bodyTypeFieldHint}
       />
 
       {/* Capacity & Volume */}
@@ -214,13 +215,13 @@ export default function OnboardingVehicleScreen() {
             }}
             error={errors.capacityTons}
             keyboardType="decimal-pad"
-            hint="0.5 – 60 t oralig‘ida"
+            hint={uz.onboarding.capacityHint}
           />
         </View>
 
         <View style={styles.halfCol}>
           <TextField
-            label={`${uz.onboarding.volumeM3} (${uz.common.optional})`}
+            label={uz.onboarding.volumeM3}
             placeholder="86"
             value={volumeM3}
             onChangeText={(text) => {
@@ -229,7 +230,7 @@ export default function OnboardingVehicleScreen() {
             }}
             error={errors.volumeM3}
             keyboardType="decimal-pad"
-            hint="1 – 150 m³"
+            hint={uz.onboarding.volumeHint}
           />
         </View>
       </View>
@@ -237,7 +238,7 @@ export default function OnboardingVehicleScreen() {
       {/* License Card Number */}
       <TextField
         label={uz.onboarding.licenseCardNumber}
-        placeholder="Masalan: TLC 123456"
+        placeholder={uz.onboarding.licenseCardPlaceholder}
         value={licenseCardNumber}
         onChangeText={(text) => {
           setLicenseCardNumber(text);
@@ -245,7 +246,7 @@ export default function OnboardingVehicleScreen() {
         }}
         error={errors.licenseCardNumber}
         autoCapitalize="characters"
-        hint="Tashuvchi mashinasiga berilgan litsenziya kartochkasi raqami"
+        hint={uz.onboarding.licenseCardHint}
       />
     </Screen>
   );
@@ -261,7 +262,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: '#1a56db',
+    color: colors.primary,
     fontWeight: '700',
   },
   header: {
@@ -276,7 +277,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   stepBadgeText: {
-    color: '#1a56db',
+    color: colors.primary,
     fontSize: 13,
     fontWeight: '700',
   },

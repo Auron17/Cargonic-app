@@ -1,15 +1,15 @@
 export const colors = {
   // Brand Highway Blue
-  primary: '#1D4ED8',
-  primaryDark: '#1E40AF',
-  primaryLight: '#DBEAFE',
-  primary50: '#EFF6FF',
+  primary: '#2457F5',
+  primaryDark: '#1A44C8',
+  primaryLight: '#E3EAFE',
+  primary50: '#F2F5FF',
 
   // Safety Amber / Bidding & Urgency
-  accent: '#F59E0B',
-  accentDark: '#D97706',
-  accentLight: '#FEF3C7',
-  accent50: '#FFFBEB',
+  accent: '#F97316',
+  accentDark: '#EA580C',
+  accentLight: '#FFEDD5',
+  accent50: '#FFF7ED',
 
   // Deep Industrial Slate scale
   slate950: '#020617',
@@ -25,10 +25,10 @@ export const colors = {
   slate50: '#F8FAFC',
 
   // Surfaces & Backgrounds
-  background: '#F8FAFC',
+  background: '#F2F4F7',
   surface: '#FFFFFF',
   surfaceMuted: '#F1F5F9',
-  surfaceBorder: '#E2E8F0',
+  surfaceBorder: '#E8EBF0',
   borderStrong: '#CBD5E1',
 
   // Feedback Colors
@@ -53,8 +53,8 @@ export const colors = {
   // Text
   textPrimary: '#0F172A',
   textSecondary: '#475569',
-  textMuted: '#475569',
-  textLight: '#64748B',
+  textMuted: '#6B7686',
+  textLight: '#8C96A5',
   textWhite: '#FFFFFF',
 } as const;
 
@@ -79,10 +79,10 @@ export const radii = {
 
 export const shadows = {
   card: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowColor: '#0B1220',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
     elevation: 2,
   },
   cardHover: {
@@ -106,6 +106,14 @@ export const shadows = {
     shadowRadius: 3,
     elevation: 1,
   },
+} as const;
+
+/** Ilovaning to'q fon rangi (splash, balans kartasi, faol reys) */
+export const ink = {
+  900: '#0E1A2B',
+  800: '#172538',
+  700: '#22324A',
+  muted: '#93A1B5',
 } as const;
 
 export const typography = {

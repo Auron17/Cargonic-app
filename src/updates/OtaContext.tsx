@@ -1,4 +1,5 @@
 import React, { createContext, useContext, ReactNode } from 'react';
+import { View } from 'react-native';
 import { OtaState, useOtaUpdates } from './useOtaUpdates';
 import { OtaUpdateBanner } from './OtaUpdateBanner';
 
@@ -9,8 +10,15 @@ export function OtaProvider({ children }: { children: ReactNode }) {
 
   return (
     <OtaContext.Provider value={ota}>
-      {children}
-      <OtaUpdateBanner />
+      <View style={{ flex: 1 }}>
+        {children}
+        <OtaUpdateBanner
+          isDownloading={ota.isDownloading}
+          isUpdateReady={ota.isUpdateReady}
+          isBannerVisible={ota.isBannerVisible}
+          onInstall={ota.applyUpdate}
+        />
+      </View>
     </OtaContext.Provider>
   );
 }

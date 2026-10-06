@@ -2,12 +2,13 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { ErrorBoundaryProps } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { uz } from '../i18n/uz';
+import { useCopy } from '../i18n';
 import { colors, radii } from '../theme';
 import { PrimaryButton } from './PrimaryButton';
 import { Screen } from './Screen';
 
 export function AppErrorBoundary({ retry }: ErrorBoundaryProps) {
+  const uz = useCopy();
   return (
     <Screen style={styles.screen}>
       <View style={styles.box}>

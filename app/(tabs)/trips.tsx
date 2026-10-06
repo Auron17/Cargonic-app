@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,39 +9,112 @@ import {
   EmptyState,
   ErrorBanner,
   Money,
+  Pill,
+  RouteLine,
   Screen,
-  StatusBadge,
-  TAB_EDGES_WITH_HEADER,
+  ScreenTitle,
+  SectionTitle,
+  SkeletonList,
+  TAB_EDGES_NO_HEADER,
+  pillToneForStatus,
+  statusBadgeLabel,
 } from '../../src/components';
-import { uz } from '../../src/i18n/uz';
+import { useCopy } from '../../src/i18n';
+import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
 import { isTrackingActive } from '../../src/tracking/backgroundTask';
 import { isActiveTrip } from '../../src/trips/nextStatus';
-import { formatDate } from '../../src/utils/format';
-import { colors, radii, shadows } from '../../src/theme';
+import { formatDate, formatMoney } from '../../src/utils/format';
+import { colors, ink } from '../../src/theme';
+
+/** "Toshkent, Sergeli sanoat zonasi" → "Toshkent" */
+function city(address: string): string {
+  return address.split(',')[0].trim();
+}
+
+function ActiveTripCard({ trip, gpsActive, onPress }: { trip: TripListItem; gpsActive: boolean; onPress: () => void }) {
+  const uz = useCopy();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.active, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`${uz.tripsScreen.activeTitle}: ${trip.pickupAddress} dan ${trip.dropoffAddress} gacha`}
+    >
+      <View style={styles.activeTop}>
+        <View style={styles.statusChip}>
+          <View style={styles.statusDot} />
+          <Text style={styles.statusChipText}>{statusBadgeLabel(trip.status, 'trip')}</Text>
+        </View>
+        <View style={styles.gps}>
+          <Ionicons name={gpsActive ? 'radio' : 'radio-outline'} size={14} color={gpsActive ? '#4ADE80' : ink.muted} />
+          <Text style={[styles.gpsText, gpsActive && styles.gpsTextOn]}>
+            {gpsActive ? uz.tripsScreen.trackingActive : uz.tripsScreen.trackingInactive}
+          </Text>
+        </View>
+      </View>
+
+      <Money amount={trip.agreedPrice} size="xl" weight="800" color="#FFFFFF" style={styles.activePrice} />
+      <Text style={styles.activeMeta} numberOfLines={1}>
+        {[trip.companyName, trip.plateNumber, formatDate(trip.pickupDate)].filter(Boolean).join(' · ')}
+      </Text>
+
+      <View style={styles.activeRoute}>
+        <RouteLine inverse lines={2} from={trip.pickupAddress} to={trip.dropoffAddress} />
+      </View>
+
+      <View style={styles.activeButton}>
+        <Text style={styles.activeButtonText}>{uz.tripsScreen.openTrip}</Text>
+        <Ionicons name="arrow-forward" size={18} color={ink[900]} />
+      </View>
+    </Pressable>
+  );
+}
+
+function HistoryRow({ trip, onPress, last }: { trip: TripListItem; onPress: () => void; last: boolean }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, !last && styles.rowDivider, pressed && styles.rowPressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`${trip.pickupAddress} dan ${trip.dropoffAddress} gacha, ${formatMoney(trip.agreedPrice)}`}
+    >
+      <View style={styles.rowIcon}>
+        <Ionicons name="cube-outline" size={18} color={colors.slate700} />
+      </View>
+      <View style={styles.rowMain}>
+        <Text style={styles.rowRoute} numberOfLines={1}>
+          {city(trip.pickupAddress)} → {city(trip.dropoffAddress)}
+        </Text>
+        <Text style={styles.rowMeta} numberOfLines={1}>
+          {formatDate(trip.pickupDate)}
+          {trip.companyName ? ` · ${trip.companyName}` : ''}
+        </Text>
+      </View>
+      <View style={styles.rowRight}>
+        <Text style={styles.rowPrice}>{formatMoney(trip.agreedPrice)}</Text>
+        <Pill tone={pillToneForStatus(trip.status)} label={statusBadgeLabel(trip.status, 'trip')} />
+      </View>
+    </Pressable>
+  );
+}
 
 export default function TripsTabScreen() {
+  const uz = useCopy();
   const router = useRouter();
   const [isGpsActive, setIsGpsActive] = useState(false);
 
-  const {
-    data: trips,
-    isLoading,
-    isRefetching,
-    error,
-    refetch,
-  } = useQuery({
+  const { data: trips, isLoading, error, refetch } = useQuery({
     queryKey: ['trips'],
     queryFn: () => tripsApi.getTrips(),
-    refetchInterval: 15000, // har 15 soniyada yangilash
+    refetchInterval: 15000,
   });
+  const pull = usePullToRefresh(refetch);
 
   useEffect(() => {
     let isMounted = true;
     async function checkGps() {
       const active = await isTrackingActive();
-      if (isMounted) {
-        setIsGpsActive(active);
-      }
+      if (isMounted) setIsGpsActive(active);
     }
     checkGps();
     const interval = setInterval(checkGps, 5000);
@@ -60,586 +125,110 @@ export default function TripsTabScreen() {
   }, []);
 
   const activeTrip = trips?.find((t) => isActiveTrip(t.status));
-  const historyTrips = trips?.filter((t) => t.id !== activeTrip?.id) || [];
-
-  if (isLoading && !trips) {
-    return (
-      <Screen edges={TAB_EDGES_WITH_HEADER} style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>{uz.common.loading}</Text>
-      </Screen>
-    );
-  }
-
-  if (error && !trips) {
-    return (
-      <Screen edges={TAB_EDGES_WITH_HEADER} style={styles.screen}>
-        <ErrorBanner
-          message={error instanceof Error ? error.message : uz.common.networkError}
-          onRetry={refetch}
-        />
-      </Screen>
-    );
-  }
-
-  const renderHistoryItem = ({ item }: { item: TripListItem }) => {
-    return (
-      <Pressable
-        onPress={() => router.push(`/trips/${item.id}`)}
-        style={({ pressed }) => [styles.historyCard, pressed && styles.cardPressed]}
-        accessibilityRole="button"
-        accessibilityLabel={`Reys ${item.pickupAddress} dan ${item.dropoffAddress} ga`}
-      >
-        <View style={styles.historyCardHeader}>
-          <View style={styles.historyDateWrap}>
-            <Ionicons name="calendar-outline" size={13} color={colors.slate500} style={styles.historyIcon} />
-            <Text style={styles.historyDate}>{formatDate(item.pickupDate)}</Text>
-          </View>
-          <StatusBadge kind="trip" status={item.status} size="sm" />
-        </View>
-
-        <View style={styles.historyCompanyRow}>
-          <Ionicons name="business-outline" size={14} color={colors.slate600} style={styles.historyIcon} />
-          <Text style={styles.historyCompany} numberOfLines={1}>
-            {item.companyName || 'Yuk beruvchi'}
-          </Text>
-        </View>
-
-        <View style={styles.historyRouteBox}>
-          <View style={styles.routeBulletRow}>
-            <View style={styles.bulletPickup} />
-            <Text style={styles.routeBulletText} numberOfLines={1}>
-              {item.pickupAddress}
-            </Text>
-          </View>
-          <View style={styles.routeBulletRow}>
-            <View style={styles.bulletDropoff} />
-            <Text style={styles.routeBulletText} numberOfLines={1}>
-              {item.dropoffAddress}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.historyCardFooter}>
-          <View>
-            <Text style={styles.historyPriceLabel}>{uz.tripsScreen.agreedPrice}</Text>
-            <Money amount={item.agreedPrice} size="md" color={colors.slate900} weight="800" />
-          </View>
-          <View style={styles.detailsBtn}>
-            <Text style={styles.detailsBtnText}>{uz.common.details}</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-          </View>
-        </View>
-      </Pressable>
-    );
-  };
-
-  const renderHeader = () => {
-    return (
-      <View style={styles.headerContainer}>
-        {/* Faol reys kartasi */}
-        {activeTrip ? (
-          <View style={styles.activeSection}>
-            <View style={styles.activeSectionHeader}>
-              <View style={styles.activeTitleRow}>
-                <View style={styles.pulsingDot} />
-                <Text style={styles.activeSectionTitle}>{uz.tripsScreen.activeTitle}</Text>
-              </View>
-
-              <View
-                style={[
-                  styles.gpsBadge,
-                  isGpsActive ? styles.gpsBadgeActive : styles.gpsBadgeInactive,
-                ]}
-              >
-                <Ionicons
-                  name={isGpsActive ? 'navigate' : 'navigate-outline'}
-                  size={12}
-                  color={isGpsActive ? colors.successDark : colors.slate500}
-                  style={styles.gpsIcon}
-                />
-                <Text
-                  style={[
-                    styles.gpsBadgeText,
-                    isGpsActive ? styles.gpsTextActive : styles.gpsTextInactive,
-                  ]}
-                >
-                  {isGpsActive
-                    ? uz.tripsScreen.trackingActive
-                    : uz.tripsScreen.trackingInactive}
-                </Text>
-              </View>
-            </View>
-
-            <Pressable
-              onPress={() => router.push(`/trips/${activeTrip.id}`)}
-              style={({ pressed }) => [
-                styles.activeCard,
-                pressed && styles.cardPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={`${uz.tripsScreen.activeTitle} tafsilotlari`}
-            >
-              <View style={styles.activeCardTop}>
-                <View style={styles.activeCompanyWrap}>
-                  <Text style={styles.activeCompany} numberOfLines={1}>
-                    {activeTrip.companyName || 'Yuk beruvchi'}
-                  </Text>
-                  {activeTrip.plateNumber ? (
-                    <View style={styles.plateBadge}>
-                      <Ionicons name="car-outline" size={12} color={colors.slate600} style={styles.plateIcon} />
-                      <Text style={styles.activePlate}>
-                        {activeTrip.plateNumber}
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-                <StatusBadge kind="trip" status={activeTrip.status} />
-              </View>
-
-              <View style={styles.activePriceRow}>
-                <View>
-                  <Text style={styles.activePriceLabel}>{uz.tripsScreen.agreedPrice}</Text>
-                  <Money amount={activeTrip.agreedPrice} size="xl" color={colors.primary} weight="800" />
-                </View>
-                <View style={styles.pickupDateBadge}>
-                  <Ionicons name="calendar-outline" size={13} color={colors.slate600} style={styles.calIcon} />
-                  <Text style={styles.activeDate}>
-                    {formatDate(activeTrip.pickupDate)}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Marshrut sxemasi */}
-              <View style={styles.routeContainer}>
-                <View style={styles.routeRow}>
-                  <View style={[styles.routeDot, styles.dotPickup]} />
-                  <View style={styles.routeTextWrap}>
-                    <Text style={styles.routeLabel}>{uz.tripView.pickupAddress}</Text>
-                    <Text style={styles.routeValue} numberOfLines={2}>
-                      {activeTrip.pickupAddress}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.routeLine} />
-
-                <View style={styles.routeRow}>
-                  <View style={[styles.routeDot, styles.dotDropoff]} />
-                  <View style={styles.routeTextWrap}>
-                    <Text style={styles.routeLabel}>{uz.tripView.dropoffAddress}</Text>
-                    <Text style={styles.routeValue} numberOfLines={2}>
-                      {activeTrip.dropoffAddress}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Amal tugmasi */}
-              <View style={styles.activeButtonWrap}>
-                <View style={styles.openTripButton}>
-                  <Text style={styles.openTripButtonText}>
-                    {uz.tripsScreen.openTrip}
-                  </Text>
-                  <Ionicons name="arrow-forward" size={16} color="#FFFFFF" style={styles.actionArrow} />
-                </View>
-              </View>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {/* Tarix bo'limi sarlavhasi */}
-        <View style={styles.historySectionHeader}>
-          <Text style={styles.historySectionTitle}>{uz.tripsScreen.historyTitle}</Text>
-          <View style={styles.historyBadge}>
-            <Text style={styles.historyCountText}>{historyTrips.length} ta reys</Text>
-          </View>
-        </View>
-      </View>
-    );
-  };
-
-  const hasNoTrips = !activeTrip && historyTrips.length === 0;
+  const history = trips?.filter((t) => t.id !== activeTrip?.id) ?? [];
+  const openTrip = (id: string) => router.push(`/trips/${id}`);
 
   return (
-    <Screen edges={TAB_EDGES_WITH_HEADER} style={styles.screen}>
-      {hasNoTrips ? (
-        <View style={styles.emptyContainer}>
-          <EmptyState
-            iconName="navigate-outline"
-            title={uz.tripsScreen.emptyTitle}
-            description={uz.tripsScreen.emptyDesc}
-            actionTitle="Yuklar lentasini ko‘rish"
-            onAction={() => router.push('/(tabs)')}
-          />
-        </View>
-      ) : (
-        <FlatList
-          data={historyTrips}
-          keyExtractor={(item) => item.id}
-          renderItem={renderHistoryItem}
-          ListHeaderComponent={renderHeader}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefetching}
-              onRefresh={refetch}
-              colors={[colors.primary]}
-              tintColor={colors.primary}
+    <Screen edges={TAB_EDGES_NO_HEADER} contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={colors.slate500} colors={[colors.primary]} />
+        }
+      >
+            <ScreenTitle
+              title={uz.tripsScreen.title}
+              subtitle={activeTrip ? uz.tripsScreen.activeCount : trips ? uz.tripsScreen.historyCount.replace('{{count}}', String(history.length)) : undefined}
             />
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyHistoryBox}>
-              <Text style={styles.emptyHistoryText}>
-                Oldingi reyslar tarixi hozircha mavjud emas.
-              </Text>
-            </View>
-          }
-        />
-      )}
+            {error ? (
+              <ErrorBanner message={error instanceof Error ? error.message : uz.common.networkError} onRetry={refetch} />
+            ) : null}
+            {isLoading ? <SkeletonList count={2} /> : null}
+
+            {activeTrip ? (
+              <ActiveTripCard trip={activeTrip} gpsActive={isGpsActive} onPress={() => openTrip(activeTrip.id)} />
+            ) : null}
+
+            {trips && !activeTrip && history.length === 0 ? (
+              <View style={styles.empty}>
+                <EmptyState
+                  iconName="navigate-outline"
+                  title={uz.tripsScreen.emptyTitle}
+                  description={uz.tripsScreen.emptyDesc}
+                  actionTitle="Yuklarni ko‘rish"
+                  onAction={() => router.push('/(tabs)')}
+                />
+              </View>
+            ) : null}
+
+            {history.length > 0 ? (
+              <>
+                <SectionTitle title={uz.tripsScreen.historyTitle} />
+                <View style={styles.historyCard}>
+                  {history.map((t, i) => (
+                    <HistoryRow key={t.id} trip={t} last={i === history.length - 1} onPress={() => openTrip(t.id)} />
+                  ))}
+                </View>
+              </>
+            ) : null}
+      </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    paddingHorizontal: 0,
-    backgroundColor: colors.background,
-  },
-  centerContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.slate600,
-  },
-  emptyContainer: {
-    flex: 1,
-    padding: 16,
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  headerContainer: {
-    marginBottom: 10,
-  },
-  activeSection: {
-    marginBottom: 24,
-  },
-  activeSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  activeTitleRow: {
+  content: { paddingHorizontal: 0, paddingTop: 0 },
+  list: { paddingHorizontal: 16, paddingBottom: 28 },
+  empty: { paddingTop: 40 },
+  pressed: { opacity: 0.94, transform: [{ scale: 0.99 }] },
+
+  active: { backgroundColor: ink[900], borderRadius: 22, padding: 18 },
+  activeTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  statusChip: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  pulsingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.success,
-    marginRight: 8,
-  },
-  activeSectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.slate900,
-  },
-  gpsBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: radii.full,
-    borderWidth: 1,
-  },
-  gpsIcon: {
-    marginRight: 4,
-  },
-  gpsBadgeActive: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#A7F3D0',
-  },
-  gpsBadgeInactive: {
-    backgroundColor: colors.slate100,
-    borderColor: colors.slate200,
-  },
-  gpsBadgeText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-  },
-  gpsTextActive: {
-    color: colors.successDark,
-  },
-  gpsTextInactive: {
-    color: colors.slate500,
-  },
-  activeCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: radii.xl,
-    padding: 18,
-    borderWidth: 1.5,
-    borderColor: '#BFDBFE',
-    ...shadows.card,
-  },
-  cardPressed: {
-    borderColor: colors.primary,
-    transform: [{ scale: 0.995 }],
-  },
-  activeCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 14,
-  },
-  activeCompanyWrap: {
-    flex: 1,
-    marginRight: 10,
-  },
-  activeCompany: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.slate900,
-  },
-  plateBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  plateIcon: {
-    marginRight: 4,
-  },
-  activePlate: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: colors.slate600,
-  },
-  activePriceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    backgroundColor: colors.primary50,
-    padding: 12,
-    borderRadius: radii.md,
-    marginBottom: 16,
-  },
-  activePriceLabel: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: colors.slate500,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-    marginBottom: 2,
-  },
-  pickupDateBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  calIcon: {
-    marginRight: 4,
-  },
-  activeDate: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: colors.slate700,
-  },
-  routeContainer: {
-    marginBottom: 16,
-  },
-  routeRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  routeDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginTop: 4,
-    marginRight: 12,
-  },
-  dotPickup: {
-    backgroundColor: colors.successDark,
-    borderWidth: 2,
-    borderColor: '#A7F3D0',
-  },
-  dotDropoff: {
-    backgroundColor: colors.dangerDark,
-    borderWidth: 2,
-    borderColor: '#FECACA',
-  },
-  routeLine: {
-    width: 2,
-    height: 18,
-    backgroundColor: colors.slate300,
-    marginLeft: 4,
-    marginVertical: 2,
-  },
-  routeTextWrap: {
-    flex: 1,
-  },
-  routeLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-  },
-  routeValue: {
-    fontSize: 14.5,
-    fontWeight: '700',
-    color: colors.slate900,
-    marginTop: 1,
-  },
-  activeButtonWrap: {
-    marginTop: 4,
-  },
-  openTripButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radii.md,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 13,
-  },
-  openTripButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-    marginRight: 6,
-  },
-  actionArrow: {
-    marginLeft: 2,
-  },
-  historySectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  historySectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.slate900,
-  },
-  historyBadge: {
-    backgroundColor: colors.slate100,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.full,
-  },
-  historyCountText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.slate600,
-  },
-  historyCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: radii.lg,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.slate200,
-    ...shadows.card,
-  },
-  historyCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  historyDateWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  historyIcon: {
-    marginRight: 5,
-  },
-  historyDate: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: colors.slate500,
-  },
-  historyCompanyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  historyCompany: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.slate800,
-  },
-  historyRouteBox: {
-    backgroundColor: colors.slate50,
-    borderRadius: radii.sm,
-    padding: 10,
-    marginBottom: 12,
     gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
-  routeBulletRow: {
+  statusDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accent },
+  statusChipText: { fontSize: 12.5, fontWeight: '600', color: '#FFFFFF' },
+  gps: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  gpsText: { fontSize: 12.5, fontWeight: '600', color: ink.muted },
+  gpsTextOn: { color: '#4ADE80' },
+  activePrice: { marginTop: 16, fontSize: 32, letterSpacing: -1 },
+  activeMeta: { marginTop: 2, fontSize: 13.5, color: ink.muted },
+  activeRoute: { marginTop: 18 },
+  activeButton: {
+    marginTop: 20,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
-  bulletPickup: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.successDark,
-    marginRight: 8,
-  },
-  bulletDropoff: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.dangerDark,
-    marginRight: 8,
-  },
-  routeBulletText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.slate700,
-    flex: 1,
-  },
-  historyCardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  activeButtonText: { fontSize: 16, fontWeight: '700', color: ink[900] },
+
+  historyCard: { backgroundColor: colors.surface, borderRadius: 18, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 12 },
+  rowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.slate200 },
+  rowPressed: { backgroundColor: colors.slate50 },
+  rowIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: colors.slate100,
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: colors.slate100,
-    paddingTop: 10,
+    justifyContent: 'center',
   },
-  historyPriceLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-  },
-  detailsBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 44,
-    paddingLeft: 8,
-  },
-  detailsBtnText: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: colors.primary,
-    marginRight: 2,
-  },
-  emptyHistoryBox: {
-    padding: 24,
-    alignItems: 'center',
-  },
-  emptyHistoryText: {
-    fontSize: 14,
-    color: colors.slate500,
-  },
+  rowMain: { flex: 1, minWidth: 0 },
+  rowRoute: { fontSize: 15.5, fontWeight: '600', color: colors.slate900 },
+  rowMeta: { marginTop: 2, fontSize: 13, color: colors.textMuted },
+  rowRight: { alignItems: 'flex-end', gap: 5 },
+  rowPrice: { fontSize: 15, fontWeight: '700', color: colors.slate900, fontVariant: ['tabular-nums'] },
 });

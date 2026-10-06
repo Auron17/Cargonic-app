@@ -30,10 +30,15 @@ export interface OtaState {
   simulateUpdateReadyForTesting: () => void;
 }
 
+/** Simulyatorda banner ko‘rish. Ko‘rib bo‘lgach false qiling. */
+const DEV_PREVIEW_OTA_BANNER = __DEV__;
+
 export function useOtaUpdates(): OtaState {
   const isEnabled = Updates.isEnabled;
-  const [status, setStatus] = useState<OtaStatus>(isEnabled ? 'idle' : 'disabled');
-  const [isBannerVisible, setIsBannerVisible] = useState(false);
+  const [status, setStatus] = useState<OtaStatus>(
+    DEV_PREVIEW_OTA_BANNER ? 'ready' : isEnabled ? 'idle' : 'disabled'
+  );
+  const [isBannerVisible, setIsBannerVisible] = useState(DEV_PREVIEW_OTA_BANNER);
   const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const isCheckingRef = useRef(false);

@@ -1,4 +1,5 @@
 import { TripStatus } from '../api/types';
+import { getCopy } from '../i18n/copy';
 
 /**
  * Reys holatlari xaritasi:
@@ -64,15 +65,16 @@ export function isActiveTrip(status: TripStatus): boolean {
  * Keyingi holat uchun haydovchi tugmasi matnini qaytaradi.
  */
 export function getStatusActionLabel(nextStatus: TripStatus | null): string {
+  const uz = getCopy();
   switch (nextStatus) {
     case 'EN_ROUTE_TO_PICKUP':
-      return 'Yo‘lga chiqdim';
+      return uz.tripView.actionEnRoute;
     case 'AT_PICKUP':
-      return 'Yetib keldim';
+      return uz.tripView.actionAtPickup;
     case 'LOADED':
-      return 'Yuk ortildi';
+      return uz.tripView.actionLoaded;
     case 'DELIVERED':
-      return 'Topshirdim';
+      return uz.tripView.actionDelivered;
     default:
       return '';
   }

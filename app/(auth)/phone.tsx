@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { authApi } from '../../src/api/client';
-import { ErrorBanner, PrimaryButton, Screen, TextField } from '../../src/components';
-import { uz } from '../../src/i18n/uz';
+import { ErrorBanner, LanguageChips, PrimaryButton, Screen, TextField } from '../../src/components';
+import { useCopy } from '../../src/i18n';
 import { cleanPhoneNumber, formatPhoneDisplay } from '../../src/utils/format';
-import { colors, radii, shadows } from '../../src/theme';
+import { colors } from '../../src/theme';
 
 export default function PhoneScreen() {
+  const uz = useCopy();
   const [phoneInput, setPhoneInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,12 +75,11 @@ export default function PhoneScreen() {
           onPress={handleSendCode}
           loading={isLoading}
           disabled={!isPhoneValid}
-          icon={<Ionicons name="paper-plane" size={16} color="#FFFFFF" />}
           accessibilityLabel={uz.auth.sendCode}
         />
       }
     >
-      <View style={styles.header}>
+      <View style={styles.brandRow}>
         <Image
           source={require('../../assets/logo.png')}
           style={styles.brandLogo}
@@ -88,81 +87,40 @@ export default function PhoneScreen() {
           accessibilityRole="image"
           accessibilityLabel={uz.app.name}
         />
-        <Text style={styles.brandTitle}>{uz.app.name}</Text>
-        <Text style={styles.brandTagline}>{uz.app.tagline}</Text>
+        <Text style={styles.brandName}>{uz.app.name}</Text>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>{uz.auth.phoneLabel}</Text>
-        <Text style={styles.sectionLead}>{uz.auth.phoneLead}</Text>
+      <Text style={styles.title} accessibilityRole="header">
+        {uz.auth.phoneTitle}
+      </Text>
+      <Text style={styles.lead}>{uz.auth.phoneLead}</Text>
 
-        <ErrorBanner message={error} onDismiss={() => setError(null)} />
+      <ErrorBanner message={error} onDismiss={() => setError(null)} />
 
-        <TextField
-          placeholder="+998 (90) 123-45-67"
-          value={phoneInput}
-          onChangeText={handlePhoneChange}
-          keyboardType="phone-pad"
-          autoFocus
-          maxLength={19}
-          leftIcon={<Ionicons name="call-outline" size={18} color={colors.slate400} />}
-        />
+      <TextField
+        placeholder="+998 (90) 123-45-67"
+        value={phoneInput}
+        onChangeText={handlePhoneChange}
+        keyboardType="phone-pad"
+        autoFocus
+        maxLength={19}
+        style={styles.phoneInput}
+        leftIcon={<Text style={styles.flag}>🇺🇿</Text>}
+      />
 
-        <Text style={styles.termsNotice}>{uz.auth.termsNotice}</Text>
-      </View>
+      <Text style={styles.termsNotice}>{uz.auth.termsNotice}</Text>
+      <LanguageChips />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-  brandLogo: {
-    width: 88,
-    height: 88,
-    borderRadius: 20,
-    marginBottom: 16,
-    ...shadows.subtle,
-  },
-  brandTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: colors.slate900,
-    letterSpacing: -0.4,
-    marginBottom: 4,
-  },
-  brandTagline: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontWeight: '500',
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: radii.xl,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.slate200,
-    ...shadows.card,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.slate900,
-    marginBottom: 6,
-  },
-  sectionLead: {
-    fontSize: 14,
-    color: colors.slate600,
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  termsNotice: {
-    fontSize: 12,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 16,
-  },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, marginBottom: 36 },
+  brandLogo: { width: 40, height: 40, borderRadius: 11 },
+  brandName: { fontSize: 20, fontWeight: '800', color: colors.slate900, letterSpacing: -0.4 },
+  title: { fontSize: 30, fontWeight: '800', color: colors.slate900, letterSpacing: -0.8 },
+  lead: { marginTop: 8, marginBottom: 24, fontSize: 16, lineHeight: 22, color: colors.textMuted },
+  phoneInput: { fontSize: 20, fontWeight: '600', letterSpacing: 0.3 },
+  flag: { fontSize: 20 },
+  termsNotice: { marginTop: 4, fontSize: 12.5, lineHeight: 17, color: colors.textMuted },
 });

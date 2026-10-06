@@ -17,33 +17,38 @@ import {
   SelectOption,
   TextField,
 } from '../../src/components';
-import { uz } from '../../src/i18n/uz';
+import { useCopy } from '../../src/i18n';
+import { colors } from '../../src/theme';
 
-const LEGAL_OPTIONS: SelectOption<LegalType>[] = [
-  { label: 'YaTT (Yakka tartibdagi tadbirkor)', value: 'YATT' },
-  { label: 'MChJ (Mas’uliyati cheklangan jamiyat)', value: 'MCHJ' },
-];
-
-const REGION_OPTIONS: SelectOption<Region>[] = [
-  { label: uz.regions.TASHKENT_CITY, value: 'TASHKENT_CITY' },
-  { label: uz.regions.TASHKENT, value: 'TASHKENT' },
-  { label: uz.regions.ANDIJAN, value: 'ANDIJAN' },
-  { label: uz.regions.FERGANA, value: 'FERGANA' },
-  { label: uz.regions.NAMANGAN, value: 'NAMANGAN' },
-  { label: uz.regions.SAMARKAND, value: 'SAMARKAND' },
-  { label: uz.regions.BUKHARA, value: 'BUKHARA' },
-  { label: uz.regions.NAVOI, value: 'NAVOI' },
-  { label: uz.regions.KASHKADARYA, value: 'KASHKADARYA' },
-  { label: uz.regions.SURKHANDARYA, value: 'SURKHANDARYA' },
-  { label: uz.regions.JIZZAKH, value: 'JIZZAKH' },
-  { label: uz.regions.SYRDARYA, value: 'SYRDARYA' },
-  { label: uz.regions.KHOREZM, value: 'KHOREZM' },
-  { label: uz.regions.KARAKALPAKSTAN, value: 'KARAKALPAKSTAN' },
+const REGION_VALUES: Region[] = [
+  'TASHKENT_CITY',
+  'TASHKENT',
+  'ANDIJAN',
+  'FERGANA',
+  'NAMANGAN',
+  'SAMARKAND',
+  'BUKHARA',
+  'NAVOI',
+  'KASHKADARYA',
+  'SURKHANDARYA',
+  'JIZZAKH',
+  'SYRDARYA',
+  'KHOREZM',
+  'KARAKALPAKSTAN',
 ];
 
 export default function OnboardingProfileScreen() {
+  const uz = useCopy();
   const router = useRouter();
   const { profile, refreshProfile } = useAuth();
+  const LEGAL_OPTIONS: SelectOption<LegalType>[] = [
+    { label: uz.legalType.YATT, value: 'YATT' },
+    { label: uz.legalType.MCHJ, value: 'MCHJ' },
+  ];
+  const REGION_OPTIONS: SelectOption<Region>[] = REGION_VALUES.map((value) => ({
+    label: uz.regions[value],
+    value,
+  }));
 
   const [fullName, setFullName] = useState(profile?.fullName || '');
   const [legalType, setLegalType] = useState<LegalType>(profile?.legalType || 'YATT');
@@ -60,24 +65,24 @@ export default function OnboardingProfileScreen() {
     const newErrors: Record<string, string> = {};
 
     if (!fullName.trim() || fullName.trim().length < 3) {
-      newErrors.fullName = 'F.I.SH. kamida 3 ta harfdan iborat bo‘lsin';
+      newErrors.fullName = uz.onboarding.errors.fullNameMin;
     }
 
     if (!legalName.trim()) {
-      newErrors.legalName = 'Yuridik nomini kiriting';
+      newErrors.legalName = uz.onboarding.errors.legalNameRequired;
     }
 
     const cleanStir = stir.replace(/\D/g, '');
     if (cleanStir.length !== 9) {
-      newErrors.stir = 'STIR aynan 9 ta raqamdan iborat bo‘lishi kerak';
+      newErrors.stir = uz.onboarding.errors.stirDigits;
     }
 
     if (!licenseNumber.trim()) {
-      newErrors.licenseNumber = 'Litsenziya raqamini kiriting';
+      newErrors.licenseNumber = uz.onboarding.errors.licenseRequired;
     }
 
     if (!homeRegion) {
-      newErrors.homeRegion = 'Asosiy viloyatni tanlang';
+      newErrors.homeRegion = uz.onboarding.errors.regionRequired;
     }
 
     setErrors(newErrors);
@@ -114,7 +119,7 @@ export default function OnboardingProfileScreen() {
       }
     } catch (err: unknown) {
       const apiErr = err as { message?: string };
-      setServerError(apiErr?.message || 'Profilni saqlashda xatolik yuz berdi. Qayta urinib ko‘ring.');
+      setServerError(apiErr?.message || uz.onboarding.errors.profileSaveError);
     } finally {
       setLoading(false);
     }
@@ -143,7 +148,9 @@ export default function OnboardingProfileScreen() {
       {/* Progress & Header */}
       <View style={styles.header}>
         <View style={styles.stepBadge}>
-          <Text style={styles.stepBadgeText}>1 / 3-qadam</Text>
+          <Text style={styles.stepBadgeText}>
+            {uz.onboarding.stepOf.replace('{{current}}', '1').replace('{{total}}', '3')}
+          </Text>
         </View>
         <Text style={styles.title}>{uz.onboarding.profileTitle}</Text>
         <Text style={styles.lead}>{uz.onboarding.profileLead}</Text>
@@ -231,12 +238,12 @@ export default function OnboardingProfileScreen() {
         }}
         error={errors.licenseNumber}
         autoCapitalize="characters"
-        hint="Yuk tashish faoliyati uchun litsenziya raqami"
+        hint={uz.onboarding.licenseHint}
       />
 
       <Select<Region>
         label={uz.onboarding.homeRegion}
-        placeholder="Viloyatni tanlang"
+        placeholder={uz.onboarding.regionPlaceholder}
         value={homeRegion}
         options={REGION_OPTIONS}
         onChange={(val) => {
@@ -244,7 +251,7 @@ export default function OnboardingProfileScreen() {
           if (errors.homeRegion) setErrors((prev) => ({ ...prev, homeRegion: '' }));
         }}
         error={errors.homeRegion}
-        hint="Yuklar asosan shu hudud atrofida moslashtiriladi"
+        hint={uz.onboarding.regionHint}
       />
     </Screen>
   );
@@ -263,7 +270,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   stepBadgeText: {
-    color: '#1a56db',
+    color: colors.primary,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -314,7 +321,7 @@ const styles = StyleSheet.create({
     color: '#6b7280',
   },
   segmentTextActive: {
-    color: '#1a56db',
+    color: colors.primary,
     fontWeight: '700',
   },
 });

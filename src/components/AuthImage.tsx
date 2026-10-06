@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { filesApi } from '../api/client';
 import { getAccessToken } from '../api/storage';
-import { uz } from '../i18n/uz';
+import { useCopy } from '../i18n';
 import { colors } from '../theme';
 
 interface AuthImageProps {
@@ -28,6 +28,7 @@ export function AuthImage({
   placeholder,
   accessibilityLabel,
 }: AuthImageProps) {
+  const uz = useCopy();
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);

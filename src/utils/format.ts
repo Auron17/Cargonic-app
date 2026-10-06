@@ -33,6 +33,17 @@ export function formatDate(dateString: string | null | undefined): string {
   return parsed.format('DD.MM.YYYY');
 }
 
+/** Server vaqti `08:00:00` → `08:00` */
+export function formatTimeShort(time: string | null | undefined): string {
+  return time ? time.slice(0, 5) : '';
+}
+
+/** Ortish sanasi va (bo'lsa) vaqt oralig'i: `07.10.2026, 08:00–12:00` */
+export function formatPickupWindow(date: string, from?: string | null, to?: string | null): string {
+  const window = from && to ? `, ${formatTimeShort(from)}–${formatTimeShort(to)}` : '';
+  return `${formatDate(date)}${window}`;
+}
+
 /**
  * Sana va vaqtni formatlaydi: `DD.MM.YYYY HH:mm`
  */

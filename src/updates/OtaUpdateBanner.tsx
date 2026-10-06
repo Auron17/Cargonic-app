@@ -1,203 +1,135 @@
 import React from 'react';
 import {
   ActivityIndicator,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useOta } from './OtaContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCopy } from '../i18n';
 import { colors, radii, shadows } from '../theme';
 
-export function OtaUpdateBanner() {
-  const {
-    isUpdateReady,
-    isDownloading,
-    isBannerVisible,
-    applyUpdate,
-    dismissBanner,
-  } = useOta();
+type Props = {
+  isDownloading: boolean;
+  isUpdateReady: boolean;
+  isBannerVisible: boolean;
+  onInstall: () => void;
+};
+
+export function OtaUpdateBanner({
+  isDownloading,
+  isUpdateReady,
+  isBannerVisible,
+  onInstall,
+}: Props) {
+  const uz = useCopy();
+  const insets = useSafeAreaInsets();
+
+  if (!isDownloading && (!isUpdateReady || !isBannerVisible)) {
+    return null;
+  }
+
+  const bottomPad = Math.max(insets.bottom, 10);
 
   if (isDownloading) {
     return (
-      <View style={styles.downloadingPill} pointerEvents="none">
-        <ActivityIndicator size="small" color="#ffffff" style={styles.spinner} />
-        <Text style={styles.downloadingText}>
-          Yangi talqin yuklanmoqda…
-        </Text>
+      <View style={[styles.dock, { paddingBottom: bottomPad }]}>
+        <View
+          style={styles.bar}
+          accessibilityRole="progressbar"
+          accessibilityLabel={uz.ota.downloading}
+        >
+          <View style={styles.iconCircle}>
+            <ActivityIndicator size="small" color={colors.textWhite} />
+          </View>
+          <View style={styles.textCol}>
+            <Text style={styles.title}>{uz.ota.downloading}</Text>
+            <Text style={styles.subtitle}>{uz.ota.downloadingHint}</Text>
+          </View>
+        </View>
       </View>
     );
   }
 
-  if (!isUpdateReady || !isBannerVisible) {
-    return null;
-  }
-
   return (
-    <View style={styles.wrapper} pointerEvents="box-none">
-      <View style={styles.card}>
-        <View style={styles.headerRow}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="sparkles" size={18} color="#D97706" />
-          </View>
-          <View style={styles.textContainer}>
-            <Text style={styles.title}>Yangi yangilanish tayyor!</Text>
-            <Text style={styles.description}>
-              Ilovadagi yangi imkoniyatlar va tuzatishlarni faollashtirish uchun ilovani qayta ishga tushiring.
-            </Text>
-          </View>
-          <Pressable
-            onPress={dismissBanner}
-            hitSlop={12}
-            style={styles.closeBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Yopish"
-          >
-            <Ionicons name="close" size={20} color={colors.slate400} />
-          </Pressable>
+    <View style={[styles.dock, { paddingBottom: bottomPad }]}>
+      <View style={styles.bar} accessibilityRole="alert">
+        <View style={styles.iconCircle}>
+          <Ionicons name="download-outline" size={22} color={colors.textWhite} />
         </View>
-
-        <View style={styles.actionRow}>
-          <Pressable
-            onPress={dismissBanner}
-            style={({ pressed }) => [
-              styles.dismissBtn,
-              pressed && styles.dismissBtnPressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Keyinroq"
-          >
-            <Text style={styles.dismissBtnText}>Keyinroq</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={applyUpdate}
-            style={({ pressed }) => [
-              styles.updateBtn,
-              pressed && styles.updateBtnPressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Hoziroq qayta yuklash"
-          >
-            <Ionicons name="refresh" size={16} color="#ffffff" style={styles.btnIcon} />
-            <Text style={styles.updateBtnText}>Qayta ishga tushirish</Text>
-          </Pressable>
+        <View style={styles.textCol}>
+          <Text style={styles.title}>{uz.ota.readyTitle}</Text>
+          <Text style={styles.subtitle}>{uz.ota.readyHint}</Text>
         </View>
+        <Pressable
+          onPress={onInstall}
+          style={({ pressed }) => [styles.installBtn, pressed && styles.installBtnPressed]}
+          accessibilityRole="button"
+          accessibilityLabel={uz.ota.install}
+        >
+          <Text style={styles.installText}>{uz.ota.install}</Text>
+        </Pressable>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 54 : 36,
-    left: 16,
-    right: 16,
-    zIndex: 9999,
+  dock: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    backgroundColor: 'transparent',
   },
-  card: {
-    backgroundColor: '#0F172A', // Deep Industrial Slate
-    borderRadius: radii.lg,
-    padding: 16,
-    borderWidth: 1.5,
-    borderColor: '#334155',
+  bar: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.xl,
+    paddingVertical: 14,
+    paddingLeft: 14,
+    paddingRight: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     ...shadows.floating,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
   iconCircle: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     borderRadius: radii.full,
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center',
-    marginRight: 12,
+    justifyContent: 'center',
   },
-  textContainer: {
+  textCol: {
     flex: 1,
-    paddingRight: 8,
+    minWidth: 0,
   },
   title: {
-    fontSize: 16,
+    color: colors.textWhite,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
     letterSpacing: -0.2,
   },
-  description: {
-    fontSize: 13,
-    color: '#94A3B8',
-    lineHeight: 18,
+  subtitle: {
+    color: 'rgba(255,255,255,0.88)',
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
   },
-  closeBtn: {
-    padding: 4,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    marginTop: 14,
-    gap: 10,
-  },
-  dismissBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: radii.md,
-  },
-  dismissBtnPressed: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  dismissBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#94A3B8',
-  },
-  updateBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1D4ED8', // Highway Cobalt
+  installBtn: {
+    backgroundColor: colors.surface,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: radii.md,
+    borderRadius: radii.full,
+    flexShrink: 0,
   },
-  updateBtnPressed: {
-    backgroundColor: '#1E40AF',
+  installBtnPressed: {
+    opacity: 0.88,
   },
-  btnIcon: {
-    marginRight: 6,
-  },
-  updateBtnText: {
+  installText: {
+    color: colors.primary,
     fontSize: 14,
     fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  downloadingPill: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 52 : 32,
-    alignSelf: 'center',
-    zIndex: 9999,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.92)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: '#334155',
-    ...shadows.subtle,
-  },
-  spinner: {
-    marginRight: 8,
-  },
-  downloadingText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#E2E8F0',
   },
 });

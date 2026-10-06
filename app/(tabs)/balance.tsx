@@ -1,434 +1,221 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Linking,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { carrierApi } from '../../src/api/client';
+import { carrierApi, tripsApi } from '../../src/api/client';
 import { EntryDto, EntryType, WalletDto } from '../../src/api/types';
 import {
   EmptyState,
   ErrorBanner,
   Money,
   Screen,
-  TAB_EDGES_WITH_HEADER,
+  ScreenTitle,
+  SectionTitle,
+  Skeleton,
+  TAB_EDGES_NO_HEADER,
 } from '../../src/components';
-import { uz } from '../../src/i18n/uz';
+import { useCopy } from '../../src/i18n';
 import { formatDateTime, formatMoney } from '../../src/utils/format';
-import { colors, radii, shadows } from '../../src/theme';
+import { colors, ink } from '../../src/theme';
 
 const ADMIN_PHONE = '+998900000001';
-const ADMIN_PHONE_DISPLAY = '+998 (90) 000-00-01';
+const ADMIN_PHONE_DISPLAY = '+998 90 000 00 01';
+
+const ENTRY_ICON: Record<EntryType, keyof typeof Ionicons.glyphMap> = {
+  TOPUP: 'arrow-down',
+  COMMISSION: 'arrow-up',
+  REFUND: 'refresh',
+  ADJUSTMENT: 'swap-horizontal',
+};
+
+function city(address: string): string {
+  return address.split(',')[0].trim();
+}
+
+function EntryRow({ entry, route, last }: { entry: EntryDto; route?: string; last: boolean }) {
+  const uz = useCopy();
+  const positive = entry.amount > 0;
+  const title = uz.wallet.types[entry.type] ?? entry.type;
+  const subtitle = entry.comment || route || formatDateTime(entry.createdAt);
+  return (
+    <View style={[styles.row, !last && styles.rowDivider]} accessibilityRole="text">
+      <View style={[styles.rowIcon, positive ? styles.rowIconIn : styles.rowIconOut]}>
+        <Ionicons name={ENTRY_ICON[entry.type] ?? 'swap-horizontal'} size={17} color={positive ? '#0F7A45' : colors.slate700} />
+      </View>
+      <View style={styles.rowMain}>
+        <Text style={styles.rowTitle}>{title}</Text>
+        <Text style={styles.rowSub} numberOfLines={1}>
+          {subtitle}
+        </Text>
+        {entry.comment || route ? <Text style={styles.rowDate}>{formatDateTime(entry.createdAt)}</Text> : null}
+      </View>
+      <Text style={[styles.rowAmount, positive && styles.rowAmountIn]}>
+        {positive ? '+' : '−'}
+        {formatMoney(Math.abs(entry.amount))}
+      </Text>
+    </View>
+  );
+}
 
 export default function BalanceTabScreen() {
+  const uz = useCopy();
   const [wallet, setWallet] = useState<WalletDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Hisob yozuvidagi reys kodi o'rniga yo'nalishni ko'rsatish uchun
+  const { data: trips } = useQuery({ queryKey: ['trips'], queryFn: () => tripsApi.getTrips() });
+  const routeByTrip = useMemo(() => {
+    const map = new Map<string, string>();
+    trips?.forEach((t) => map.set(t.id, `${city(t.pickupAddress)} → ${city(t.dropoffAddress)}`));
+    return map;
+  }, [trips]);
+
   const fetchWallet = useCallback(async () => {
     try {
       setError(null);
-      const data = await carrierApi.getWallet();
-      setWallet(data);
+      setWallet(await carrierApi.getWallet());
     } catch (err: unknown) {
       const apiErr = err as { message?: string };
-      setError(apiErr?.message || 'Balans ma’lumotlarini yuklashda xatolik yuz berdi.');
+      setError(apiErr?.message || uz.wallet.loadError);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [uz.wallet.loadError]);
 
   useEffect(() => {
     fetchWallet();
   }, [fetchWallet]);
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchWallet();
-  };
-
-  const handleCallAdmin = async () => {
-    const url = `tel:${ADMIN_PHONE}`;
-    try {
-      await Linking.openURL(url);
-    } catch {
-      // Fallback
-    }
-  };
-
-  const renderEntryTypeBadge = (type: EntryType) => {
-    switch (type) {
-      case 'TOPUP':
-        return {
-          label: uz.wallet.types.TOPUP,
-          color: colors.successDark,
-          bg: '#ECFDF5',
-          border: '#A7F3D0',
-          prefix: '+',
-          isPositive: true,
-          icon: 'arrow-down-circle' as const,
-        };
-      case 'COMMISSION':
-        return {
-          label: uz.wallet.types.COMMISSION,
-          color: colors.dangerDark,
-          bg: '#FEF2F2',
-          border: '#FECACA',
-          prefix: '-',
-          isPositive: false,
-          icon: 'arrow-up-circle' as const,
-        };
-      case 'REFUND':
-        return {
-          label: uz.wallet.types.REFUND,
-          color: colors.successDark,
-          bg: '#ECFDF5',
-          border: '#A7F3D0',
-          prefix: '+',
-          isPositive: true,
-          icon: 'refresh-circle' as const,
-        };
-      case 'ADJUSTMENT':
-      default:
-        return {
-          label: uz.wallet.types.ADJUSTMENT,
-          color: colors.primary,
-          bg: colors.primary50,
-          border: '#BFDBFE',
-          prefix: '',
-          isPositive: false,
-          icon: 'swap-horizontal' as const,
-        };
-    }
-  };
-
-  const renderEntryItem = ({ item }: { item: EntryDto }) => {
-    const config = renderEntryTypeBadge(item.type);
-    const isAmountPositive = item.amount > 0;
-    const formattedAmount = `${config.prefix ? (isAmountPositive ? '+' : '') : ''}${formatMoney(
-      Math.abs(item.amount)
-    )}`;
-
-    return (
-      <View style={styles.entryCard} accessibilityRole="text">
-        <View style={styles.entryLeft}>
-          <View style={[styles.entryBadge, { backgroundColor: config.bg, borderColor: config.border }]}>
-            <Ionicons name={config.icon} size={13} color={config.color} style={styles.entryBadgeIcon} />
-            <Text style={[styles.entryBadgeText, { color: config.color }]}>
-              {config.label}
-            </Text>
-          </View>
-
-          {item.comment ? (
-            <Text style={styles.entryComment} numberOfLines={2}>
-              {item.comment}
-            </Text>
-          ) : item.tripId ? (
-            <Text style={styles.entryComment}>
-              Reys: {item.tripId.slice(0, 8)}…
-            </Text>
-          ) : null}
-
-          <Text style={styles.entryDate}>{formatDateTime(item.createdAt)}</Text>
-        </View>
-
-        <View style={styles.entryRight}>
-          <Text
-            style={[
-              styles.entryAmount,
-              { color: item.amount >= 0 ? colors.successDark : colors.dangerDark },
-            ]}
-          >
-            {formattedAmount}
-          </Text>
-        </View>
-      </View>
-    );
-  };
-
-  const renderHeader = () => {
-    return (
-      <View style={styles.headerContainer}>
-        {/* Hero Balance Card */}
-        <View style={styles.heroCard}>
-          <View style={styles.heroTopRow}>
-            <Text style={styles.heroLabel}>{uz.wallet.currentBalance}</Text>
-            <View style={styles.statusPill}>
-              <View style={styles.activeDot} />
-              <Text style={styles.statusPillText}>Hamyon faol</Text>
-            </View>
-          </View>
-
-          <View style={styles.heroAmountRow}>
-            <Money
-              amount={wallet?.balance ?? 0}
-              size="xl"
-              color="#FFFFFF"
-              weight="800"
-            />
-          </View>
-
-          <View style={styles.heroDivider} />
-
-          <View style={styles.heroActionBox}>
-            <View style={styles.instructionWrap}>
-              <Ionicons name="information-circle-outline" size={16} color="#94A3B8" style={styles.infoIcon} />
-              <Text style={styles.heroInstructionText}>
-                {uz.wallet.topUpInstruction}
-              </Text>
-            </View>
-
-            <Pressable
-              onPress={handleCallAdmin}
-              style={({ pressed }) => [
-                styles.topUpButton,
-                pressed && styles.topUpButtonPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={uz.wallet.callAdmin}
-            >
-              <Ionicons name="call" size={16} color="#FFFFFF" style={styles.callIcon} />
-              <Text style={styles.topUpButtonText}>{ADMIN_PHONE_DISPLAY}</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Section title */}
-        <View style={styles.entriesSectionHeader}>
-          <Text style={styles.entriesTitle}>{uz.wallet.entriesTitle}</Text>
-          {wallet?.entries && wallet.entries.length > 0 ? (
-            <Text style={styles.entriesCount}>{wallet.entries.length} ta yozuv</Text>
-          ) : null}
-        </View>
-      </View>
-    );
-  };
-
-  if (loading && !wallet) {
-    return (
-      <Screen edges={TAB_EDGES_WITH_HEADER} style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>{uz.common.loading}</Text>
-      </Screen>
-    );
-  }
+  const entries = useMemo(() => wallet?.entries ?? [], [wallet]);
+  const spentThisMonth = useMemo(() => {
+    const now = new Date();
+    return entries
+      .filter((e) => e.type === 'COMMISSION')
+      .filter((e) => {
+        const d = new Date(e.createdAt);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      })
+      .reduce((sum, e) => sum + Math.abs(e.amount), 0);
+  }, [entries]);
 
   return (
-    <Screen edges={TAB_EDGES_WITH_HEADER} style={styles.screen}>
-      {error && !wallet ? (
-        <ErrorBanner message={error} onRetry={fetchWallet} />
-      ) : null}
-
-      <FlatList
-        data={wallet?.entries || []}
-        keyExtractor={(item) => item.id}
-        renderItem={renderEntryItem}
-        ListHeaderComponent={renderHeader}
-        contentContainerStyle={styles.listContent}
+    <Screen edges={TAB_EDGES_NO_HEADER} contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={onRefresh}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchWallet();
+            }}
+            tintColor={colors.slate500}
             colors={[colors.primary]}
-            tintColor={colors.primary}
           />
         }
-        ListEmptyComponent={
-          !loading ? (
-            <EmptyState
-              iconName="wallet-outline"
-              title={uz.wallet.emptyEntries}
-              description="Bajarilgan reyslar va to‘lovlar tarixi shu yerda qayd etiladi."
-            />
-          ) : null
-        }
-      />
+      >
+        <ScreenTitle title={uz.wallet.title} />
+        {error && !wallet ? <ErrorBanner message={error} onRetry={fetchWallet} /> : null}
+
+        <View style={styles.hero}>
+          <Text style={styles.heroLabel}>{uz.wallet.currentBalance}</Text>
+          {loading && !wallet ? (
+            <Skeleton width={200} height={38} radius={10} style={styles.heroSkeleton} />
+          ) : (
+            <Money amount={wallet?.balance ?? 0} size="xl" weight="800" color="#FFFFFF" style={styles.heroAmount} />
+          )}
+          <Text style={styles.heroSub}>Bu oy komissiyaga: {formatMoney(spentThisMonth)}</Text>
+
+          <View style={styles.heroDivider} />
+          <Text style={styles.heroHint}>{uz.wallet.topUpInstruction}</Text>
+          <Pressable
+            onPress={() => Linking.openURL(`tel:${ADMIN_PHONE}`).catch(() => undefined)}
+            style={({ pressed }) => [styles.topUp, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={uz.wallet.callAdmin}
+          >
+            <Ionicons name="call" size={17} color={ink[900]} />
+            <Text style={styles.topUpText}>To‘ldirish · {ADMIN_PHONE_DISPLAY}</Text>
+          </Pressable>
+        </View>
+
+        <SectionTitle
+          title={uz.wallet.entriesTitle}
+          right={entries.length > 0 ? <Text style={styles.count}>{entries.length} ta</Text> : undefined}
+        />
+        {loading && !wallet ? (
+          <View style={styles.listCard}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={[styles.row, i < 2 && styles.rowDivider]}>
+                <Skeleton width={38} height={38} radius={12} />
+                <View style={styles.rowMain}>
+                  <Skeleton width="50%" height={13} />
+                  <Skeleton width="70%" height={11} style={styles.skeletonGap} />
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : entries.length > 0 ? (
+          <View style={styles.listCard}>
+            {entries.map((e, i) => (
+              <EntryRow
+                key={e.id}
+                entry={e}
+                route={e.tripId ? routeByTrip.get(e.tripId) : undefined}
+                last={i === entries.length - 1}
+              />
+            ))}
+          </View>
+        ) : (
+          <EmptyState
+            iconName="wallet-outline"
+            title={uz.wallet.emptyEntries}
+            description="Bajarilgan reyslar va to‘lovlar tarixi shu yerda qayd etiladi."
+          />
+        )}
+      </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    paddingHorizontal: 0,
-    backgroundColor: colors.background,
-  },
-  centerContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
+  content: { paddingHorizontal: 0, paddingTop: 0 },
+  list: { paddingHorizontal: 16, paddingBottom: 28 },
+  pressed: { opacity: 0.85 },
+  hero: { backgroundColor: ink[900], borderRadius: 22, padding: 20 },
+  heroLabel: { fontSize: 14, fontWeight: '600', color: ink.muted },
+  heroAmount: { marginTop: 6, fontSize: 36, letterSpacing: -1 },
+  heroSkeleton: { marginTop: 8, opacity: 0.2 },
+  heroSub: { marginTop: 4, fontSize: 13.5, color: ink.muted },
+  heroDivider: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.15)', marginVertical: 16 },
+  heroHint: { fontSize: 13.5, lineHeight: 19, color: ink.muted },
+  topUp: {
     marginTop: 12,
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.slate600,
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  headerContainer: {
-    marginBottom: 8,
-  },
-  heroCard: {
-    backgroundColor: '#0F172A', // Deep Slate
-    borderRadius: radii.xl,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 1.5,
-    borderColor: '#334155',
-    ...shadows.floating,
-  },
-  heroTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  heroLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#94A3B8',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.full,
-  },
-  activeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.success,
-    marginRight: 5,
-  },
-  statusPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#34D399',
-  },
-  heroAmountRow: {
-    marginVertical: 4,
-  },
-  heroDivider: {
-    height: 1,
-    backgroundColor: '#1E293B',
-    marginVertical: 16,
-  },
-  heroActionBox: {
-    gap: 12,
-  },
-  instructionWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  infoIcon: {
-    marginRight: 6,
-  },
-  heroInstructionText: {
-    fontSize: 12.5,
-    color: '#94A3B8',
-    flex: 1,
-    lineHeight: 18,
-  },
-  topUpButton: {
-    backgroundColor: colors.primary,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: radii.md,
-  },
-  topUpButtonPressed: {
-    backgroundColor: colors.primaryDark,
-  },
-  callIcon: {
-    marginRight: 8,
-  },
-  topUpButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  entriesSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  entriesTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.slate900,
-  },
-  entriesCount: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.slate500,
-  },
-  entryCard: {
+    height: 50,
+    borderRadius: 14,
     backgroundColor: '#FFFFFF',
-    borderRadius: radii.lg,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: colors.slate200,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    ...shadows.card,
+    justifyContent: 'center',
+    gap: 8,
   },
-  entryLeft: {
-    flex: 1,
-    marginRight: 12,
-  },
-  entryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    alignSelf: 'flex-start',
-    marginBottom: 6,
-  },
-  entryBadgeIcon: {
-    marginRight: 4,
-  },
-  entryBadgeText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-  },
-  entryComment: {
-    fontSize: 13.5,
-    fontWeight: '600',
-    color: colors.slate800,
-    marginBottom: 4,
-  },
-  entryDate: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  entryRight: {
-    alignItems: 'flex-end',
-  },
-  entryAmount: {
-    fontSize: 16,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
-  },
+  topUpText: { fontSize: 15.5, fontWeight: '700', color: ink[900] },
+  count: { fontSize: 14, color: colors.textMuted },
+  listCard: { backgroundColor: colors.surface, borderRadius: 18, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12 },
+  rowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.slate200 },
+  rowIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  rowIconIn: { backgroundColor: '#E8F7EF' },
+  rowIconOut: { backgroundColor: colors.slate100 },
+  rowMain: { flex: 1, minWidth: 0 },
+  rowTitle: { fontSize: 15.5, fontWeight: '600', color: colors.slate900 },
+  rowSub: { marginTop: 2, fontSize: 13.5, color: colors.slate700 },
+  rowDate: { marginTop: 1, fontSize: 12.5, color: colors.textMuted },
+  rowAmount: { fontSize: 15.5, fontWeight: '700', color: colors.slate900, fontVariant: ['tabular-nums'] },
+  rowAmountIn: { color: '#0F7A45' },
+  skeletonGap: { marginTop: 6 },
 });

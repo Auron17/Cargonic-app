@@ -1,225 +1,201 @@
 import React from 'react';
-import {
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { loadsApi } from '../../src/api/client';
 import { FeedItem } from '../../src/api/types';
 import {
+  Card,
   EmptyState,
   ErrorBanner,
   Money,
+  Pill,
+  PrimaryButton,
+  RouteLine,
   Screen,
-  TAB_EDGES_WITH_HEADER,
+  ScreenTitle,
+  SkeletonList,
+  TAB_EDGES_NO_HEADER,
 } from '../../src/components';
-import { formatDate } from '../../src/utils/format';
-import { uz } from '../../src/i18n/uz';
-import { colors, radii, shadows } from '../../src/theme';
+import { formatMoney, formatPickupWindow } from '../../src/utils/format';
+import { useCopy } from '../../src/i18n';
+import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
+import { colors } from '../../src/theme';
 
-export default function LoadsFeedScreen() {
-  const router = useRouter();
-
-  const {
-    data: feedItems,
-    isLoading,
-    isRefetching,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ['feed'],
-    queryFn: loadsApi.getFeed,
-    refetchInterval: 60000, // Auto refresh every 60 seconds
-  });
-
-  const handleOpenLoad = (loadId: string) => {
-    router.push({
-      pathname: '/loads/[id]',
-      params: { id: loadId },
-    });
-  };
-
-  const renderFeedCard = ({ item }: { item: FeedItem }) => {
-    const isFixed = item.priceMode === 'FIXED';
-    const bodyTypeName = uz.bodyType[item.requiredBodyType] || item.requiredBodyType;
-    const distanceToPickup = Math.round(item.distanceKm);
-    const routeDistance = Math.round(item.routeKm);
-
-    return (
-      <Pressable
-        onPress={() => handleOpenLoad(item.loadId)}
-        style={({ pressed }) => [
-          styles.card,
-          pressed && styles.cardPressed,
-        ]}
-        accessibilityRole="button"
-        accessibilityLabel={`${item.pickupAddress} dan ${item.dropoffAddress} gacha yuk, ${item.weightTons} tonna`}
-      >
-        {/* Top Header: Proximity Badge & Company Name */}
-        <View style={styles.cardHeader}>
-          <View style={styles.proximityBadge}>
-            <Ionicons name="location-sharp" size={13} color={colors.successDark} style={styles.badgeIcon} />
-            <Text style={styles.proximityText}>
-              {distanceToPickup} km yaqinlikda
-            </Text>
-          </View>
-
-          {item.companyName ? (
-            <View style={styles.companyWrap}>
-              <Ionicons name="business-outline" size={13} color={colors.slate500} style={styles.badgeIcon} />
-              <Text style={styles.companyName} numberOfLines={1}>
-                {item.companyName}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-
-        {/* Route Visualizer: Origin to Destination */}
-        <View style={styles.routeSection}>
-          {/* Pickup */}
-          <View style={styles.routeRow}>
-            <View style={styles.nodeOriginWrap}>
-              <View style={styles.nodeOrigin} />
-            </View>
-            <View style={styles.addressBlock}>
-              <Text style={styles.addressCity} numberOfLines={1}>
-                {item.pickupAddress}
-              </Text>
-              <View style={styles.dateRow}>
-                <Ionicons name="calendar-outline" size={13} color={colors.textMuted} />
-                <Text style={styles.dateSubtext}>
-                  {formatDate(item.pickupDate)}
-                  {item.pickupTimeFrom && item.pickupTimeTo ? ` (${item.pickupTimeFrom}–${item.pickupTimeTo})` : ''}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Connecting Track with Distance Badge */}
-          <View style={styles.connectorRow}>
-            <View style={styles.connectorLine} />
-            <View style={styles.routeDistancePill}>
-              <Ionicons name="git-commit-outline" size={12} color={colors.slate500} style={styles.pillIcon} />
-              <Text style={styles.routeDistanceText}>{routeDistance} km yo‘nalish</Text>
-            </View>
-          </View>
-
-          {/* Dropoff */}
-          <View style={styles.routeRow}>
-            <View style={styles.nodeDestWrap}>
-              <View style={styles.nodeDest} />
-            </View>
-            <View style={styles.addressBlock}>
-              <Text style={styles.addressCity} numberOfLines={1}>
-                {item.dropoffAddress}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Specifications Chips */}
-        <View style={styles.chipsRow}>
-          <View style={styles.chip}>
-            <Ionicons name="cube-outline" size={13} color={colors.slate700} style={styles.chipIcon} />
-            <Text style={styles.chipText}>
-              {item.cargoType} • {item.weightTons} {uz.common.tons}
-              {item.volumeM3 ? ` • ${item.volumeM3} ${uz.common.m3}` : ''}
-            </Text>
-          </View>
-
-          <View style={styles.chip}>
-            <Ionicons name="car-outline" size={13} color={colors.slate700} style={styles.chipIcon} />
-            <Text style={styles.chipText}>{bodyTypeName}</Text>
-          </View>
-
-          {item.insuranceRequired ? (
-            <View style={[styles.chip, styles.insuranceChip]}>
-              <Ionicons name="shield-checkmark" size={13} color={colors.primary} style={styles.chipIcon} />
-              <Text style={styles.insuranceChipText}>{uz.loadsTab.insuranceBadge}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        {/* Driver's Bid Banner if placed */}
-        {item.myBidPrice != null ? (
-          <View style={styles.myBidBanner}>
-            <Ionicons name="pricetag" size={14} color={colors.accentDark} style={styles.myBidIcon} />
-            <Text style={styles.myBidBannerText}>
-              Sizning taklifingiz: {item.myBidPrice.toLocaleString()} {uz.common.moneySuffix}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* Card Footer: Price & Action CTA */}
-        <View style={styles.cardFooter}>
-          <View style={styles.priceContainer}>
-            <Text style={styles.priceTypeLabel}>
-              {isFixed ? uz.priceMode.FIXED : uz.priceMode.BIDDING}
-            </Text>
-            {isFixed && item.price != null ? (
-              <Money amount={item.price} size="lg" color={colors.primary} weight="800" />
-            ) : (
-              <Text style={styles.biddingAwaitingText}>
-                Taklif kiritiladi
-              </Text>
-            )}
-          </View>
-
-          <View style={styles.detailsHint}>
-            <Text style={styles.detailsHintText}>{uz.common.details}</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-          </View>
-        </View>
-      </Pressable>
-    );
-  };
+function FeedCard({
+  item,
+  onOpen,
+  onAction,
+}: {
+  item: FeedItem;
+  onOpen: () => void;
+  onAction: () => void;
+}) {
+  const uz = useCopy();
+  const isFixed = item.priceMode === 'FIXED';
+  const bodyTypeName = uz.bodyType[item.requiredBodyType] || item.requiredBodyType;
+  const specs = [
+    item.cargoType,
+    `${item.weightTons} ${uz.common.tons}`,
+    item.volumeM3 ? `${item.volumeM3} ${uz.common.m3}` : null,
+    bodyTypeName,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const a11y = `${item.pickupAddress} dan ${item.dropoffAddress} gacha, ${specs}`;
+  const ctaTitle = isFixed ? uz.loadDetails.bookButton : uz.loadsTab.bidCta;
 
   return (
-    <Screen edges={TAB_EDGES_WITH_HEADER} style={styles.screen}>
-      <View style={styles.liveIndicator} accessibilityRole="text">
-        <View style={styles.liveDot} />
-        <Text style={styles.screenSubtitle}>{uz.loadsTab.autoRefreshInfo}</Text>
-      </View>
+    <Card>
+      <Pressable
+        onPress={onOpen}
+        accessibilityRole="button"
+        accessibilityLabel={a11y}
+        style={({ pressed }) => pressed && styles.pressed}
+      >
+        <View style={styles.topRow}>
+          {isFixed && item.price != null ? (
+            <Money amount={item.price} size="xl" weight="800" />
+          ) : (
+            <View>
+              <Text style={styles.biddingTitle}>{uz.priceMode.BIDDING}</Text>
+              <Text style={styles.biddingHint}>{uz.loadsTab.bidYourPrice}</Text>
+            </View>
+          )}
+          <View style={styles.nearBox}>
+            <Ionicons name="navigate" size={12} color={colors.textMuted} />
+            <Text style={styles.nearText}>{Math.round(item.distanceKm)} km</Text>
+          </View>
+        </View>
 
+        <View style={styles.route}>
+          <RouteLine
+            from={item.pickupAddress}
+            to={item.dropoffAddress}
+            fromHint={formatPickupWindow(item.pickupDate, item.pickupTimeFrom, item.pickupTimeTo)}
+            toHint={uz.loadsTab.routeKmRoad.replace('{{km}}', String(Math.round(item.routeKm)))}
+          />
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.specs} numberOfLines={1}>
+            {specs}
+          </Text>
+          {item.insuranceRequired ? (
+            <Ionicons name="shield-checkmark" size={16} color={colors.primary} accessibilityLabel={uz.loadsTab.insuranceBadge} />
+          ) : null}
+        </View>
+
+        {item.myBidPrice != null || item.companyName ? (
+          <View style={styles.metaRow}>
+            {item.companyName ? (
+              <Text style={styles.company} numberOfLines={1}>
+                {item.companyName}
+              </Text>
+            ) : (
+              <View />
+            )}
+            {item.myBidPrice != null ? (
+              <Pill tone="accent" label={uz.loadsTab.myBidAmount.replace('{{amount}}', formatMoney(item.myBidPrice))} />
+            ) : null}
+          </View>
+        ) : null}
+      </Pressable>
+
+      <PrimaryButton
+        title={ctaTitle}
+        variant={isFixed ? 'primary' : 'accent'}
+        onPress={onAction}
+        size="md"
+        style={styles.cta}
+        accessibilityLabel={ctaTitle}
+      />
+    </Card>
+  );
+}
+
+export default function LoadsFeedScreen() {
+  const uz = useCopy();
+  const router = useRouter();
+
+  const { data: feedItems, isLoading, error, refetch } = useQuery({
+    queryKey: ['feed'],
+    queryFn: loadsApi.getFeed,
+    refetchInterval: 60000,
+  });
+  const pull = usePullToRefresh(refetch);
+
+  const count = feedItems?.length ?? 0;
+  const subtitle = isLoading
+    ? uz.loadsTab.searching
+    : count > 0
+      ? uz.loadsTab.nearbyCount.replace('{{count}}', String(count))
+      : uz.loadsTab.autoRefreshInfo;
+
+  const header = (
+    <>
+      <ScreenTitle
+        title={uz.loadsTab.title}
+        subtitle={subtitle}
+        right={
+          <Pressable
+            onPress={() => router.push('/bids')}
+            hitSlop={8}
+            style={({ pressed }) => [styles.bidsButton, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={uz.loadsTab.myBids}
+          >
+            <Ionicons name="pricetags-outline" size={16} color={colors.slate900} />
+            <Text style={styles.bidsButtonText}>{uz.loadsTab.myBids}</Text>
+          </Pressable>
+        }
+      />
       {error ? (
-        <ErrorBanner
-          message={error instanceof Error ? error.message : uz.common.networkError}
-          onRetry={refetch}
-        />
+        <ErrorBanner message={error instanceof Error ? error.message : uz.common.networkError} onRetry={refetch} />
       ) : null}
+      {isLoading ? <SkeletonList count={3} /> : null}
+    </>
+  );
 
+  return (
+    <Screen edges={TAB_EDGES_NO_HEADER} style={styles.screen} contentContainerStyle={styles.content}>
       <FlatList
-        data={feedItems || []}
+        data={feedItems ?? []}
         keyExtractor={(item) => item.loadId}
-        renderItem={renderFeedCard}
-        contentContainerStyle={[
-          styles.listContent,
-          (!feedItems || feedItems.length === 0) && styles.emptyListContent,
-        ]}
+        renderItem={({ item }) => (
+          <FeedCard
+            item={item}
+            onOpen={() => router.push({ pathname: '/loads/[id]', params: { id: item.loadId } })}
+            onAction={() =>
+              router.push({
+                pathname: '/loads/[id]',
+                params: {
+                  id: item.loadId,
+                  action: item.priceMode === 'FIXED' ? 'book' : 'bid',
+                },
+              })
+            }
+          />
+        )}
+        ListHeaderComponent={header}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={isRefetching || (isLoading && !feedItems)}
-            onRefresh={refetch}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
+          <RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={colors.slate500} colors={[colors.primary]} />
         }
         ListEmptyComponent={
-          !isLoading ? (
-            <EmptyState
-              iconName="cube-outline"
-              title={uz.loadsTab.emptyTitle}
-              description={uz.loadsTab.emptyDesc}
-              actionTitle="Yangilash"
-              onAction={refetch}
-            />
+          !isLoading && !error ? (
+            <View style={styles.empty}>
+              <EmptyState
+                iconName="cube-outline"
+                title={uz.loadsTab.emptyTitle}
+                description={uz.loadsTab.emptyDesc}
+                actionTitle="Yangilash"
+                onAction={refetch}
+              />
+            </View>
           ) : null
         }
       />
@@ -228,249 +204,47 @@ export default function LoadsFeedScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    paddingHorizontal: 16,
-    paddingTop: 6,
-  },
-  liveIndicator: {
+  screen: { backgroundColor: colors.background },
+  content: { paddingHorizontal: 0, paddingTop: 0 },
+  list: { paddingHorizontal: 16, paddingBottom: 24 },
+  separator: { height: 12 },
+  empty: { paddingTop: 48 },
+  bidsButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.success,
-    marginRight: 6,
-  },
-  screenSubtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.textMuted,
-  },
-  listContent: {
-    paddingBottom: 28,
-    gap: 14,
-  },
-  emptyListContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: radii.lg,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.slate200,
-    ...shadows.card,
-  },
-  cardPressed: {
-    borderColor: colors.primary,
-    transform: [{ scale: 0.995 }],
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  proximityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ECFDF5',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    borderRadius: radii.full,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  badgeIcon: {
-    marginRight: 4,
-  },
-  proximityText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: colors.successDark,
-  },
-  companyWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    maxWidth: '55%',
-  },
-  companyName: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: colors.slate600,
-  },
-  routeSection: {
-    marginBottom: 14,
-  },
-  routeRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  nodeOriginWrap: {
-    width: 20,
-    alignItems: 'center',
-    paddingTop: 3,
-  },
-  nodeOrigin: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.successDark,
-    borderWidth: 2,
-    borderColor: '#A7F3D0',
-  },
-  nodeDestWrap: {
-    width: 20,
-    alignItems: 'center',
-    paddingTop: 3,
-  },
-  nodeDest: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.dangerDark,
-    borderWidth: 2,
-    borderColor: '#FECACA',
-  },
-  connectorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 2,
-  },
-  connectorLine: {
-    width: 2,
-    height: 20,
-    backgroundColor: colors.slate300,
-    marginLeft: 9,
-    marginRight: 10,
-  },
-  routeDistancePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.slate100,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radii.sm,
-  },
-  pillIcon: {
-    marginRight: 4,
-  },
-  routeDistanceText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.slate600,
-  },
-  addressBlock: {
-    flex: 1,
-    marginLeft: 8,
-  },
-  addressCity: {
-    fontSize: 15.5,
-    fontWeight: '700',
-    color: colors.slate900,
-    lineHeight: 20,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-    gap: 4,
-  },
-  dateSubtext: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.textMuted,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 6,
-    marginBottom: 12,
+    paddingHorizontal: 12,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
   },
-  chip: {
+  bidsButtonText: { fontSize: 14, fontWeight: '600', color: colors.slate900 },
+  pressed: { opacity: 0.7 },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  biddingTitle: { fontSize: 20, fontWeight: '800', color: colors.accentDark, letterSpacing: -0.4 },
+  biddingHint: { marginTop: 2, fontSize: 13, color: colors.textMuted },
+  nearBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.slate100,
-    borderRadius: radii.sm,
+    gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 4.5,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: colors.slate100,
   },
-  chipIcon: {
-    marginRight: 4,
-  },
-  chipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.slate700,
-  },
-  insuranceChip: {
-    backgroundColor: colors.primary50,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  insuranceChipText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  myBidBanner: {
+  nearText: { fontSize: 12.5, fontWeight: '600', color: colors.slate700 },
+  route: { marginTop: 16 },
+  footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    borderRadius: radii.md,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    marginBottom: 12,
-  },
-  myBidIcon: {
-    marginRight: 6,
-  },
-  myBidBannerText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#92400E',
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: colors.slate100,
+    gap: 8,
+    marginTop: 14,
     paddingTop: 12,
-    marginTop: 2,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.slate200,
   },
-  priceContainer: {
-    flex: 1,
-  },
-  priceTypeLabel: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: colors.slate500,
-    marginBottom: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  biddingAwaitingText: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: colors.accentDark,
-  },
-  detailsHint: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 44,
-    paddingLeft: 8,
-  },
-  detailsHintText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '700',
-    marginRight: 2,
-  },
+  specs: { flex: 1, fontSize: 14, color: colors.slate700, fontWeight: '500' },
+  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 8 },
+  company: { flex: 1, fontSize: 13, color: colors.textMuted },
+  cta: { marginTop: 14 },
 });

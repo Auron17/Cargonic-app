@@ -18,7 +18,8 @@ import {
   Screen,
   StatusBadge,
 } from '../../src/components';
-import { uz } from '../../src/i18n/uz';
+import { useCopy } from '../../src/i18n';
+import { colors } from '../../src/theme';
 
 interface DocConfig {
   docType: DocType;
@@ -27,54 +28,19 @@ interface DocConfig {
   required: boolean;
 }
 
-const DOCUMENT_CONFIGS: DocConfig[] = [
-  {
-    docType: 'PASSPORT',
-    title: uz.docTypes.PASSPORT,
-    hint: 'Pasport yoki ID-karta (asosiy ma’lumotlar sahifasi)',
-    required: true,
-  },
-  {
-    docType: 'DRIVER_LICENSE',
-    title: uz.docTypes.DRIVER_LICENSE,
-    hint: 'Tegishli toifadagi haydovchilik guvohnomasi',
-    required: true,
-  },
-  {
-    docType: 'DRIVER_PHOTO',
-    title: uz.docTypes.DRIVER_PHOTO,
-    hint: 'Haydovchining yuzi aniq ko‘ringan selfi rasmi',
-    required: true,
-  },
-  {
-    docType: 'TECH_PASSPORT',
-    title: uz.docTypes.TECH_PASSPORT,
-    hint: 'Yuk mashinasi qayd etish guvohnomasi (texpasport)',
-    required: true,
-  },
-  {
-    docType: 'LICENSE_CARD',
-    title: uz.docTypes.LICENSE_CARD,
-    hint: 'Mashinaga biriktirilgan litsenziya kartochkasi',
-    required: true,
-  },
-  {
-    docType: 'VEHICLE_PHOTO',
-    title: uz.docTypes.VEHICLE_PHOTO,
-    hint: 'Davlat raqami aniq ko‘ringan mashina rasmi',
-    required: true,
-  },
-  {
-    docType: 'INSURANCE',
-    title: uz.docTypes.INSURANCE,
-    hint: 'Sug‘urta polisi (ixtiyoriy, qo‘shimcha buyurtmalar uchun)',
-    required: false,
-  },
-];
-
 export default function OnboardingDocumentsScreen() {
+  const uz = useCopy();
   const router = useRouter();
   const { profile, refreshProfile } = useAuth();
+  const DOCUMENT_CONFIGS: DocConfig[] = [
+    { docType: 'PASSPORT', title: uz.docTypes.PASSPORT, hint: uz.docHint.PASSPORT, required: true },
+    { docType: 'DRIVER_LICENSE', title: uz.docTypes.DRIVER_LICENSE, hint: uz.docHint.DRIVER_LICENSE, required: true },
+    { docType: 'DRIVER_PHOTO', title: uz.docTypes.DRIVER_PHOTO, hint: uz.docHint.DRIVER_PHOTO, required: true },
+    { docType: 'TECH_PASSPORT', title: uz.docTypes.TECH_PASSPORT, hint: uz.docHint.TECH_PASSPORT, required: true },
+    { docType: 'LICENSE_CARD', title: uz.docTypes.LICENSE_CARD, hint: uz.docHint.LICENSE_CARD, required: true },
+    { docType: 'VEHICLE_PHOTO', title: uz.docTypes.VEHICLE_PHOTO, hint: uz.docHint.VEHICLE_PHOTO, required: true },
+    { docType: 'INSURANCE', title: uz.docTypes.INSURANCE, hint: uz.docHint.INSURANCE, required: false },
+  ];
 
   const [documents, setDocuments] = useState<DocumentDto[]>(profile?.documents || []);
   const [loading, setLoading] = useState(false);
@@ -140,7 +106,7 @@ export default function OnboardingDocumentsScreen() {
     } catch (err: unknown) {
       const apiErr = err as { message?: string };
       setServerError(
-        apiErr?.message || 'Hujjatni tizimga biriktirishda xatolik yuz berdi.'
+        apiErr?.message || uz.onboarding.docAttachError
       );
     } finally {
       setSavingDocType(null);
@@ -150,7 +116,7 @@ export default function OnboardingDocumentsScreen() {
   const handleFinish = async () => {
     if (!allRequiredUploaded) {
       Alert.alert(
-        'Hujjatlar to‘liq emas',
+        uz.onboarding.docsIncompleteTitle,
         uz.onboarding.missingRequiredDocs
       );
       return;
@@ -191,26 +157,27 @@ export default function OnboardingDocumentsScreen() {
           hitSlop={12}
           style={styles.backButton}
           accessibilityRole="button"
-          accessibilityLabel="Ortga qaytish"
+          accessibilityLabel={uz.common.back}
         >
-          <Text style={styles.backButtonText}>← Ortga</Text>
+          <Text style={styles.backButtonText}>← {uz.common.back}</Text>
         </Pressable>
       </View>
 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.stepBadge}>
-          <Text style={styles.stepBadgeText}>3 / 3-qadam</Text>
+          <Text style={styles.stepBadgeText}>
+            {uz.onboarding.stepOf.replace('{{current}}', '3').replace('{{total}}', '3')}
+          </Text>
         </View>
         <Text style={styles.title}>{uz.onboarding.documentsTitle}</Text>
         <Text style={styles.lead}>{uz.onboarding.documentsLead}</Text>
 
         <View style={styles.progressCounter}>
-          <Text style={styles.counterText}>
-            Majburiy hujjatlar:{' '}
-            <Text style={allRequiredUploaded ? styles.counterDone : styles.counterPending}>
-              {uploadedRequiredCount} / {requiredConfigs.length} ta
-            </Text>
+          <Text style={[styles.counterText, allRequiredUploaded ? styles.counterDone : styles.counterPending]}>
+            {uz.onboarding.requiredDocsCount
+              .replace('{{uploaded}}', String(uploadedRequiredCount))
+              .replace('{{total}}', String(requiredConfigs.length))}
           </Text>
         </View>
       </View>
@@ -219,7 +186,7 @@ export default function OnboardingDocumentsScreen() {
 
       {loading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator color="#1a56db" size="large" />
+          <ActivityIndicator color={colors.primary} size="large" />
           <Text style={styles.loadingText}>{uz.common.loading}</Text>
         </View>
       ) : null}
@@ -260,7 +227,7 @@ export default function OnboardingDocumentsScreen() {
 
             {isSavingThis ? (
               <View style={styles.savingBox}>
-                <ActivityIndicator color="#1a56db" size="small" />
+                <ActivityIndicator color={colors.primary} size="small" />
                 <Text style={styles.savingText}>Hujjat saqlanmoqda…</Text>
               </View>
             ) : null}
@@ -288,7 +255,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: '#1a56db',
+    color: colors.primary,
     fontWeight: '700',
   },
   header: {
@@ -303,7 +270,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   stepBadgeText: {
-    color: '#1a56db',
+    color: colors.primary,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -419,7 +386,7 @@ const styles = StyleSheet.create({
   },
   savingText: {
     fontSize: 13,
-    color: '#1a56db',
+    color: colors.primary,
     fontWeight: '600',
   },
 });

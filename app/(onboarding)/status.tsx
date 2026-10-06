@@ -4,10 +4,11 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { PrimaryButton, Screen, StatusBadge } from '../../src/components';
-import { uz } from '../../src/i18n/uz';
+import { useCopy } from '../../src/i18n';
 import { colors, radii, shadows } from '../../src/theme';
 
 export default function OnboardingStatusScreen() {
+  const uz = useCopy();
   const { profile, refreshProfile, logout } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
@@ -67,19 +68,28 @@ export default function OnboardingStatusScreen() {
             />
           ) : (
             <>
+              {rejectedDocs.length > 0 ? (
+                <PrimaryButton
+                  title={uz.onboarding.fixDocuments}
+                  onPress={() => router.push('/(onboarding)/documents')}
+                  icon={<Ionicons name="construct-outline" size={16} color="#FFFFFF" />}
+                  accessibilityLabel={uz.onboarding.fixDocuments}
+                />
+              ) : null}
               <PrimaryButton
                 title={uz.onboarding.refreshStatus}
                 onPress={handleRefresh}
                 loading={refreshing}
-                icon={<Ionicons name="refresh" size={16} color="#FFFFFF" />}
+                variant={rejectedDocs.length > 0 ? 'outline' : 'primary'}
+                icon={<Ionicons name="refresh" size={16} color={rejectedDocs.length > 0 ? colors.primary : '#FFFFFF'} />}
                 accessibilityLabel={uz.onboarding.refreshStatus}
               />
               <PrimaryButton
-                title="Hujjatlarni ko‘rish"
+                title={uz.onboarding.viewDocuments}
                 onPress={() => router.push('/(onboarding)/documents')}
                 variant="outline"
                 icon={<Ionicons name="document-text-outline" size={16} color={colors.primary} />}
-                accessibilityLabel="Hujjatlarni ko‘rish"
+                accessibilityLabel={uz.onboarding.viewDocuments}
               />
             </>
           )}
@@ -109,16 +119,15 @@ export default function OnboardingStatusScreen() {
             <Text style={styles.title}>{uz.onboarding.rejectedTitle}</Text>
 
             <View style={styles.reasonCard}>
-              <Text style={styles.reasonLabel}>Sabab:</Text>
+              <Text style={styles.reasonLabel}>{uz.onboarding.reasonLabel}</Text>
               <Text style={styles.reasonText}>
-                {profile?.rejectReason ||
-                  'Hujjatlaringizda kamchiliklar aniqlandi. Iltimos, belgilangan hujjatlarni qayta yuklang.'}
+                {profile?.rejectReason || uz.onboarding.rejectedHint}
               </Text>
             </View>
 
             {rejectedDocs.length > 0 ? (
               <View style={styles.rejectedDocsList}>
-                <Text style={styles.rejectedDocsTitle}>Rad etilgan hujjatlar:</Text>
+                <Text style={styles.rejectedDocsTitle}>{uz.onboarding.rejectedDocsTitle}</Text>
                 {rejectedDocs.map((doc) => (
                   <View key={doc.id} style={styles.rejectedDocItem}>
                     <Text style={styles.rejectedDocName}>
@@ -134,9 +143,7 @@ export default function OnboardingStatusScreen() {
               </View>
             ) : null}
 
-            <Text style={styles.pullHint}>
-              Hujjatlarni tuzatgach, pastga tortib holatni yangilang.
-            </Text>
+            <Text style={styles.pullHint}>{uz.onboarding.pullHint}</Text>
           </>
         ) : isApproved ? (
           <>
@@ -145,10 +152,7 @@ export default function OnboardingStatusScreen() {
             </View>
             <StatusBadge kind="verification" status="APPROVED" style={styles.badge} />
             <Text style={styles.title}>{uz.onboarding.approvedTitle}</Text>
-            <Text style={styles.lead}>
-              Tabriklaymiz! Sizning tashuvchi profilingiz muvaffaqiyatli tasdiqlandi.
-              Endi ochiq yuklarni ko‘rishingiz va band qilishingiz mumkin.
-            </Text>
+            <Text style={styles.lead}>{uz.onboarding.approvedLead}</Text>
           </>
         ) : (
           <>
@@ -163,19 +167,39 @@ export default function OnboardingStatusScreen() {
               {uz.onboarding.pendingVerificationLead}
             </Text>
 
+            {rejectedDocs.length > 0 ? (
+              <View style={[styles.rejectedDocsList, { borderColor: colors.danger, backgroundColor: '#fef2f2', marginBottom: 16 }]}>
+                <Text style={[styles.rejectedDocsTitle, { color: colors.danger }]}>
+                  ⚠️ {uz.onboarding.rejectedDocsAlert.replace('{{count}}', String(rejectedDocs.length))}
+                </Text>
+                {rejectedDocs.map((doc) => (
+                  <View key={doc.id} style={styles.rejectedDocItem}>
+                    <Text style={[styles.rejectedDocName, { color: colors.slate900 }]}>
+                      • {uz.docTypes[doc.docType] || doc.docType}
+                    </Text>
+                    {doc.rejectReason ? (
+                      <Text style={[styles.rejectedDocSubReason, { color: colors.danger }]}>
+                        — {doc.rejectReason}
+                      </Text>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
             <View style={styles.infoCard}>
-              <Text style={styles.infoTitle}>Tekshiruv bosqichlari:</Text>
+              <Text style={styles.infoTitle}>{uz.onboarding.reviewStepsTitle}</Text>
               <View style={styles.stepItem}>
                 <Ionicons name="checkmark-done" size={16} color={colors.primary} style={styles.stepIcon} />
-                <Text style={styles.infoItem}>1. Yuridik shaxs / YaTT rekvizitlari</Text>
+                <Text style={styles.infoItem}>{uz.onboarding.reviewStep1}</Text>
               </View>
               <View style={styles.stepItem}>
                 <Ionicons name="checkmark-done" size={16} color={colors.primary} style={styles.stepIcon} />
-                <Text style={styles.infoItem}>2. Yuk mashinasi va litsenziya kartochkasi</Text>
+                <Text style={styles.infoItem}>{uz.onboarding.reviewStep2}</Text>
               </View>
               <View style={styles.stepItem}>
                 <Ionicons name="checkmark-done" size={16} color={colors.primary} style={styles.stepIcon} />
-                <Text style={styles.infoItem}>3. Haydovchilik guvohnomasi va pasport</Text>
+                <Text style={styles.infoItem}>{uz.onboarding.reviewStep3}</Text>
               </View>
             </View>
 

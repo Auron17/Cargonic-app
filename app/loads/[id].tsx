@@ -1,39 +1,42 @@
-import React, { useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { bidsApi, carrierApi, loadsApi } from '../../src/api/client';
 import { MyBid } from '../../src/api/types';
 import {
+  BottomSheet,
+  Card,
+  DETAIL_EDGES,
   ErrorBanner,
+  HeaderBackButton,
   Money,
+  Pill,
   PrimaryButton,
-  SAFE_EDGES_WITH_HEADER,
+  RouteLine,
   Screen,
-  StatusBadge,
+  SectionTitle,
+  SkeletonCard,
   SuccessBanner,
+  SummaryRow,
   TextField,
+  pillToneForStatus,
+  statusBadgeLabel,
 } from '../../src/components';
 import { Ionicons } from '@expo/vector-icons';
-import { formatDate, formatMoney } from '../../src/utils/format';
-import { uz } from '../../src/i18n/uz';
+import { formatMoney, formatPickupWindow } from '../../src/utils/format';
+import { useCopy } from '../../src/i18n';
 import { colors } from '../../src/theme';
 
 export default function LoadDetailsScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const uz = useCopy();
+  const { id, action } = useLocalSearchParams<{ id: string; action?: string | string[] }>();
   const router = useRouter();
   const queryClient = useQueryClient();
 
   const loadId = Array.isArray(id) ? id[0] : id;
+  const actionParam = Array.isArray(action) ? action[0] : action;
+  const consumedActionRef = useRef<string | null>(null);
 
   // Local state for modals & forms
   const [showConfirmBookModal, setShowConfirmBookModal] = useState(false);
@@ -57,7 +60,7 @@ export default function LoadDetailsScreen() {
   });
 
   // 2. Fetch carrier's bids to check if already placed a bid on this load
-  const { data: myBids } = useQuery({
+  const { data: myBids, isFetched: bidsFetched } = useQuery({
     queryKey: ['myBids'],
     queryFn: carrierApi.getMyBids,
   });
@@ -185,6 +188,36 @@ export default function LoadDetailsScreen() {
     setShowBidModal(true);
   };
 
+  useEffect(() => {
+    if (!load || load.status !== 'OPEN' || !actionParam) return;
+    if (actionParam === 'bid' && !bidsFetched) return;
+    if (consumedActionRef.current === `${loadId}:${actionParam}`) return;
+
+    // iOS sahifa o'tish animatsiyasi paytida Modal ochilmaydi — animatsiya tugashini kutamiz
+    const timer = setTimeout(() => {
+      consumedActionRef.current = `${loadId}:${actionParam}`;
+
+      if (actionParam === 'book' && load.priceMode === 'FIXED') {
+        setShowConfirmBookModal(true);
+      } else if (actionParam === 'bid' && load.priceMode === 'BIDDING') {
+        if (existingBid) {
+          setIsEditingBid(true);
+          setBidPriceInput(String(existingBid.price));
+          setBidCommentInput(existingBid.comment || '');
+          setErrorMessage(null);
+          setShowBidModal(true);
+        } else {
+          setIsEditingBid(false);
+          setBidPriceInput('');
+          setBidCommentInput('');
+          setErrorMessage(null);
+          setShowBidModal(true);
+        }
+      }
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [load, loadId, actionParam, existingBid, bidsFetched]);
+
   const handleSubmitBidForm = () => {
     const numericPrice = Number(bidPriceInput.replace(/\D/g, ''));
     if (!numericPrice || numericPrice <= 0) {
@@ -226,16 +259,17 @@ export default function LoadDetailsScreen() {
 
   if (isLoadingLoad) {
     return (
-      <Screen edges={SAFE_EDGES_WITH_HEADER} style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1a56db" />
-        <Text style={styles.loadingText}>{uz.common.loading}</Text>
+      <Screen edges={DETAIL_EDGES} contentContainerStyle={styles.pad}>
+        <SkeletonCard />
+        <View style={styles.gap} />
+        <SkeletonCard />
       </Screen>
     );
   }
 
   if (loadError || !load) {
     return (
-      <Screen edges={SAFE_EDGES_WITH_HEADER} style={styles.screen}>
+      <Screen edges={DETAIL_EDGES} contentContainerStyle={styles.pad}>
         <ErrorBanner
           message={loadError instanceof Error ? loadError.message : uz.loadDetails.errors.GENERIC}
           onRetry={refetchLoad}
@@ -245,726 +279,269 @@ export default function LoadDetailsScreen() {
   }
 
   const isFixed = load.priceMode === 'FIXED';
+  const isOpen = load.status === 'OPEN';
   const bodyTypeName = uz.bodyType[load.requiredBodyType] || load.requiredBodyType;
   const estimatedCommission = isFixed && load.price ? Math.round(load.price * 0.03) : null;
+  const facts: { label: string; value: string }[] = [
+    { label: uz.loadDetails.cargoType, value: load.cargoType },
+    { label: 'Og‘irlik', value: `${load.weightTons} ${uz.common.tons}` },
+    ...(load.volumeM3 ? [{ label: 'Hajm', value: `${load.volumeM3} ${uz.common.m3}` }] : []),
+    { label: uz.loadDetails.requiredBody, value: bodyTypeName },
+  ];
+
+  const bottomAction = !isOpen ? (
+    <View style={styles.closedBar}>
+      <Ionicons name="lock-closed-outline" size={16} color={colors.textMuted} />
+      <Text style={styles.closedText}>Bu yuk endi ochiq emas</Text>
+    </View>
+  ) : isFixed ? (
+    <PrimaryButton
+      title={`${uz.loadDetails.bookButton} · ${formatMoney(load.price)}`}
+      onPress={() => setShowConfirmBookModal(true)}
+      loading={bookMutation.isPending}
+      size="lg"
+      accessibilityLabel={uz.loadDetails.bookButton}
+    />
+  ) : !existingBid ? (
+    <PrimaryButton
+      title={uz.loadDetails.placeBidButton}
+      variant="accent"
+      onPress={handleOpenPlaceBid}
+      loading={placeBidMutation.isPending}
+      size="lg"
+      accessibilityLabel={uz.loadDetails.placeBidButton}
+    />
+  ) : (
+    <PrimaryButton
+      title={uz.loadDetails.editBid}
+      variant="outline"
+      onPress={handleOpenEditBid}
+      size="lg"
+      accessibilityLabel={uz.loadDetails.editBid}
+    />
+  );
 
   return (
-    <Screen edges={SAFE_EDGES_WITH_HEADER} style={styles.screen}>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <View style={{ paddingRight: 8 }}>
-              <StatusBadge kind="load" status={load.status} />
-            </View>
-          ),
-        }}
-      />
+    <Screen edges={DETAIL_EDGES} scrollable contentContainerStyle={styles.pad} bottomAction={bottomAction}>
+      <Stack.Screen options={{ title: '', headerLeft: () => <HeaderBackButton /> }} />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <SuccessBanner
-          message={successMessage}
-          onDismiss={() => setSuccessMessage(null)}
-        />
-        {errorMessage ? (
-          <ErrorBanner
-            message={errorMessage}
-            onDismiss={() => setErrorMessage(null)}
-          />
-        ) : null}
+      <SuccessBanner message={successMessage} onDismiss={() => setSuccessMessage(null)} />
+      {errorMessage && !showBidModal ? (
+        <ErrorBanner message={errorMessage} onDismiss={() => setErrorMessage(null)} />
+      ) : null}
 
-        {/* Company & Price Banner */}
-        <View style={styles.headerCard}>
-          {load.companyName ? (
-            <View style={styles.companyWrap}>
-              <Ionicons name="business-outline" size={16} color={colors.slate700} style={styles.headerIcon} />
-              <Text style={styles.companyTitle}>{load.companyName}</Text>
-            </View>
-          ) : null}
-
-          <View style={styles.priceRow}>
-            <View>
-              <Text style={styles.priceModeLabel}>
-                {isFixed ? uz.loadDetails.fixedPrice : uz.loadDetails.biddingPrice}
-              </Text>
-              {isFixed && load.price != null ? (
-                <Money amount={load.price} size="xl" color={colors.primary} weight="800" />
-              ) : (
-                <Text style={styles.biddingHeadline}>
-                  {uz.loadsTab.biddingAwaiting}
-                </Text>
-              )}
-            </View>
-
-            {estimatedCommission != null ? (
-              <View style={styles.commissionBadge}>
-                <Text style={styles.commissionLabel}>Komissiya (3%)</Text>
-                <Text style={styles.commissionAmount}>
-                  ~{formatMoney(estimatedCommission)}
-                </Text>
-              </View>
-            ) : null}
-          </View>
+      {/* Narx va asosiy holat */}
+      <View style={styles.hero}>
+        <View style={styles.heroTop}>
+          <Text style={styles.heroLabel}>{isFixed ? uz.loadDetails.fixedPrice : uz.loadDetails.biddingPrice}</Text>
+          <Pill tone={pillToneForStatus(load.status)} label={statusBadgeLabel(load.status, 'load')} />
         </View>
-
-        {/* Route Details */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>{uz.loadDetails.route}</Text>
-
-          <View style={styles.routeContainer}>
-            <View style={styles.routeRow}>
-              <View style={[styles.routeDot, styles.dotPickup]} />
-              <View style={styles.routeTextWrap}>
-                <Text style={styles.addressRoleLabel}>{uz.loadDetails.pickupAddress}</Text>
-                <Text style={styles.addressValueText} selectable>
-                  {load.pickupAddress}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.routeLine} />
-
-            <View style={styles.routeRow}>
-              <View style={[styles.routeDot, styles.dotDropoff]} />
-              <View style={styles.routeTextWrap}>
-                <Text style={styles.addressRoleLabel}>{uz.loadDetails.dropoffAddress}</Text>
-                <Text style={styles.addressValueText} selectable>
-                  {load.dropoffAddress}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.infoGrid}>
-            <View style={styles.gridItem}>
-              <Text style={styles.gridLabel}>Marshrut masofasi</Text>
-              <Text style={styles.gridValue}>{Math.round(load.routeKm)} {uz.common.km}</Text>
-            </View>
-
-            <View style={styles.gridItem}>
-              <Text style={styles.gridLabel}>{uz.loadDetails.pickupSchedule}</Text>
-              <Text style={styles.gridValue}>
-                {formatDate(load.pickupDate)}
-                {load.pickupTimeFrom ? ` (${load.pickupTimeFrom})` : ''}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Cargo specs */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>{uz.loadDetails.cargoInfo}</Text>
-
-          <View style={styles.infoGrid}>
-            <View style={styles.gridItem}>
-              <Text style={styles.gridLabel}>{uz.loadDetails.cargoType}</Text>
-              <Text style={styles.gridValue}>{load.cargoType}</Text>
-            </View>
-
-            <View style={styles.gridItem}>
-              <Text style={styles.gridLabel}>{uz.loadDetails.requiredBody}</Text>
-              <Text style={styles.gridValue}>{bodyTypeName}</Text>
-            </View>
-
-            <View style={styles.gridItem}>
-              <Text style={styles.gridLabel}>Og‘irlik</Text>
-              <Text style={styles.gridValue}>{load.weightTons} {uz.common.tons}</Text>
-            </View>
-
-            {load.volumeM3 ? (
-              <View style={styles.gridItem}>
-                <Text style={styles.gridLabel}>Hajm</Text>
-                <Text style={styles.gridValue}>{load.volumeM3} {uz.common.m3}</Text>
-              </View>
-            ) : null}
-          </View>
-        </View>
-
-        {/* Insurance */}
-        {load.insuranceRequired ? (
-          <View style={[styles.sectionCard, styles.insuranceSectionCard]}>
-            <View style={styles.sectionTitleRow}>
-              <Ionicons name="shield-checkmark" size={18} color={colors.primary} style={styles.headerIcon} />
-              <Text style={styles.insuranceTitle}>{uz.loadDetails.insuranceSection}</Text>
-            </View>
-            <Text style={styles.insuranceDesc}>{uz.loadDetails.insuranceRequired}</Text>
-            {load.cargoValue != null ? (
-              <Text style={styles.cargoValueText}>
-                {uz.loadDetails.cargoValue.replace('{{amount}}', formatMoney(load.cargoValue))}
-              </Text>
-            ) : null}
-          </View>
-        ) : null}
-
-        {/* Logist Notes */}
-        {load.notes ? (
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionTitleRow}>
-              <Ionicons name="chatbubble-ellipses-outline" size={17} color={colors.slate700} style={styles.headerIcon} />
-              <Text style={styles.sectionTitle}>{uz.loadDetails.shipperNotes}</Text>
-            </View>
-            <Text style={styles.notesText}>{load.notes}</Text>
-          </View>
-        ) : null}
-
-        {/* Existing Bid Section (if bidding mode & carrier has bid) */}
-        {!isFixed && existingBid ? (
-          <View style={[styles.sectionCard, styles.existingBidCard]}>
-            <View style={styles.existingBidHeader}>
-              <Text style={styles.existingBidTitle}>{uz.loadDetails.myBidSection}</Text>
-              <StatusBadge kind="bid" status={existingBid.status} size="sm" />
-            </View>
-
-            <View style={styles.existingBidPriceRow}>
-              <Money amount={existingBid.price} size="lg" color={colors.successDark} weight="800" />
-            </View>
-
-            {existingBid.comment ? (
-              <Text style={styles.existingBidComment}>
-                “{existingBid.comment}”
-              </Text>
-            ) : null}
-
-            <View style={styles.existingBidActions}>
-              <Pressable
-                onPress={handleOpenEditBid}
-                style={styles.editBidButton}
-                accessibilityRole="button"
-                accessibilityLabel={uz.loadDetails.editBid}
-              >
-                <Ionicons name="pencil-outline" size={14} color={colors.primary} style={styles.btnActionIcon} />
-                <Text style={styles.editBidButtonText}>{uz.loadDetails.editBid}</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={handleWithdrawBid}
-                style={styles.withdrawBidButton}
-                accessibilityRole="button"
-                accessibilityLabel={uz.loadDetails.withdrawBid}
-              >
-                <Ionicons name="close-circle-outline" size={15} color={colors.danger} style={styles.btnActionIcon} />
-                <Text style={styles.withdrawBidButtonText}>{uz.loadDetails.withdrawBid}</Text>
-              </Pressable>
-            </View>
-          </View>
-        ) : null}
-      </ScrollView>
-
-      {/* Persistent Bottom Action Bar */}
-      <View style={styles.bottomBar}>
-        {load.status !== 'OPEN' ? (
-          <View style={styles.notOpenBanner}>
-            <Text style={styles.notOpenText}>Ushbu yuk hozir ochiq emas</Text>
-          </View>
-        ) : isFixed ? (
-          <PrimaryButton
-            title={uz.loadDetails.bookButton}
-            icon={<Ionicons name="cube" size={18} color="#FFFFFF" />}
-            onPress={() => setShowConfirmBookModal(true)}
-            loading={bookMutation.isPending}
-            accessibilityLabel={uz.loadDetails.bookButton}
-          />
-        ) : !existingBid ? (
-          <PrimaryButton
-            title={uz.loadDetails.placeBidButton}
-            icon={<Ionicons name="chatbubble-ellipses" size={18} color="#FFFFFF" />}
-            onPress={handleOpenPlaceBid}
-            loading={placeBidMutation.isPending}
-            accessibilityLabel={uz.loadDetails.placeBidButton}
-          />
+        {isFixed && load.price != null ? (
+          <Money amount={load.price} size="xl" weight="800" style={styles.heroPrice} />
         ) : (
-          <PrimaryButton
-            title={uz.loadDetails.editBid}
-            variant="outline"
-            icon={<Ionicons name="pencil" size={18} color={colors.primary} />}
-            onPress={handleOpenEditBid}
-            accessibilityLabel={uz.loadDetails.editBid}
-          />
+          <Text style={styles.heroBidding}>Narxni siz taklif qilasiz</Text>
         )}
+        {estimatedCommission != null ? (
+          <Text style={styles.heroHint}>Platforma komissiyasi taxminan {formatMoney(estimatedCommission)} (3%)</Text>
+        ) : null}
+        {load.companyName ? (
+          <View style={styles.companyRow}>
+            <View style={styles.companyIcon}>
+              <Ionicons name="business" size={14} color={colors.slate700} />
+            </View>
+            <Text style={styles.companyText} numberOfLines={1}>
+              {load.companyName}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
-      {/* Modal: Confirm Booking (Fixed price) */}
-      <Modal
+      {/* Marshrut */}
+      <Card>
+        <RouteLine
+          size="lg"
+          lines={3}
+          from={load.pickupAddress}
+          to={load.dropoffAddress}
+          fromHint={formatPickupWindow(load.pickupDate, load.pickupTimeFrom, load.pickupTimeTo)}
+          toHint={`${Math.round(load.routeKm)} ${uz.common.km} yo‘l`}
+        />
+      </Card>
+
+      {/* Yuk haqida */}
+      <SectionTitle title={uz.loadDetails.cargoInfo} />
+      <Card>
+        <View style={styles.factsGrid}>
+          {facts.map((f) => (
+            <View key={f.label} style={styles.fact}>
+              <Text style={styles.factLabel}>{f.label}</Text>
+              <Text style={styles.factValue}>{f.value}</Text>
+            </View>
+          ))}
+        </View>
+      </Card>
+
+      {load.insuranceRequired ? (
+        <View style={styles.notice}>
+          <Ionicons name="shield-checkmark" size={20} color={colors.primary} />
+          <View style={styles.noticeTexts}>
+            <Text style={styles.noticeTitle}>{uz.loadDetails.insuranceSection}</Text>
+            <Text style={styles.noticeBody}>
+              {uz.loadDetails.insuranceRequired}
+              {load.cargoValue != null
+                ? ` ${uz.loadDetails.cargoValue.replace('{{amount}}', formatMoney(load.cargoValue))}`
+                : ''}
+            </Text>
+          </View>
+        </View>
+      ) : null}
+
+      {load.notes ? (
+        <>
+          <SectionTitle title={uz.loadDetails.shipperNotes} />
+          <Card>
+            <Text style={styles.notes}>{load.notes}</Text>
+          </Card>
+        </>
+      ) : null}
+
+      {!isFixed && existingBid ? (
+        <>
+          <SectionTitle
+            title={uz.loadDetails.myBidSection}
+            right={<Pill tone={pillToneForStatus(existingBid.status)} label={statusBadgeLabel(existingBid.status, 'bid')} />}
+          />
+          <Card>
+            <Money amount={existingBid.price} size="lg" weight="800" />
+            {existingBid.comment ? <Text style={styles.bidComment}>“{existingBid.comment}”</Text> : null}
+            <View style={styles.bidActions}>
+              <Pressable onPress={handleOpenEditBid} style={styles.linkBtn} accessibilityRole="button">
+                <Ionicons name="pencil" size={15} color={colors.primary} />
+                <Text style={styles.linkText}>{uz.loadDetails.editBid}</Text>
+              </Pressable>
+              <Pressable onPress={handleWithdrawBid} style={styles.linkBtn} accessibilityRole="button">
+                <Ionicons name="close-circle" size={16} color={colors.danger} />
+                <Text style={[styles.linkText, styles.linkDanger]}>{uz.loadDetails.withdrawBid}</Text>
+              </Pressable>
+            </View>
+          </Card>
+        </>
+      ) : null}
+
+      {/* Band qilishni tasdiqlash */}
+      <BottomSheet
         visible={showConfirmBookModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowConfirmBookModal(false)}
+        onClose={() => setShowConfirmBookModal(false)}
+        locked={bookMutation.isPending}
+        title={uz.loadDetails.confirmBookingTitle}
+        subtitle="Band qilsangiz, balansingizdan komissiya yechiladi va reys darhol boshlanadi."
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>{uz.loadDetails.confirmBookingTitle}</Text>
-
-            <View style={styles.modalSummaryBox}>
-              <View style={styles.modalSummaryRow}>
-                <Text style={styles.modalSummaryLabel}>Yuk narxi:</Text>
-                <Text style={styles.modalSummaryValue}>{formatMoney(load.price)}</Text>
-              </View>
-
-              {estimatedCommission != null ? (
-                <View style={styles.modalSummaryRow}>
-                  <Text style={styles.modalSummaryLabel}>Tizim komissiyasi (3%):</Text>
-                  <Text style={[styles.modalSummaryValue, styles.commissionHighlight]}>
-                    {formatMoney(estimatedCommission)}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-
-            <Text style={styles.modalExplanation}>
-              Yukni band qilsangiz, balansingizdan komissiya yechiladi va reys darhol boshlanadi.
-            </Text>
-
-            <View style={styles.modalButtons}>
-              <PrimaryButton
-                title={uz.loadDetails.confirmBookingAction}
-                onPress={() => bookMutation.mutate()}
-                loading={bookMutation.isPending}
-                style={styles.modalPrimaryBtn}
-              />
-              <PrimaryButton
-                title={uz.common.cancel}
-                variant="secondary"
-                onPress={() => setShowConfirmBookModal(false)}
-                disabled={bookMutation.isPending}
-                style={styles.modalSecondaryBtn}
-              />
-            </View>
-          </View>
+        <View style={styles.summaryBox}>
+          <SummaryRow label="Yuk narxi" value={formatMoney(load.price)} />
+          {estimatedCommission != null ? (
+            <SummaryRow label="Komissiya (3%)" value={`−${formatMoney(estimatedCommission)}`} />
+          ) : null}
         </View>
-      </Modal>
+        <PrimaryButton
+          title={uz.loadDetails.confirmBookingAction}
+          onPress={() => bookMutation.mutate()}
+          loading={bookMutation.isPending}
+          size="lg"
+        />
+        <PrimaryButton
+          title={uz.common.cancel}
+          variant="secondary"
+          onPress={() => setShowConfirmBookModal(false)}
+          disabled={bookMutation.isPending}
+        />
+      </BottomSheet>
 
-      {/* Modal: Place / Edit Bid */}
-      <Modal
+      {/* Taklif berish / tahrirlash */}
+      <BottomSheet
         visible={showBidModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowBidModal(false)}
+        onClose={() => setShowBidModal(false)}
+        locked={placeBidMutation.isPending || updateBidMutation.isPending}
+        title={isEditingBid ? uz.loadDetails.editBidModalTitle : uz.loadDetails.bidModalTitle}
+        subtitle="Zavod barcha takliflarni ko‘radi va bittasini tanlaydi."
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>
-              {isEditingBid
-                ? uz.loadDetails.editBidModalTitle
-                : uz.loadDetails.bidModalTitle}
-            </Text>
-
-            {errorMessage ? (
-              <ErrorBanner
-                message={errorMessage}
-                onDismiss={() => setErrorMessage(null)}
-              />
-            ) : null}
-
-            <TextField
-              label={uz.loadDetails.bidPriceLabel}
-              placeholder={uz.loadDetails.bidPricePlaceholder}
-              value={bidPriceInput}
-              onChangeText={setBidPriceInput}
-              keyboardType="number-pad"
-            />
-
-            <TextField
-              label={uz.loadDetails.bidCommentLabel}
-              placeholder={uz.loadDetails.bidCommentPlaceholder}
-              value={bidCommentInput}
-              onChangeText={setBidCommentInput}
-              multiline
-              numberOfLines={3}
-            />
-
-            <View style={styles.modalButtons}>
-              <PrimaryButton
-                title={
-                  isEditingBid
-                    ? uz.loadDetails.saveBid
-                    : uz.loadDetails.sendBid
-                }
-                onPress={handleSubmitBidForm}
-                loading={placeBidMutation.isPending || updateBidMutation.isPending}
-                style={styles.modalPrimaryBtn}
-              />
-              <PrimaryButton
-                title={uz.common.cancel}
-                variant="secondary"
-                onPress={() => setShowBidModal(false)}
-                disabled={placeBidMutation.isPending || updateBidMutation.isPending}
-                style={styles.modalSecondaryBtn}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
+        {errorMessage ? <ErrorBanner message={errorMessage} onDismiss={() => setErrorMessage(null)} /> : null}
+        <TextField
+          label={uz.loadDetails.bidPriceLabel}
+          placeholder={uz.loadDetails.bidPricePlaceholder}
+          value={bidPriceInput}
+          onChangeText={setBidPriceInput}
+          keyboardType="number-pad"
+          autoFocus
+        />
+        <TextField
+          label={uz.loadDetails.bidCommentLabel}
+          placeholder={uz.loadDetails.bidCommentPlaceholder}
+          value={bidCommentInput}
+          onChangeText={setBidCommentInput}
+          multiline
+          numberOfLines={3}
+        />
+        <PrimaryButton
+          title={isEditingBid ? uz.loadDetails.saveBid : uz.loadDetails.sendBid}
+          variant="accent"
+          onPress={handleSubmitBidForm}
+          loading={placeBidMutation.isPending || updateBidMutation.isPending}
+          size="lg"
+        />
+      </BottomSheet>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    paddingHorizontal: 0,
-    backgroundColor: '#f9fafb',
-  },
-  loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#4b5563',
-  },
-  navHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  backButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+  pad: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 },
+  gap: { height: 12 },
+  hero: { paddingTop: 4, paddingBottom: 18 },
+  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  heroLabel: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
+  heroPrice: { marginTop: 6, fontSize: 34, letterSpacing: -1 },
+  heroBidding: { marginTop: 6, fontSize: 26, fontWeight: '800', color: colors.accentDark, letterSpacing: -0.6 },
+  heroHint: { marginTop: 4, fontSize: 13.5, color: colors.textMuted },
+  companyRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14 },
+  companyIcon: {
+    width: 26,
+    height: 26,
     borderRadius: 8,
-    backgroundColor: '#f3f4f6',
-  },
-  backButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1f2937',
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 110,
-    gap: 14,
-  },
-  headerCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  companyWrap: {
-    flexDirection: 'row',
+    backgroundColor: colors.surface,
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'center',
   },
-  headerIcon: {
-    marginRight: 6,
-  },
-  sectionTitleRow: {
+  companyText: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.slate800 },
+  factsGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 16 },
+  fact: { width: '50%', paddingRight: 8 },
+  factLabel: { fontSize: 13, color: colors.textMuted },
+  factValue: { marginTop: 3, fontSize: 16, fontWeight: '700', color: colors.slate900 },
+  notice: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  btnActionIcon: {
-    marginRight: 4,
-  },
-  companyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#374151',
-  },
-  priceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  priceModeLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  biddingHeadline: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#d97706',
-  },
-  commissionBadge: {
-    backgroundColor: '#eff6ff',
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    alignItems: 'flex-end',
-  },
-  commissionLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#1e40af',
-  },
-  commissionAmount: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#1a56db',
-    marginTop: 2,
-  },
-  sectionCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 12,
-  },
-  routeContainer: {
-    marginBottom: 12,
-  },
-  routeRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  routeDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 10,
-    marginTop: 4,
-  },
-  dotPickup: {
-    backgroundColor: '#16a34a',
-  },
-  dotDropoff: {
-    backgroundColor: '#dc2626',
-  },
-  routeLine: {
-    width: 2,
-    height: 18,
-    backgroundColor: '#d1d5db',
-    marginLeft: 5,
-    marginVertical: 2,
-  },
-  routeTextWrap: {
-    flex: 1,
-  },
-  addressRoleLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6b7280',
-    marginBottom: 2,
-  },
-  addressValueText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    lineHeight: 22,
-  },
-  infoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 12,
-    marginTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    paddingTop: 12,
-  },
-  gridItem: {
-    width: '47%',
-  },
-  gridLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  gridValue: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  insuranceSectionCard: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
-  },
-  insuranceTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#1e40af',
-    marginBottom: 6,
-  },
-  insuranceDesc: {
-    fontSize: 14,
-    color: '#1e3a8a',
-    lineHeight: 20,
-    fontWeight: '500',
-  },
-  cargoValueText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1d4ed8',
-    marginTop: 6,
-  },
-  notesText: {
-    fontSize: 15,
-    color: '#374151',
-    lineHeight: 22,
-  },
-  existingBidCard: {
-    backgroundColor: '#f0fdf4',
-    borderColor: '#bbf7d0',
-  },
-  existingBidHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  existingBidTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#166534',
-  },
-  existingBidPriceRow: {
-    marginBottom: 6,
-  },
-  existingBidComment: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    color: '#15803d',
-    marginBottom: 12,
-  },
-  existingBidActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 8,
-  },
-  editBidButton: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff',
-    borderWidth: 1.5,
-    borderColor: '#16a34a',
-    borderRadius: 10,
-    paddingVertical: 10,
-    minHeight: 44,
-    alignItems: 'center',
-  },
-  editBidButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#16a34a',
-  },
-  withdrawBidButton: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff',
-    borderWidth: 1.5,
-    borderColor: '#dc2626',
-    borderRadius: 10,
-    paddingVertical: 10,
-    minHeight: 44,
-    alignItems: 'center',
-  },
-  withdrawBidButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#dc2626',
-  },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#ffffff',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    padding: 16,
-    paddingBottom: 24,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 8,
-  },
-  notOpenBanner: {
-    backgroundColor: '#f3f4f6',
+    marginTop: 12,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: 16,
+    backgroundColor: colors.primary50,
+  },
+  noticeTexts: { flex: 1 },
+  noticeTitle: { fontSize: 15, fontWeight: '700', color: colors.slate900 },
+  noticeBody: { marginTop: 3, fontSize: 14, lineHeight: 20, color: colors.slate700 },
+  notes: { fontSize: 15, lineHeight: 22, color: colors.slate800 },
+  bidComment: { marginTop: 8, fontSize: 14.5, fontStyle: 'italic', color: colors.slate700 },
+  bidActions: { flexDirection: 'row', gap: 20, marginTop: 14 },
+  linkBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 },
+  linkText: { fontSize: 15, fontWeight: '600', color: colors.primary },
+  linkDanger: { color: colors.danger },
+  closedBar: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  notOpenText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#6b7280',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
     justifyContent: 'center',
-    padding: 20,
-  },
-  modalContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  modalSummaryBox: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginBottom: 14,
     gap: 8,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: colors.slate100,
   },
-  modalSummaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  modalSummaryLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4b5563',
-  },
-  modalSummaryValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  commissionHighlight: {
-    color: '#1a56db',
-    fontWeight: '800',
-  },
-  modalExplanation: {
-    fontSize: 14,
-    color: '#4b5563',
-    lineHeight: 20,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  modalButtons: {
-    gap: 10,
-  },
-  modalPrimaryBtn: {
-    minHeight: 48,
-  },
-  modalSecondaryBtn: {
-    minHeight: 48,
-  },
+  closedText: { fontSize: 15, fontWeight: '600', color: colors.textMuted },
+  summaryBox: { padding: 14, borderRadius: 14, backgroundColor: colors.slate50, gap: 4 },
 });
