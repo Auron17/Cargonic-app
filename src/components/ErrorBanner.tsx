@@ -1,5 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, radii } from '../theme';
 
 interface ErrorBannerProps {
   message?: string | null;
@@ -19,7 +21,12 @@ export function ErrorBanner({
   return (
     <View style={[styles.container, style]} accessibilityRole="alert">
       <View style={styles.textContainer}>
-        <Text style={styles.icon}>⚠️</Text>
+        <Ionicons
+          name="alert-circle"
+          size={20}
+          color={colors.dangerDark}
+          style={styles.icon}
+        />
         <Text style={styles.messageText}>{message}</Text>
       </View>
 
@@ -41,12 +48,12 @@ export function ErrorBanner({
         {onDismiss ? (
           <Pressable
             onPress={onDismiss}
-            hitSlop={8}
+            hitSlop={10}
             style={styles.dismissButton}
             accessibilityRole="button"
             accessibilityLabel="Yopish"
           >
-            <Text style={styles.dismissText}>✕</Text>
+            <Ionicons name="close" size={18} color={colors.dangerDark} />
           </Pressable>
         ) : null}
       </View>
@@ -56,11 +63,11 @@ export function ErrorBanner({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: '#FEF2F2',
     borderWidth: 1,
-    borderColor: '#fca5a5',
-    borderRadius: 12,
-    padding: 14,
+    borderColor: '#FECACA',
+    borderRadius: radii.md,
+    padding: 12,
     marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -73,41 +80,35 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   icon: {
-    fontSize: 18,
-    marginRight: 10,
+    marginRight: 8,
   },
   messageText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '600',
-    color: '#991b1b',
-    lineHeight: 20,
+    color: '#991B1B',
+    lineHeight: 19,
   },
   actionsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   retryButton: {
-    backgroundColor: '#dc2626',
+    backgroundColor: colors.dangerDark,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
-    marginRight: 8,
+    borderRadius: radii.sm,
+    marginRight: 6,
   },
   retryText: {
-    color: '#ffffff',
-    fontSize: 13,
+    color: '#FFFFFF',
+    fontSize: 12.5,
     fontWeight: '700',
   },
   dismissButton: {
-    padding: 4,
-  },
-  dismissText: {
-    color: '#991b1b',
-    fontSize: 16,
-    fontWeight: '700',
+    padding: 3,
   },
   pressed: {
-    opacity: 0.8,
+    opacity: 0.85,
   },
 });

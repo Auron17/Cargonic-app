@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { PrimaryButton, Screen, StatusBadge } from '../../src/components';
 import { uz } from '../../src/i18n/uz';
+import { colors, radii, shadows } from '../../src/theme';
 
 export default function OnboardingStatusScreen() {
   const { profile, refreshProfile, logout } = useAuth();
@@ -32,8 +34,8 @@ export default function OnboardingStatusScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={handleRefresh}
-          tintColor="#1a56db"
-          colors={['#1a56db']}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
         />
       }
       contentContainerStyle={styles.scrollContainer}
@@ -44,6 +46,7 @@ export default function OnboardingStatusScreen() {
               <PrimaryButton
                 title={uz.onboarding.fixDocuments}
                 onPress={() => router.push('/(onboarding)/documents')}
+                icon={<Ionicons name="construct-outline" size={16} color="#FFFFFF" />}
                 accessibilityLabel={uz.onboarding.fixDocuments}
               />
               <PrimaryButton
@@ -51,6 +54,7 @@ export default function OnboardingStatusScreen() {
                 onPress={handleRefresh}
                 loading={refreshing}
                 variant="outline"
+                icon={<Ionicons name="refresh" size={16} color={colors.primary} />}
                 accessibilityLabel={uz.onboarding.refreshStatus}
               />
             </>
@@ -58,6 +62,7 @@ export default function OnboardingStatusScreen() {
             <PrimaryButton
               title={uz.onboarding.goToLoads}
               onPress={() => router.replace('/(tabs)')}
+              icon={<Ionicons name="cube" size={16} color="#FFFFFF" />}
               accessibilityLabel={uz.onboarding.goToLoads}
             />
           ) : (
@@ -66,12 +71,14 @@ export default function OnboardingStatusScreen() {
                 title={uz.onboarding.refreshStatus}
                 onPress={handleRefresh}
                 loading={refreshing}
+                icon={<Ionicons name="refresh" size={16} color="#FFFFFF" />}
                 accessibilityLabel={uz.onboarding.refreshStatus}
               />
               <PrimaryButton
                 title="Hujjatlarni ko‘rish"
                 onPress={() => router.push('/(onboarding)/documents')}
                 variant="outline"
+                icon={<Ionicons name="document-text-outline" size={16} color={colors.primary} />}
                 accessibilityLabel="Hujjatlarni ko‘rish"
               />
             </>
@@ -81,6 +88,7 @@ export default function OnboardingStatusScreen() {
             title={uz.auth.logout}
             onPress={logout}
             variant="secondary"
+            icon={<Ionicons name="log-out-outline" size={16} color={colors.slate700} />}
             accessibilityLabel={uz.auth.logout}
           />
         </View>
@@ -89,7 +97,9 @@ export default function OnboardingStatusScreen() {
       <View style={styles.centerBox}>
         {isRejected ? (
           <>
-            <Text style={styles.statusEmoji}>⚠️</Text>
+            <View style={[styles.iconBox, styles.iconBoxDanger]}>
+              <Ionicons name="alert-circle" size={42} color={colors.danger} />
+            </View>
             <StatusBadge status="REJECTED" style={styles.badge} />
             <Text style={styles.title}>{uz.onboarding.rejectedTitle}</Text>
 
@@ -125,7 +135,9 @@ export default function OnboardingStatusScreen() {
           </>
         ) : isApproved ? (
           <>
-            <Text style={styles.statusEmoji}>✅</Text>
+            <View style={[styles.iconBox, styles.iconBoxSuccess]}>
+              <Ionicons name="checkmark-circle" size={44} color={colors.success} />
+            </View>
             <StatusBadge status="APPROVED" style={styles.badge} />
             <Text style={styles.title}>{uz.onboarding.approvedTitle}</Text>
             <Text style={styles.lead}>
@@ -135,7 +147,9 @@ export default function OnboardingStatusScreen() {
           </>
         ) : (
           <>
-            <Text style={styles.statusEmoji}>⏳</Text>
+            <View style={[styles.iconBox, styles.iconBoxPending]}>
+              <Ionicons name="hourglass" size={40} color={colors.accentDark} />
+            </View>
             <StatusBadge status="PENDING" style={styles.badge} />
             <Text style={styles.title}>
               {uz.onboarding.pendingVerificationTitle}
@@ -145,10 +159,19 @@ export default function OnboardingStatusScreen() {
             </Text>
 
             <View style={styles.infoCard}>
-              <Text style={styles.infoTitle}>📋 Tekshiruv bosqichlari:</Text>
-              <Text style={styles.infoItem}>1. Yuridik shaxs / YaTT rekvizitlari</Text>
-              <Text style={styles.infoItem}>2. Yuk mashinasi va litsenziya kartochkasi</Text>
-              <Text style={styles.infoItem}>3. Haydovchilik guvohnomasi va pasport</Text>
+              <Text style={styles.infoTitle}>Tekshiruv bosqichlari:</Text>
+              <View style={styles.stepItem}>
+                <Ionicons name="checkmark-done" size={16} color={colors.primary} style={styles.stepIcon} />
+                <Text style={styles.infoItem}>1. Yuridik shaxs / YaTT rekvizitlari</Text>
+              </View>
+              <View style={styles.stepItem}>
+                <Ionicons name="checkmark-done" size={16} color={colors.primary} style={styles.stepIcon} />
+                <Text style={styles.infoItem}>2. Yuk mashinasi va litsenziya kartochkasi</Text>
+              </View>
+              <View style={styles.stepItem}>
+                <Ionicons name="checkmark-done" size={16} color={colors.primary} style={styles.stepIcon} />
+                <Text style={styles.infoItem}>3. Haydovchilik guvohnomasi va pasport</Text>
+              </View>
             </View>
 
             <Text style={styles.pullHint}>
@@ -165,16 +188,29 @@ const styles = StyleSheet.create({
   scrollContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: 24,
   },
   centerBox: {
     alignItems: 'center',
     paddingHorizontal: 16,
     width: '100%',
   },
-  statusEmoji: {
-    fontSize: 56,
-    marginBottom: 12,
+  iconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  iconBoxDanger: {
+    backgroundColor: '#FEE2E2',
+  },
+  iconBoxSuccess: {
+    backgroundColor: '#ECFDF5',
+  },
+  iconBoxPending: {
+    backgroundColor: '#FEF3C7',
   },
   badge: {
     marginBottom: 14,
@@ -182,23 +218,24 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.slate900,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
+    letterSpacing: -0.3,
   },
   lead: {
-    fontSize: 15,
-    color: '#4b5563',
+    fontSize: 14.5,
+    color: colors.slate600,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 20,
     maxWidth: 320,
   },
   reasonCard: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: '#FEF2F2',
     borderWidth: 1,
-    borderColor: '#fca5a5',
-    borderRadius: 12,
+    borderColor: '#FECACA',
+    borderRadius: radii.lg,
     padding: 14,
     width: '100%',
     marginBottom: 16,
@@ -206,21 +243,21 @@ const styles = StyleSheet.create({
   reasonLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#991b1b',
+    color: colors.dangerDark,
     marginBottom: 4,
     textTransform: 'uppercase',
   },
   reasonText: {
     fontSize: 14,
-    color: '#7f1d1d',
+    color: '#7F1D1D',
     lineHeight: 20,
     fontWeight: '500',
   },
   rejectedDocsList: {
-    backgroundColor: '#fff7ed',
+    backgroundColor: '#FFF7ED',
     borderWidth: 1,
-    borderColor: '#fed7aa',
-    borderRadius: 12,
+    borderColor: '#FED7AA',
+    borderRadius: radii.lg,
     padding: 14,
     width: '100%',
     marginBottom: 16,
@@ -228,7 +265,7 @@ const styles = StyleSheet.create({
   rejectedDocsTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#9a3412',
+    color: '#9A3412',
     marginBottom: 6,
   },
   rejectedDocItem: {
@@ -237,37 +274,44 @@ const styles = StyleSheet.create({
   rejectedDocName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#c2410c',
+    color: '#C2410C',
   },
   rejectedDocSubReason: {
     fontSize: 12,
-    color: '#9a3412',
+    color: '#9A3412',
     marginLeft: 12,
   },
   infoCard: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    padding: 14,
+    borderColor: colors.slate200,
+    borderRadius: radii.lg,
+    padding: 16,
     width: '100%',
     marginBottom: 20,
+    ...shadows.card,
   },
   infoTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1f2937',
+    color: colors.slate900,
+    marginBottom: 10,
+  },
+  stepItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
   },
+  stepIcon: {
+    marginRight: 8,
+  },
   infoItem: {
-    fontSize: 13,
-    color: '#4b5563',
-    lineHeight: 20,
-    marginBottom: 4,
+    fontSize: 13.5,
+    color: colors.slate600,
   },
   pullHint: {
-    fontSize: 13,
-    color: '#6b7280',
+    fontSize: 12.5,
+    color: colors.slate500,
     textAlign: 'center',
   },
   bottomButtons: {

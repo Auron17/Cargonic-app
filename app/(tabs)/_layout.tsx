@@ -1,7 +1,9 @@
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { uz } from '../../src/i18n/uz';
+import { colors } from '../../src/theme';
 
 export default function TabLayout() {
   return (
@@ -9,17 +11,20 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: '#ffffff',
+          backgroundColor: '#FFFFFF',
+          elevation: 0,
+          shadowOpacity: 0,
         },
         headerTitleStyle: {
-          fontSize: 20,
+          fontSize: 19,
           fontWeight: '800',
-          color: '#111827',
+          color: colors.slate900,
+          letterSpacing: -0.3,
         },
         headerShadowVisible: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: '#1a56db',
-        tabBarInactiveTintColor: '#6b7280',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.slate400,
         tabBarLabelStyle: styles.tabBarLabel,
       }}
     >
@@ -28,8 +33,12 @@ export default function TabLayout() {
         options={{
           title: uz.nav.loads,
           tabBarLabel: uz.nav.loads,
-          tabBarIcon: ({ color }) => (
-            <Text style={[styles.tabIcon, { color }]}>📦</Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'cube' : 'cube-outline'}
+              size={23}
+              color={color}
+            />
           ),
         }}
       />
@@ -38,8 +47,12 @@ export default function TabLayout() {
         options={{
           title: uz.nav.trips,
           tabBarLabel: uz.nav.trips,
-          tabBarIcon: ({ color }) => (
-            <Text style={[styles.tabIcon, { color }]}>🚚</Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'navigate' : 'navigate-outline'}
+              size={23}
+              color={color}
+            />
           ),
         }}
       />
@@ -48,8 +61,12 @@ export default function TabLayout() {
         options={{
           title: uz.nav.balance,
           tabBarLabel: uz.nav.balance,
-          tabBarIcon: ({ color }) => (
-            <Text style={[styles.tabIcon, { color }]}>💳</Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'wallet' : 'wallet-outline'}
+              size={23}
+              color={color}
+            />
           ),
         }}
       />
@@ -58,8 +75,12 @@ export default function TabLayout() {
         options={{
           title: uz.nav.profile,
           tabBarLabel: uz.nav.profile,
-          tabBarIcon: ({ color }) => (
-            <Text style={[styles.tabIcon, { color }]}>👤</Text>
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'person' : 'person-outline'}
+              size={23}
+              color={color}
+            />
           ),
         }}
       />
@@ -69,19 +90,17 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    height: 64,
-    paddingBottom: 8,
+    height: Platform.OS === 'ios' ? 88 : 66,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 10,
     paddingTop: 8,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: colors.slate200,
   },
   tabBarLabel: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
     marginTop: 2,
-  },
-  tabIcon: {
-    fontSize: 22,
+    letterSpacing: -0.1,
   },
 });

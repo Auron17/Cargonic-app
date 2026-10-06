@@ -11,6 +11,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { SafeAreaView, Edge } from 'react-native-safe-area-context';
+import { colors } from '../theme';
 
 interface ScreenProps {
   children: ReactNode;
@@ -33,7 +34,7 @@ export function Screen({
 }: ScreenProps) {
   return (
     <SafeAreaView edges={edges} style={[styles.container, style]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -63,7 +64,7 @@ export function Screen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background, // Slate 50 (#F8FAFC)
   },
   keyboardContainer: {
     flex: 1,
@@ -73,21 +74,21 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 24,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
   bottomBar: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 12 : 16,
-    backgroundColor: '#ffffff',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#e5e7eb',
+    paddingBottom: Platform.OS === 'ios' ? 14 : 16,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: colors.slate200,
   },
 });

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -7,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/auth/AuthProvider';
 import {
   AuthImage,
@@ -14,13 +16,17 @@ import {
   Screen,
   StatusBadge,
 } from '../../src/components';
+import { useOta } from '../../src/updates';
 import { uz } from '../../src/i18n/uz';
 import { formatPhoneDisplay } from '../../src/utils/format';
+import { colors, radii, shadows } from '../../src/theme';
 
 export default function ProfileTabScreen() {
   const router = useRouter();
   const { user, profile, refreshProfile, logout } = useAuth();
+  const ota = useOta();
   const [refreshing, setRefreshing] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -28,10 +34,27 @@ export default function ProfileTabScreen() {
     setRefreshing(false);
   };
 
+  const handleCheckForUpdate = async () => {
+    setCheckingUpdate(true);
+    try {
+      const hasUpdate = await ota.checkForUpdate(true);
+      if (!ota.isEnabled) {
+        Alert.alert(
+          'OTA Yangilanish',
+          'Siz hozir ishlab chiqish (Development) rejimidasiz. OTA yangilanishlar mustaqil production yoki preview buildlarida to‘liq ishlaydi. Sinov uchun pastdagi "Sinov yangilanishini ko‘rish" tugmasidan foydalanishingiz mumkin.'
+        );
+      } else if (!hasUpdate) {
+        Alert.alert('Yangilanish', 'Sizda eng so‘nggi talqin o‘rnatilgan!');
+      }
+    } catch {
+      Alert.alert('Xatolik', 'Yangilanishlarni tekshirishda xatolik yuz berdi.');
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
+
   const vehicle = profile?.vehicle;
   const documents = profile?.documents || [];
-
-  // Find driver photo document if uploaded
   const driverPhotoDoc = documents.find((d) => d.docType === 'DRIVER_PHOTO');
 
   return (
@@ -41,8 +64,8 @@ export default function ProfileTabScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={handleRefresh}
-          tintColor="#1a56db"
-          colors={['#1a56db']}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
         />
       }
       bottomAction={
@@ -50,6 +73,7 @@ export default function ProfileTabScreen() {
           title={uz.auth.logout}
           onPress={logout}
           variant="secondary"
+          icon={<Ionicons name="log-out-outline" size={18} color={colors.slate700} />}
           accessibilityLabel={uz.auth.logout}
         />
       }
@@ -65,7 +89,7 @@ export default function ProfileTabScreen() {
             />
           ) : (
             <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarEmoji}>👤</Text>
+              <Ionicons name="person" size={34} color={colors.primary} />
             </View>
           )}
 
@@ -87,7 +111,7 @@ export default function ProfileTabScreen() {
         {/* Stats Row */}
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text style={styles.statIcon}>⭐</Text>
+            <Ionicons name="star" size={18} color="#F59E0B" style={styles.statIcon} />
             <Text style={styles.statValue}>
               {profile?.ratingAvg ? Number(profile.ratingAvg).toFixed(1) : '5.0'}
             </Text>
@@ -101,7 +125,7 @@ export default function ProfileTabScreen() {
           <View style={styles.statDivider} />
 
           <View style={styles.statBox}>
-            <Text style={styles.statIcon}>🚚</Text>
+            <Ionicons name="cube" size={18} color={colors.primary} style={styles.statIcon} />
             <Text style={styles.statValue}>
               {profile?.completedTrips ?? 0}
             </Text>
@@ -110,10 +134,98 @@ export default function ProfileTabScreen() {
         </View>
       </View>
 
+      {/* OTA & App Updates Card */}
+      <View style={styles.sectionCard}>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="cloud-download-outline" size={19} color={colors.primary} style={styles.sectionHeaderIcon} />
+            <Text style={styles.sectionTitle}>Ilova yangilanishlari (OTA)</Text>
+          </View>
+          <View style={styles.versionPill}>
+            <Text style={styles.versionPillText}>v1.0.0</Text>
+          </View>
+        </View>
+
+        <Text style={styles.otaLeadText}>
+          Ilova ishlatilayotgan paytda yangilanishlar avtomatik tekshirilib turiladi. App Store yoki Google Play’siz darhol yangilanadi.
+        </Text>
+
+        <View style={styles.otaStatusBox}>
+          <View style={styles.otaStatusLeft}>
+            <View
+              style={[
+                styles.otaStatusBullet,
+                {
+                  backgroundColor: ota.isUpdateReady
+                    ? colors.accent
+                    : ota.isEnabled
+                    ? colors.success
+                    : colors.info,
+                },
+              ]}
+            />
+            <View>
+              <Text style={styles.otaStatusLabel}>
+                {ota.isDownloading
+                  ? 'Yangilanish yuklanmoqda…'
+                  : ota.isUpdateReady
+                  ? 'Yangi yangilanish yuklandi!'
+                  : ota.isEnabled
+                  ? 'Avtomatik yangilanish yoqilgan'
+                  : 'Ishlab chiqish (Dev) rejimida'}
+              </Text>
+              <Text style={styles.otaStatusSub}>
+                {ota.lastCheckedAt
+                  ? `Oxirgi tekshiruv: ${ota.lastCheckedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                  : 'Kutish rejimida'}
+              </Text>
+            </View>
+          </View>
+
+          {ota.isUpdateReady ? (
+            <Pressable
+              onPress={ota.applyUpdate}
+              style={styles.otaApplyBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Qayta yuklash"
+            >
+              <Ionicons name="refresh" size={14} color="#FFFFFF" style={styles.otaApplyIcon} />
+              <Text style={styles.otaApplyText}>Qayta yuklash</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        <View style={styles.otaActionsRow}>
+          <PrimaryButton
+            title={checkingUpdate || ota.isChecking ? 'Tekshirilmoqda…' : 'Yangilanishni tekshirish'}
+            onPress={handleCheckForUpdate}
+            loading={checkingUpdate || ota.isChecking}
+            variant="outline"
+            size="sm"
+            icon={<Ionicons name="reload" size={14} color={colors.primary} />}
+            style={styles.otaCheckBtn}
+          />
+
+          {!ota.isEnabled && !ota.isUpdateReady ? (
+            <Pressable
+              onPress={ota.simulateUpdateReadyForTesting}
+              style={styles.simulateBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Sinov yangilanishini ko'rish"
+            >
+              <Text style={styles.simulateBtnText}>Sinov yangilanishini ko‘rish</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+
       {/* Carrier Legal Information */}
       <View style={styles.sectionCard}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{uz.profileTab.driverSection}</Text>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="briefcase-outline" size={18} color={colors.slate700} style={styles.sectionHeaderIcon} />
+            <Text style={styles.sectionTitle}>{uz.profileTab.driverSection}</Text>
+          </View>
           <Pressable
             onPress={() => router.push('/(onboarding)/profile')}
             hitSlop={8}
@@ -158,7 +270,10 @@ export default function ProfileTabScreen() {
       {/* Vehicle Section */}
       <View style={styles.sectionCard}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{uz.profileTab.vehicleSection}</Text>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="car-outline" size={18} color={colors.slate700} style={styles.sectionHeaderIcon} />
+            <Text style={styles.sectionTitle}>{uz.profileTab.vehicleSection}</Text>
+          </View>
           <Pressable
             onPress={() => router.push('/(onboarding)/vehicle')}
             hitSlop={8}
@@ -176,6 +291,7 @@ export default function ProfileTabScreen() {
           <>
             <View style={styles.plateRow}>
               <View style={styles.plateBadge}>
+                <Ionicons name="car" size={14} color={colors.slate800} style={styles.plateIcon} />
                 <Text style={styles.plateText}>{vehicle.plateNumber}</Text>
               </View>
               <StatusBadge status={vehicle.verificationStatus} />
@@ -216,6 +332,7 @@ export default function ProfileTabScreen() {
               title={uz.profileTab.addVehicle}
               onPress={() => router.push('/(onboarding)/vehicle')}
               variant="outline"
+              size="sm"
               style={{ marginTop: 10 }}
             />
           </View>
@@ -225,7 +342,10 @@ export default function ProfileTabScreen() {
       {/* Documents Overview Section */}
       <View style={styles.sectionCard}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{uz.profileTab.documentsSection}</Text>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="document-text-outline" size={18} color={colors.slate700} style={styles.sectionHeaderIcon} />
+            <Text style={styles.sectionTitle}>{uz.profileTab.documentsSection}</Text>
+          </View>
           <Pressable
             onPress={() => router.push('/(onboarding)/documents')}
             hitSlop={8}
@@ -249,7 +369,7 @@ export default function ProfileTabScreen() {
                     <Text style={styles.docRejectText}>{doc.rejectReason}</Text>
                   ) : null}
                 </View>
-                <StatusBadge status={doc.status} />
+                <StatusBadge status={doc.status} size="sm" />
               </View>
             ))}
           </View>
@@ -260,6 +380,7 @@ export default function ProfileTabScreen() {
               title="Hujjatlarni yuklash"
               onPress={() => router.push('/(onboarding)/documents')}
               variant="outline"
+              size="sm"
               style={{ marginTop: 10 }}
             />
           </View>
@@ -271,63 +392,57 @@ export default function ProfileTabScreen() {
 
 const styles = StyleSheet.create({
   headerCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 20,
+    borderColor: colors.slate200,
+    padding: 18,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    ...shadows.card,
   },
   avatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 18,
   },
   avatarContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     overflow: 'hidden',
     marginRight: 16,
     borderWidth: 2,
-    borderColor: '#1a56db',
+    borderColor: colors.primary,
   },
   avatarImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
+    resizeMode: 'cover' as const,
   },
   avatarPlaceholder: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#eff6ff',
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: colors.primary50,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
     borderWidth: 1.5,
-    borderColor: '#bfdbfe',
-  },
-  avatarEmoji: {
-    fontSize: 34,
+    borderColor: '#BFDBFE',
   },
   headerInfo: {
     flex: 1,
   },
   driverName: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '800',
-    color: '#111827',
-    marginBottom: 4,
+    color: colors.slate900,
+    marginBottom: 3,
+    letterSpacing: -0.2,
   },
   driverPhone: {
-    fontSize: 15,
-    color: '#4b5563',
+    fontSize: 14,
+    color: colors.slate600,
     fontWeight: '500',
     marginBottom: 6,
   },
@@ -336,115 +451,207 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    backgroundColor: '#f9fafb',
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+    backgroundColor: colors.slate50,
+    borderRadius: radii.lg,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: colors.slate100,
   },
   statBox: {
     flex: 1,
     alignItems: 'center',
   },
-  statDivider: {
-    width: 1,
-    backgroundColor: '#e5e7eb',
-    marginVertical: 4,
-  },
   statIcon: {
-    fontSize: 18,
     marginBottom: 2,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
-    color: '#111827',
-    marginBottom: 2,
+    color: colors.slate900,
+    marginTop: 2,
   },
   statSub: {
-    fontSize: 12,
-    color: '#6b7280',
-    fontWeight: '600',
+    fontSize: 11.5,
+    color: colors.slate500,
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: colors.slate200,
+    marginVertical: 4,
   },
   sectionCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    padding: 18,
+    borderColor: colors.slate200,
+    padding: 16,
     marginBottom: 16,
+    ...shadows.card,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    marginBottom: 12,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sectionHeaderIcon: {
+    marginRight: 6,
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.slate900,
+  },
+  versionPill: {
+    backgroundColor: colors.primary50,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  versionPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  otaLeadText: {
+    fontSize: 13,
+    color: colors.slate500,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  otaStatusBox: {
+    backgroundColor: colors.slate50,
+    borderRadius: radii.md,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.slate200,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  otaStatusLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  otaStatusBullet: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 10,
+  },
+  otaStatusLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.slate800,
+  },
+  otaStatusSub: {
+    fontSize: 11.5,
+    color: colors.slate500,
+    marginTop: 2,
+  },
+  otaApplyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: radii.sm,
+  },
+  otaApplyIcon: {
+    marginRight: 4,
+  },
+  otaApplyText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  otaActionsRow: {
+    gap: 8,
+  },
+  otaCheckBtn: {
+    width: '100%',
+  },
+  simulateBtn: {
+    alignSelf: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  simulateBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.slate500,
+    textDecorationLine: 'underline',
   },
   editLink: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
   },
   editLinkText: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#1a56db',
+    color: colors.primary,
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f3f4f6',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.slate100,
   },
   infoLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '500',
-    flex: 1,
+    fontSize: 13.5,
+    color: colors.slate500,
   },
   infoValue: {
-    fontSize: 15,
-    color: '#111827',
+    fontSize: 13.5,
     fontWeight: '700',
+    color: colors.slate800,
+    maxWidth: '60%',
     textAlign: 'right',
-    flex: 1.2,
   },
   plateRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
-    paddingBottom: 8,
   },
   plateBadge: {
-    backgroundColor: '#f3f4f6',
-    borderWidth: 2,
-    borderColor: '#111827',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.slate100,
+    borderWidth: 1.5,
+    borderColor: colors.slate300,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.sm,
+  },
+  plateIcon: {
+    marginRight: 6,
   },
   plateText: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#111827',
-    letterSpacing: 1.5,
+    fontSize: 15,
+    fontWeight: '800',
+    color: colors.slate900,
+    letterSpacing: 0.5,
   },
   emptyVehicleBox: {
-    paddingVertical: 12,
+    padding: 16,
     alignItems: 'center',
   },
   emptyVehicleText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.slate500,
   },
   docsList: {
     gap: 8,
@@ -454,29 +661,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f3f4f6',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.slate100,
   },
   docNameCol: {
     flex: 1,
-    paddingRight: 10,
+    marginRight: 10,
   },
   docName: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '600',
-    color: '#1f2937',
+    color: colors.slate800,
   },
   docRejectText: {
     fontSize: 12,
-    color: '#dc2626',
+    color: colors.dangerDark,
     marginTop: 2,
   },
   emptyDocsBox: {
-    paddingVertical: 12,
+    padding: 16,
     alignItems: 'center',
   },
   emptyDocsText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.slate500,
   },
 });

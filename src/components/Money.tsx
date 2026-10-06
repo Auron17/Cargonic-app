@@ -1,13 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, TextStyle } from 'react-native';
 import { formatMoney } from '../utils/format';
+import { colors } from '../theme';
 
 interface MoneyProps {
   amount: number | null | undefined;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   style?: TextStyle;
   color?: string;
-  weight?: 'normal' | '500' | '600' | '700' | 'bold';
+  weight?: 'normal' | '500' | '600' | '700' | '800' | 'bold';
 }
 
 export function Money({
@@ -24,10 +25,10 @@ export function Money({
       case 'lg':
         return 22;
       case 'xl':
-        return 30;
+        return 28;
       case 'md':
       default:
-        return 18;
+        return 17;
     }
   };
 
@@ -38,7 +39,7 @@ export function Money({
         {
           fontSize: getFontSize(),
           fontWeight: weight,
-          color: color || '#111827',
+          color: color || colors.slate900,
         },
         style,
       ]}
@@ -52,6 +53,7 @@ export function Money({
 
 const styles = StyleSheet.create({
   text: {
-    letterSpacing: 0.3,
+    letterSpacing: -0.2,
+    fontVariant: ['tabular-nums'],
   },
 });

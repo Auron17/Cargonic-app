@@ -21,8 +21,10 @@ import {
   StatusBadge,
   TextField,
 } from '../../src/components';
+import { Ionicons } from '@expo/vector-icons';
 import { formatDate, formatMoney } from '../../src/utils/format';
 import { uz } from '../../src/i18n/uz';
+import { colors } from '../../src/theme';
 
 export default function LoadDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -238,7 +240,7 @@ export default function LoadDetailsScreen() {
             accessibilityRole="button"
             accessibilityLabel={uz.common.back}
           >
-            <Text style={styles.backButtonText}>← {uz.common.back}</Text>
+            <Ionicons name="arrow-back" size={20} color={colors.slate800} />
           </Pressable>
         </View>
         <ErrorBanner
@@ -264,7 +266,7 @@ export default function LoadDetailsScreen() {
           accessibilityRole="button"
           accessibilityLabel={uz.common.back}
         >
-          <Text style={styles.backButtonText}>← {uz.common.back}</Text>
+          <Ionicons name="arrow-back" size={20} color={colors.slate800} />
         </Pressable>
 
         <StatusBadge status={load.status} />
@@ -284,7 +286,10 @@ export default function LoadDetailsScreen() {
         {/* Company & Price Banner */}
         <View style={styles.headerCard}>
           {load.companyName ? (
-            <Text style={styles.companyTitle}>🏢 {load.companyName}</Text>
+            <View style={styles.companyWrap}>
+              <Ionicons name="business-outline" size={16} color={colors.slate700} style={styles.headerIcon} />
+              <Text style={styles.companyTitle}>{load.companyName}</Text>
+            </View>
           ) : null}
 
           <View style={styles.priceRow}>
@@ -293,7 +298,7 @@ export default function LoadDetailsScreen() {
                 {isFixed ? uz.loadDetails.fixedPrice : uz.loadDetails.biddingPrice}
               </Text>
               {isFixed && load.price != null ? (
-                <Money amount={load.price} size="xl" color="#1a56db" weight="bold" />
+                <Money amount={load.price} size="xl" color={colors.primary} weight="800" />
               ) : (
                 <Text style={styles.biddingHeadline}>
                   {uz.loadsTab.biddingAwaiting}
@@ -384,7 +389,10 @@ export default function LoadDetailsScreen() {
         {/* Insurance */}
         {load.insuranceRequired ? (
           <View style={[styles.sectionCard, styles.insuranceSectionCard]}>
-            <Text style={styles.insuranceTitle}>🛡 {uz.loadDetails.insuranceSection}</Text>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="shield-checkmark" size={18} color={colors.primary} style={styles.headerIcon} />
+              <Text style={styles.insuranceTitle}>{uz.loadDetails.insuranceSection}</Text>
+            </View>
             <Text style={styles.insuranceDesc}>{uz.loadDetails.insuranceRequired}</Text>
             {load.cargoValue != null ? (
               <Text style={styles.cargoValueText}>
@@ -397,7 +405,10 @@ export default function LoadDetailsScreen() {
         {/* Logist Notes */}
         {load.notes ? (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>💬 {uz.loadDetails.shipperNotes}</Text>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="chatbubble-ellipses-outline" size={17} color={colors.slate700} style={styles.headerIcon} />
+              <Text style={styles.sectionTitle}>{uz.loadDetails.shipperNotes}</Text>
+            </View>
             <Text style={styles.notesText}>{load.notes}</Text>
           </View>
         ) : null}
@@ -407,11 +418,11 @@ export default function LoadDetailsScreen() {
           <View style={[styles.sectionCard, styles.existingBidCard]}>
             <View style={styles.existingBidHeader}>
               <Text style={styles.existingBidTitle}>{uz.loadDetails.myBidSection}</Text>
-              <StatusBadge status={existingBid.status} />
+              <StatusBadge status={existingBid.status} size="sm" />
             </View>
 
             <View style={styles.existingBidPriceRow}>
-              <Money amount={existingBid.price} size="lg" color="#166534" weight="bold" />
+              <Money amount={existingBid.price} size="lg" color={colors.successDark} weight="800" />
             </View>
 
             {existingBid.comment ? (
@@ -427,7 +438,8 @@ export default function LoadDetailsScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={uz.loadDetails.editBid}
               >
-                <Text style={styles.editBidButtonText}>✏️ {uz.loadDetails.editBid}</Text>
+                <Ionicons name="pencil-outline" size={14} color={colors.primary} style={styles.btnActionIcon} />
+                <Text style={styles.editBidButtonText}>{uz.loadDetails.editBid}</Text>
               </Pressable>
 
               <Pressable
@@ -436,7 +448,8 @@ export default function LoadDetailsScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={uz.loadDetails.withdrawBid}
               >
-                <Text style={styles.withdrawBidButtonText}>✕ {uz.loadDetails.withdrawBid}</Text>
+                <Ionicons name="close-circle-outline" size={15} color={colors.danger} style={styles.btnActionIcon} />
+                <Text style={styles.withdrawBidButtonText}>{uz.loadDetails.withdrawBid}</Text>
               </Pressable>
             </View>
           </View>
@@ -636,11 +649,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
+  companyWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  headerIcon: {
+    marginRight: 6,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  btnActionIcon: {
+    marginRight: 4,
+  },
   companyTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#374151',
-    marginBottom: 8,
   },
   priceRow: {
     flexDirection: 'row',

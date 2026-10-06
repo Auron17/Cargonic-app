@@ -1,19 +1,23 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
+  View,
   ViewStyle,
   TextStyle,
 } from 'react-native';
+import { colors, radii } from '../theme';
 
 interface PrimaryButtonProps {
   title: string;
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  variant?: 'primary' | 'secondary' | 'danger' | 'outline';
+  variant?: 'primary' | 'secondary' | 'accent' | 'danger' | 'outline';
+  size?: 'sm' | 'md' | 'lg';
+  icon?: ReactNode;
   style?: ViewStyle;
   textStyle?: TextStyle;
   accessibilityLabel?: string;
@@ -25,6 +29,8 @@ export function PrimaryButton({
   loading = false,
   disabled = false,
   variant = 'primary',
+  size = 'md',
+  icon,
   style,
   textStyle,
   accessibilityLabel,
@@ -33,6 +39,8 @@ export function PrimaryButton({
 
   const getContainerStyle = () => {
     switch (variant) {
+      case 'accent':
+        return [styles.accentButton, isDisabled && styles.disabledAccent];
       case 'secondary':
         return [styles.secondaryButton, isDisabled && styles.disabledSecondary];
       case 'danger':
@@ -47,6 +55,8 @@ export function PrimaryButton({
 
   const getTextStyle = () => {
     switch (variant) {
+      case 'accent':
+        return [styles.accentText, isDisabled && styles.disabledAccentText];
       case 'secondary':
         return [styles.secondaryText, isDisabled && styles.disabledSecondaryText];
       case 'danger':
@@ -59,14 +69,38 @@ export function PrimaryButton({
     }
   };
 
+  const getSizeStyle = () => {
+    switch (size) {
+      case 'sm':
+        return styles.sizeSm;
+      case 'lg':
+        return styles.sizeLg;
+      case 'md':
+      default:
+        return styles.sizeMd;
+    }
+  };
+
+  const getTextSizeStyle = () => {
+    switch (size) {
+      case 'sm':
+        return styles.textSm;
+      case 'lg':
+        return styles.textLg;
+      case 'md':
+      default:
+        return styles.textMd;
+    }
+  };
+
   const getIndicatorColor = () => {
     switch (variant) {
       case 'outline':
-        return '#1a56db';
+        return colors.primary;
       case 'secondary':
-        return '#374151';
+        return colors.slate700;
       default:
-        return '#ffffff';
+        return '#FFFFFF';
     }
   };
 
@@ -79,6 +113,7 @@ export function PrimaryButton({
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       style={({ pressed }) => [
         styles.baseButton,
+        getSizeStyle(),
         getContainerStyle(),
         pressed && !isDisabled && styles.pressed,
         style,
@@ -87,9 +122,12 @@ export function PrimaryButton({
       {loading ? (
         <ActivityIndicator color={getIndicatorColor()} size="small" />
       ) : (
-        <Text style={[styles.baseText, getTextStyle(), textStyle]}>
-          {title}
-        </Text>
+        <View style={styles.contentRow}>
+          {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
+          <Text style={[styles.baseText, getTextSizeStyle(), getTextStyle(), textStyle]}>
+            {title}
+          </Text>
+        </View>
       )}
     </Pressable>
   );
@@ -97,71 +135,115 @@ export function PrimaryButton({
 
 const styles = StyleSheet.create({
   baseButton: {
-    minHeight: 52,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
+  },
+  sizeSm: {
+    minHeight: 40,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  sizeMd: {
+    minHeight: 52,
     paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  sizeLg: {
+    minHeight: 58,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+  },
+  contentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrap: {
+    marginRight: 8,
   },
   primaryButton: {
-    backgroundColor: '#1a56db', // Strong contrast royal blue
+    backgroundColor: colors.primary, // Highway Cobalt #1D4ED8
   },
   disabledPrimary: {
-    backgroundColor: '#93c5fd',
+    backgroundColor: '#93C5FD',
+  },
+  accentButton: {
+    backgroundColor: colors.accentDark, // Safety Amber #D97706
+  },
+  disabledAccent: {
+    backgroundColor: '#FDE68A',
   },
   secondaryButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.slate100,
+    borderWidth: 1,
+    borderColor: colors.slate200,
   },
   disabledSecondary: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.slate50,
+    borderColor: colors.slate100,
   },
   outlineButton: {
     backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#1a56db',
+    borderWidth: 1.5,
+    borderColor: colors.primary,
   },
   disabledOutline: {
-    borderColor: '#d1d5db',
+    borderColor: colors.slate300,
   },
   dangerButton: {
-    backgroundColor: '#dc2626',
+    backgroundColor: colors.dangerDark,
   },
   disabledDanger: {
-    backgroundColor: '#fca5a5',
+    backgroundColor: '#FCA5A5',
   },
   pressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.99 }],
+    opacity: 0.9,
+    transform: [{ scale: 0.985 }],
   },
   baseText: {
-    fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+  },
+  textSm: {
+    fontSize: 14,
+  },
+  textMd: {
+    fontSize: 16,
+  },
+  textLg: {
+    fontSize: 18,
   },
   primaryText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
   },
   disabledPrimaryText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
+  },
+  accentText: {
+    color: '#FFFFFF',
+  },
+  disabledAccentText: {
+    color: '#FFFFFF',
   },
   secondaryText: {
-    color: '#1f2937',
+    color: colors.slate800,
   },
   disabledSecondaryText: {
-    color: '#9ca3af',
+    color: colors.slate400,
   },
   outlineText: {
-    color: '#1a56db',
+    color: colors.primary,
   },
   disabledOutlineText: {
-    color: '#9ca3af',
+    color: colors.slate400,
   },
   dangerText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
   },
   disabledDangerText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
   },
 });

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { authApi } from '../../src/api/client';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { ErrorBanner, PrimaryButton, Screen, TextField } from '../../src/components';
 import { uz } from '../../src/i18n/uz';
 import { formatPhoneDisplay } from '../../src/utils/format';
+import { colors, radii, shadows } from '../../src/theme';
 
 export default function CodeScreen() {
   const { phone } = useLocalSearchParams<{ phone: string }>();
@@ -95,7 +97,9 @@ export default function CodeScreen() {
         }
       >
         <View style={styles.wrongRoleContainer}>
-          <Text style={styles.wrongRoleIcon}>🏢</Text>
+          <View style={styles.wrongRoleIconBox}>
+            <Ionicons name="business" size={42} color={colors.danger} />
+          </View>
           <Text style={styles.wrongRoleTitle}>{uz.auth.wrongRoleTitle}</Text>
           <Text style={styles.wrongRoleLead}>
             {uz.auth.wrongRoleLead}
@@ -119,55 +123,63 @@ export default function CodeScreen() {
           onPress={handleVerify}
           loading={isLoading}
           disabled={code.length !== 6}
+          icon={<Ionicons name="shield-checkmark-outline" size={18} color="#FFFFFF" />}
           accessibilityLabel={uz.auth.verify}
         />
       }
     >
       <View style={styles.container}>
-        <Text style={styles.title}>{uz.auth.codeTitle}</Text>
-        <Text style={styles.lead}>
-          {uz.auth.codeLead.replace('{{phone}}', formattedPhone)}
-        </Text>
+        <View style={styles.card}>
+          <Text style={styles.title}>{uz.auth.codeTitle}</Text>
+          <Text style={styles.lead}>
+            {uz.auth.codeLead.replace('{{phone}}', formattedPhone)}
+          </Text>
 
-        <ErrorBanner message={error} onDismiss={() => setError(null)} />
+          <ErrorBanner message={error} onDismiss={() => setError(null)} />
 
-        <TextField
-          label=""
-          placeholder={uz.auth.codePlaceholder}
-          value={code}
-          onChangeText={handleCodeChange}
-          keyboardType="number-pad"
-          maxLength={6}
-          autoFocus
-          style={styles.codeInput}
-        />
+          <TextField
+            label=""
+            placeholder={uz.auth.codePlaceholder}
+            value={code}
+            onChangeText={handleCodeChange}
+            keyboardType="number-pad"
+            maxLength={6}
+            autoFocus
+            style={styles.codeInput}
+          />
 
-        <View style={styles.timerRow}>
-          {timer > 0 ? (
-            <Text style={styles.timerText}>
-              {uz.auth.resendIn.replace('{{seconds}}', timer.toString())}
-            </Text>
-          ) : (
-            <Pressable
-              onPress={handleResend}
-              disabled={isLoading}
-              style={({ pressed }) => [pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel={uz.auth.resend}
-            >
-              <Text style={styles.resendButtonText}>{uz.auth.resend}</Text>
-            </Pressable>
-          )}
+          <View style={styles.timerRow}>
+            {timer > 0 ? (
+              <View style={styles.timerPill}>
+                <Ionicons name="time-outline" size={14} color={colors.slate500} style={styles.timerIcon} />
+                <Text style={styles.timerText}>
+                  {uz.auth.resendIn.replace('{{seconds}}', timer.toString())}
+                </Text>
+              </View>
+            ) : (
+              <Pressable
+                onPress={handleResend}
+                disabled={isLoading}
+                style={({ pressed }) => [styles.resendBtn, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={uz.auth.resend}
+              >
+                <Ionicons name="refresh" size={15} color={colors.primary} style={styles.timerIcon} />
+                <Text style={styles.resendButtonText}>{uz.auth.resend}</Text>
+              </Pressable>
+            )}
+          </View>
+
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={uz.auth.changePhone}
+          >
+            <Ionicons name="arrow-back" size={15} color={colors.slate600} style={styles.backIcon} />
+            <Text style={styles.backButtonText}>{uz.auth.changePhone}</Text>
+          </Pressable>
         </View>
-
-        <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={uz.auth.changePhone}
-        >
-          <Text style={styles.backButtonText}>← {uz.auth.changePhone}</Text>
-        </Pressable>
       </View>
     </Screen>
   );
@@ -177,17 +189,26 @@ const styles = StyleSheet.create({
   container: {
     paddingVertical: 16,
   },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: radii.xl,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.slate200,
+    ...shadows.card,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
-    color: '#111827',
-    marginBottom: 8,
+    color: colors.slate900,
+    marginBottom: 6,
+    letterSpacing: -0.3,
   },
   lead: {
-    fontSize: 15,
-    color: '#4b5563',
-    lineHeight: 22,
-    marginBottom: 24,
+    fontSize: 14.5,
+    color: colors.slate600,
+    lineHeight: 21,
+    marginBottom: 20,
   },
   codeInput: {
     fontSize: 28,
@@ -195,28 +216,54 @@ const styles = StyleSheet.create({
     letterSpacing: 10,
     textAlign: 'center',
     height: 60,
+    color: colors.primary,
   },
   timerRow: {
     alignItems: 'center',
-    marginVertical: 16,
+    marginVertical: 14,
+  },
+  timerPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.slate100,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radii.full,
+  },
+  timerIcon: {
+    marginRight: 5,
   },
   timerText: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '500',
+    fontSize: 13,
+    color: colors.slate600,
+    fontWeight: '600',
+  },
+  resendBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary50,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: radii.full,
   },
   resendButtonText: {
-    fontSize: 15,
-    color: '#1a56db',
+    fontSize: 14,
+    color: colors.primary,
     fontWeight: '700',
   },
   backButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    justifyContent: 'center',
+    paddingVertical: 10,
+    marginTop: 6,
+  },
+  backIcon: {
+    marginRight: 6,
   },
   backButtonText: {
-    fontSize: 15,
-    color: '#4b5563',
+    fontSize: 14,
+    color: colors.slate600,
     fontWeight: '600',
   },
   pressed: {
@@ -226,30 +273,35 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
-  wrongRoleIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+  wrongRoleIconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   wrongRoleTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.slate900,
     textAlign: 'center',
     marginBottom: 8,
   },
   wrongRoleLead: {
-    fontSize: 16,
-    color: '#4b5563',
+    fontSize: 15,
+    color: colors.slate600,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
     marginBottom: 12,
   },
   wrongRoleSub: {
-    fontSize: 14,
-    color: '#dc2626',
-    fontWeight: '600',
+    fontSize: 13.5,
+    color: colors.dangerDark,
+    fontWeight: '700',
     textAlign: 'center',
   },
 });

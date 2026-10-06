@@ -9,6 +9,8 @@ import {
   ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, radii, shadows } from '../theme';
 
 export interface SelectOption<T = string> {
   label: string;
@@ -64,7 +66,7 @@ export function Select<T = string>({
         >
           {selectedOption ? selectedOption.label : placeholder}
         </Text>
-        <Text style={styles.arrowIcon}>▼</Text>
+        <Ionicons name="chevron-down" size={18} color={colors.slate400} />
       </Pressable>
 
       {error ? (
@@ -90,7 +92,7 @@ export function Select<T = string>({
                 accessibilityRole="button"
                 accessibilityLabel="Yopish"
               >
-                <Text style={styles.closeButtonText}>✕</Text>
+                <Ionicons name="close" size={22} color={colors.slate600} />
               </Pressable>
             </View>
 
@@ -122,7 +124,7 @@ export function Select<T = string>({
                       ) : null}
                     </View>
                     {isSelected ? (
-                      <Text style={styles.checkmark}>✓</Text>
+                      <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
                     ) : null}
                   </Pressable>
                 );
@@ -140,62 +142,60 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1f2937',
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.slate800,
     marginBottom: 6,
+    letterSpacing: -0.1,
   },
   inputBox: {
     minHeight: 52,
     borderWidth: 1.5,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderColor: colors.slate200,
+    borderRadius: radii.lg,
+    paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   inputError: {
-    borderColor: '#ef4444',
-    backgroundColor: '#fef2f2',
+    borderColor: colors.danger,
+    backgroundColor: '#FEF2F2',
   },
   valueText: {
-    fontSize: 17,
-    color: '#111827',
+    fontSize: 16,
+    color: colors.slate900,
+    fontWeight: '500',
     flex: 1,
   },
   placeholderText: {
-    color: '#9ca3af',
-  },
-  arrowIcon: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginLeft: 8,
+    color: colors.slate400,
   },
   errorText: {
     fontSize: 13,
-    color: '#dc2626',
+    color: colors.dangerDark,
     marginTop: 4,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   hintText: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.slate500,
     marginTop: 4,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
     maxHeight: '75%',
     paddingTop: 16,
+    ...shadows.floating,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -204,20 +204,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: colors.slate100,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.slate900,
   },
   closeButton: {
     padding: 6,
-  },
-  closeButtonText: {
-    fontSize: 20,
-    color: '#6b7280',
-    fontWeight: '600',
   },
   optionItem: {
     flexDirection: 'row',
@@ -227,35 +222,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: colors.slate100,
   },
   selectedOptionItem: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primary50,
   },
   pressedOption: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.slate100,
   },
   optionTextContainer: {
     flex: 1,
     marginRight: 12,
   },
   optionLabel: {
-    fontSize: 17,
-    color: '#1f2937',
+    fontSize: 16,
+    color: colors.slate800,
     fontWeight: '500',
   },
   selectedOptionLabel: {
-    color: '#1a56db',
+    color: colors.primary,
     fontWeight: '700',
   },
   optionSubtitle: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.slate500,
     marginTop: 2,
-  },
-  checkmark: {
-    fontSize: 18,
-    color: '#1a56db',
-    fontWeight: '700',
   },
 });

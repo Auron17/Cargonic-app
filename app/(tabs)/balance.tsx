@@ -9,17 +9,18 @@ import {
   Text,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { carrierApi } from '../../src/api/client';
 import { EntryDto, EntryType, WalletDto } from '../../src/api/types';
 import {
   EmptyState,
   ErrorBanner,
   Money,
-  PrimaryButton,
   Screen,
 } from '../../src/components';
 import { uz } from '../../src/i18n/uz';
 import { formatDateTime, formatMoney } from '../../src/utils/format';
+import { colors, radii, shadows } from '../../src/theme';
 
 const ADMIN_PHONE = '+998900000001';
 const ADMIN_PHONE_DISPLAY = '+998 (90) 000-00-01';
@@ -56,15 +57,9 @@ export default function BalanceTabScreen() {
   const handleCallAdmin = async () => {
     const url = `tel:${ADMIN_PHONE}`;
     try {
-      const canOpen = await Linking.canOpenURL(url);
-      if (canOpen) {
-        await Linking.openURL(url);
-      } else {
-        await Linking.openURL(url);
-      }
+      await Linking.openURL(url);
     } catch {
       // Fallback
-      Linking.openURL(url);
     }
   };
 
@@ -73,35 +68,43 @@ export default function BalanceTabScreen() {
       case 'TOPUP':
         return {
           label: uz.wallet.types.TOPUP,
-          color: '#166534',
-          bg: '#dcfce7',
+          color: colors.successDark,
+          bg: '#ECFDF5',
+          border: '#A7F3D0',
           prefix: '+',
           isPositive: true,
+          icon: 'arrow-down-circle' as const,
         };
       case 'COMMISSION':
         return {
           label: uz.wallet.types.COMMISSION,
-          color: '#991b1b',
-          bg: '#fee2e2',
+          color: colors.dangerDark,
+          bg: '#FEF2F2',
+          border: '#FECACA',
           prefix: '-',
           isPositive: false,
+          icon: 'arrow-up-circle' as const,
         };
       case 'REFUND':
         return {
           label: uz.wallet.types.REFUND,
-          color: '#166534',
-          bg: '#dcfce7',
+          color: colors.successDark,
+          bg: '#ECFDF5',
+          border: '#A7F3D0',
           prefix: '+',
           isPositive: true,
+          icon: 'refresh-circle' as const,
         };
       case 'ADJUSTMENT':
       default:
         return {
           label: uz.wallet.types.ADJUSTMENT,
-          color: '#1e40af',
-          bg: '#dbeafe',
+          color: colors.primary,
+          bg: colors.primary50,
+          border: '#BFDBFE',
           prefix: '',
           isPositive: false,
+          icon: 'swap-horizontal' as const,
         };
     }
   };
@@ -116,7 +119,8 @@ export default function BalanceTabScreen() {
     return (
       <View style={styles.entryCard} accessibilityRole="text">
         <View style={styles.entryLeft}>
-          <View style={[styles.entryBadge, { backgroundColor: config.bg }]}>
+          <View style={[styles.entryBadge, { backgroundColor: config.bg, borderColor: config.border }]}>
+            <Ionicons name={config.icon} size={13} color={config.color} style={styles.entryBadgeIcon} />
             <Text style={[styles.entryBadgeText, { color: config.color }]}>
               {config.label}
             </Text>
@@ -139,7 +143,7 @@ export default function BalanceTabScreen() {
           <Text
             style={[
               styles.entryAmount,
-              { color: item.amount >= 0 ? '#16a34a' : '#dc2626' },
+              { color: item.amount >= 0 ? colors.successDark : colors.dangerDark },
             ]}
           >
             {formattedAmount}
@@ -149,215 +153,281 @@ export default function BalanceTabScreen() {
     );
   };
 
-  return (
-    <Screen
-      scrollable
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor="#1a56db"
-          colors={['#1a56db']}
-        />
-      }
-    >
-      <ErrorBanner message={error} onRetry={fetchWallet} />
+  const renderHeader = () => {
+    return (
+      <View style={styles.headerContainer}>
+        {/* Hero Balance Card */}
+        <View style={styles.heroCard}>
+          <View style={styles.heroTopRow}>
+            <Text style={styles.heroLabel}>{uz.wallet.currentBalance}</Text>
+            <View style={styles.statusPill}>
+              <View style={styles.activeDot} />
+              <Text style={styles.statusPillText}>Hamyon faol</Text>
+            </View>
+          </View>
 
-      {/* Main Balance Card */}
-      <View style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>{uz.wallet.currentBalance}</Text>
-        <Money
-          amount={wallet?.balance ?? 0}
-          size="xl"
-          color="#ffffff"
-          style={styles.balanceAmount}
-        />
-        <Text style={styles.currencyNotice}>O‘zbekiston so‘mi</Text>
-      </View>
+          <View style={styles.heroAmountRow}>
+            <Money
+              amount={wallet?.balance ?? 0}
+              size="xl"
+              color="#FFFFFF"
+              weight="800"
+            />
+          </View>
 
-      {/* Topup Info & Admin Call Action */}
-      <View style={styles.topupBox}>
-        <View style={styles.topupTextRow}>
-          <Text style={styles.topupIcon}>ℹ️</Text>
-          <View style={styles.topupTextContainer}>
-            <Text style={styles.topupTitle}>{uz.wallet.topUpInstruction}</Text>
-            <Text style={styles.topupPhone}>{ADMIN_PHONE_DISPLAY}</Text>
+          <View style={styles.heroDivider} />
+
+          <View style={styles.heroActionBox}>
+            <View style={styles.instructionWrap}>
+              <Ionicons name="information-circle-outline" size={16} color="#94A3B8" style={styles.infoIcon} />
+              <Text style={styles.heroInstructionText}>
+                {uz.wallet.topUpInstruction}
+              </Text>
+            </View>
+
+            <Pressable
+              onPress={handleCallAdmin}
+              style={({ pressed }) => [
+                styles.topUpButton,
+                pressed && styles.topUpButtonPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={uz.wallet.callAdmin}
+            >
+              <Ionicons name="call" size={16} color="#FFFFFF" style={styles.callIcon} />
+              <Text style={styles.topUpButtonText}>{ADMIN_PHONE_DISPLAY}</Text>
+            </Pressable>
           </View>
         </View>
 
-        <PrimaryButton
-          title={uz.wallet.callAdmin}
-          onPress={handleCallAdmin}
-          style={styles.callButton}
-          accessibilityLabel={`${uz.wallet.callAdmin}: ${ADMIN_PHONE_DISPLAY}`}
-        />
-      </View>
-
-      {/* Entries Title */}
-      <View style={styles.historyHeader}>
-        <Text style={styles.historyTitle}>{uz.wallet.entriesTitle}</Text>
-      </View>
-
-      {/* Entries List or Empty */}
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator color="#1a56db" size="large" />
-          <Text style={styles.loadingText}>{uz.common.loading}</Text>
+        {/* Section title */}
+        <View style={styles.entriesSectionHeader}>
+          <Text style={styles.entriesTitle}>{uz.wallet.entriesTitle}</Text>
+          {wallet?.entries && wallet.entries.length > 0 ? (
+            <Text style={styles.entriesCount}>{wallet.entries.length} ta yozuv</Text>
+          ) : null}
         </View>
-      ) : !wallet?.entries || wallet.entries.length === 0 ? (
-        <EmptyState
-          title={uz.wallet.emptyEntries}
-          description="Balans to‘ldirilganda yoki reys komissiyasi yechilganda hisob yozuvlari shu yerda ko‘rinadi."
-          icon="💳"
-        />
-      ) : (
-        <View style={styles.entriesList}>
-          {wallet.entries.map((entry) => (
-            <React.Fragment key={entry.id}>
-              {renderEntryItem({ item: entry })}
-            </React.Fragment>
-          ))}
-        </View>
-      )}
+      </View>
+    );
+  };
+
+  if (loading && !wallet) {
+    return (
+      <Screen style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>{uz.common.loading}</Text>
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen style={styles.screen}>
+      {error && !wallet ? (
+        <ErrorBanner message={error} onRetry={fetchWallet} />
+      ) : null}
+
+      <FlatList
+        data={wallet?.entries || []}
+        keyExtractor={(item) => item.id}
+        renderItem={renderEntryItem}
+        ListHeaderComponent={renderHeader}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+        ListEmptyComponent={
+          !loading ? (
+            <EmptyState
+              iconName="wallet-outline"
+              title={uz.wallet.emptyEntries}
+              description="Bajarilgan reyslar va to‘lovlar tarixi shu yerda qayd etiladi."
+            />
+          ) : null
+        }
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  balanceCard: {
-    backgroundColor: '#1a56db',
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 16,
-    shadowColor: '#1a56db',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 4,
+  screen: {
+    paddingHorizontal: 0,
+    backgroundColor: colors.background,
   },
-  balanceLabel: {
-    fontSize: 14,
-    color: '#bfdbfe',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 8,
-  },
-  balanceAmount: {
-    fontSize: 34,
-    fontWeight: '800',
-    color: '#ffffff',
-    marginBottom: 4,
-  },
-  currencyNotice: {
-    fontSize: 13,
-    color: '#93c5fd',
-    fontWeight: '500',
-  },
-  topupBox: {
-    backgroundColor: '#eff6ff',
-    borderWidth: 1.5,
-    borderColor: '#bfdbfe',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-  },
-  topupTextRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  topupIcon: {
-    fontSize: 22,
-    marginRight: 10,
-    marginTop: 2,
-  },
-  topupTextContainer: {
-    flex: 1,
-  },
-  topupTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1e3a8a',
-    lineHeight: 20,
-  },
-  topupPhone: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#1a56db',
-    marginTop: 2,
-  },
-  callButton: {
-    minHeight: 48,
-    borderRadius: 12,
-  },
-  historyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  historyTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  loadingContainer: {
-    paddingVertical: 40,
+  centerContainer: {
+    justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#6b7280',
+    marginTop: 12,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.slate600,
   },
-  entriesList: {
-    paddingBottom: 24,
+  listContent: {
+    padding: 16,
+    paddingBottom: 40,
   },
-  entryCard: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
+  headerContainer: {
+    marginBottom: 8,
+  },
+  heroCard: {
+    backgroundColor: '#0F172A', // Deep Slate
+    borderRadius: radii.xl,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: '#334155',
+    ...shadows.floating,
+  },
+  heroTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 10,
+  },
+  heroLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.success,
+    marginRight: 5,
+  },
+  statusPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#34D399',
+  },
+  heroAmountRow: {
+    marginVertical: 4,
+  },
+  heroDivider: {
+    height: 1,
+    backgroundColor: '#1E293B',
+    marginVertical: 16,
+  },
+  heroActionBox: {
+    gap: 12,
+  },
+  instructionWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  infoIcon: {
+    marginRight: 6,
+  },
+  heroInstructionText: {
+    fontSize: 12.5,
+    color: '#94A3B8',
+    flex: 1,
+    lineHeight: 18,
+  },
+  topUpButton: {
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: radii.md,
+  },
+  topUpButtonPressed: {
+    backgroundColor: colors.primaryDark,
+  },
+  callIcon: {
+    marginRight: 8,
+  },
+  topUpButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  entriesSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  entriesTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.slate900,
+  },
+  entriesCount: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.slate500,
+  },
+  entryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: radii.lg,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.slate200,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    ...shadows.card,
   },
   entryLeft: {
     flex: 1,
-    paddingRight: 12,
+    marginRight: 12,
   },
   entryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: radii.sm,
+    borderWidth: 1,
     alignSelf: 'flex-start',
     marginBottom: 6,
   },
+  entryBadgeIcon: {
+    marginRight: 4,
+  },
   entryBadgeText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
   },
   entryComment: {
-    fontSize: 14,
-    color: '#374151',
+    fontSize: 13.5,
     fontWeight: '600',
+    color: colors.slate800,
     marginBottom: 4,
-    lineHeight: 18,
   },
   entryDate: {
     fontSize: 12,
-    color: '#9ca3af',
-    fontWeight: '500',
+    color: colors.slate400,
   },
   entryRight: {
     alignItems: 'flex-end',
   },
   entryAmount: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
-    letterSpacing: 0.2,
+    fontVariant: ['tabular-nums'],
   },
 });

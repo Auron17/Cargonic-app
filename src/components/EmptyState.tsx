@@ -1,11 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { PrimaryButton } from './PrimaryButton';
+import { colors, radii } from '../theme';
 
 interface EmptyStateProps {
   title: string;
   description?: string;
   icon?: string;
+  iconName?: keyof typeof Ionicons.glyphMap;
   actionTitle?: string;
   onAction?: () => void;
   style?: ViewStyle;
@@ -14,14 +17,21 @@ interface EmptyStateProps {
 export function EmptyState({
   title,
   description,
-  icon = '📦',
+  icon,
+  iconName = 'cube-outline',
   actionTitle,
   onAction,
   style,
 }: EmptyStateProps) {
   return (
     <View style={[styles.container, style]}>
-      <Text style={styles.icon}>{icon}</Text>
+      <View style={styles.iconCircle}>
+        {icon ? (
+          <Text style={styles.emojiText}>{icon}</Text>
+        ) : (
+          <Ionicons name={iconName} size={36} color={colors.slate400} />
+        )}
+      </View>
       <Text style={styles.title}>{title}</Text>
       {description ? <Text style={styles.description}>{description}</Text> : null}
 
@@ -31,6 +41,7 @@ export function EmptyState({
             title={actionTitle}
             onPress={onAction}
             variant="outline"
+            size="sm"
           />
         </View>
       ) : null}
@@ -43,29 +54,41 @@ const styles = StyleSheet.create({
     padding: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 40,
+    marginTop: 24,
   },
-  icon: {
-    fontSize: 54,
+  iconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: radii.full,
+    backgroundColor: colors.slate100,
+    borderWidth: 1,
+    borderColor: colors.slate200,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
   },
+  emojiText: {
+    fontSize: 34,
+  },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.slate800,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
+    letterSpacing: -0.2,
   },
   description: {
-    fontSize: 15,
-    color: '#6b7280',
+    fontSize: 14,
+    color: colors.slate500,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 20,
+    lineHeight: 20,
+    marginBottom: 16,
+    maxWidth: 280,
   },
   buttonContainer: {
     width: '100%',
-    maxWidth: 240,
-    marginTop: 8,
+    maxWidth: 220,
+    marginTop: 4,
   },
 });

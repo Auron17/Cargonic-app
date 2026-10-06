@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 import { loadsApi } from '../../src/api/client';
 import { FeedItem } from '../../src/api/types';
 import {
@@ -19,6 +20,7 @@ import {
 } from '../../src/components';
 import { formatDate } from '../../src/utils/format';
 import { uz } from '../../src/i18n/uz';
+import { colors, radii, shadows } from '../../src/theme';
 
 export default function LoadsFeedScreen() {
   const router = useRouter();
@@ -49,6 +51,8 @@ export default function LoadsFeedScreen() {
   const renderFeedCard = ({ item }: { item: FeedItem }) => {
     const isFixed = item.priceMode === 'FIXED';
     const bodyTypeName = uz.bodyType[item.requiredBodyType] || item.requiredBodyType;
+    const distanceToPickup = Math.round(item.distanceKm);
+    const routeDistance = Math.round(item.routeKm);
 
     return (
       <Pressable
@@ -60,105 +64,118 @@ export default function LoadsFeedScreen() {
         accessibilityRole="button"
         accessibilityLabel={`${item.pickupAddress} dan ${item.dropoffAddress} gacha yuk, ${item.weightTons} tonna`}
       >
-        {/* Top bar: Distance to pickup & company */}
+        {/* Top Header: Proximity Badge & Company Name */}
         <View style={styles.cardHeader}>
-          <View style={styles.pickupDistanceBadge}>
-            <Text style={styles.pickupDistanceText}>
-              📍 {uz.loadsTab.distanceToPickup.replace('{{km}}', String(Math.round(item.distanceKm)))}
+          <View style={styles.proximityBadge}>
+            <Ionicons name="location-sharp" size={13} color={colors.successDark} style={styles.badgeIcon} />
+            <Text style={styles.proximityText}>
+              {distanceToPickup} km yaqinlikda
             </Text>
           </View>
+
           {item.companyName ? (
-            <Text style={styles.companyName} numberOfLines={1}>
-              🏢 {item.companyName}
-            </Text>
-          ) : null}
-        </View>
-
-        {/* Route: From -> To */}
-        <View style={styles.routeContainer}>
-          <View style={styles.routeRow}>
-            <View style={[styles.routeDot, styles.dotPickup]} />
-            <Text style={styles.addressText} numberOfLines={2}>
-              {item.pickupAddress}
-            </Text>
-          </View>
-
-          <View style={styles.routeLine} />
-
-          <View style={styles.routeRow}>
-            <View style={[styles.routeDot, styles.dotDropoff]} />
-            <Text style={styles.addressText} numberOfLines={2}>
-              {item.dropoffAddress}
-            </Text>
-          </View>
-        </View>
-
-        {/* Cargo specs badges */}
-        <View style={styles.chipsRow}>
-          <View style={styles.chip}>
-            <Text style={styles.chipText}>
-              📦 {item.cargoType} • {item.weightTons} {uz.common.tons}
-              {item.volumeM3 ? ` • ${item.volumeM3} ${uz.common.m3}` : ''}
-            </Text>
-          </View>
-
-          <View style={styles.chip}>
-            <Text style={styles.chipText}>🚛 {bodyTypeName}</Text>
-          </View>
-
-          <View style={styles.chip}>
-            <Text style={styles.chipText}>
-              🛣 {uz.loadsTab.routeLength.replace('{{km}}', String(Math.round(item.routeKm)))}
-            </Text>
-          </View>
-
-          {item.insuranceRequired ? (
-            <View style={[styles.chip, styles.insuranceChip]}>
-              <Text style={styles.insuranceChipText}>
-                🛡 {uz.loadsTab.insuranceBadge}
+            <View style={styles.companyWrap}>
+              <Ionicons name="business-outline" size={13} color={colors.slate500} style={styles.badgeIcon} />
+              <Text style={styles.companyName} numberOfLines={1}>
+                {item.companyName}
               </Text>
             </View>
           ) : null}
         </View>
 
-        {/* Date & Time */}
-        <View style={styles.dateRow}>
-          <Text style={styles.dateText}>
-            📅 {uz.loadsTab.pickupDate.replace('{{date}}', formatDate(item.pickupDate))}
-            {item.pickupTimeFrom && item.pickupTimeTo
-              ? ` (${item.pickupTimeFrom} – ${item.pickupTimeTo})`
-              : ''}
-          </Text>
+        {/* Route Visualizer: Origin to Destination */}
+        <View style={styles.routeSection}>
+          {/* Pickup */}
+          <View style={styles.routeRow}>
+            <View style={styles.nodeOriginWrap}>
+              <View style={styles.nodeOrigin} />
+            </View>
+            <View style={styles.addressBlock}>
+              <Text style={styles.addressCity} numberOfLines={1}>
+                {item.pickupAddress}
+              </Text>
+              <Text style={styles.dateSubtext}>
+                📅 {formatDate(item.pickupDate)}
+                {item.pickupTimeFrom && item.pickupTimeTo ? ` (${item.pickupTimeFrom}–${item.pickupTimeTo})` : ''}
+              </Text>
+            </View>
+          </View>
+
+          {/* Connecting Track with Distance Badge */}
+          <View style={styles.connectorRow}>
+            <View style={styles.connectorLine} />
+            <View style={styles.routeDistancePill}>
+              <Ionicons name="git-commit-outline" size={12} color={colors.slate500} style={styles.pillIcon} />
+              <Text style={styles.routeDistanceText}>{routeDistance} km yo‘nalish</Text>
+            </View>
+          </View>
+
+          {/* Dropoff */}
+          <View style={styles.routeRow}>
+            <View style={styles.nodeDestWrap}>
+              <View style={styles.nodeDest} />
+            </View>
+            <View style={styles.addressBlock}>
+              <Text style={styles.addressCity} numberOfLines={1}>
+                {item.dropoffAddress}
+              </Text>
+            </View>
+          </View>
         </View>
 
-        {/* User's existing bid notice if placed */}
+        {/* Specifications Chips */}
+        <View style={styles.chipsRow}>
+          <View style={styles.chip}>
+            <Ionicons name="cube-outline" size={13} color={colors.slate700} style={styles.chipIcon} />
+            <Text style={styles.chipText}>
+              {item.cargoType} • {item.weightTons} {uz.common.tons}
+              {item.volumeM3 ? ` • ${item.volumeM3} ${uz.common.m3}` : ''}
+            </Text>
+          </View>
+
+          <View style={styles.chip}>
+            <Ionicons name="car-outline" size={13} color={colors.slate700} style={styles.chipIcon} />
+            <Text style={styles.chipText}>{bodyTypeName}</Text>
+          </View>
+
+          {item.insuranceRequired ? (
+            <View style={[styles.chip, styles.insuranceChip]}>
+              <Ionicons name="shield-checkmark" size={13} color={colors.primary} style={styles.chipIcon} />
+              <Text style={styles.insuranceChipText}>{uz.loadsTab.insuranceBadge}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* Driver's Bid Banner if placed */}
         {item.myBidPrice != null ? (
           <View style={styles.myBidBanner}>
+            <Ionicons name="pricetag" size={14} color={colors.accentDark} style={styles.myBidIcon} />
             <Text style={styles.myBidBannerText}>
-              🏷 {uz.loadsTab.myBidAmount.replace('{{amount}}', `${item.myBidPrice.toLocaleString()} ${uz.common.moneySuffix}`)}
+              Sizning taklifingiz: {item.myBidPrice.toLocaleString()} {uz.common.moneySuffix}
             </Text>
           </View>
         ) : null}
 
-        {/* Bottom price footer */}
+        {/* Card Footer: Price & Action CTA */}
         <View style={styles.cardFooter}>
-          <View>
-            <Text style={styles.priceLabel}>
+          <View style={styles.priceContainer}>
+            <Text style={styles.priceTypeLabel}>
               {isFixed ? uz.priceMode.FIXED : uz.priceMode.BIDDING}
             </Text>
             {isFixed && item.price != null ? (
-              <Money amount={item.price} size="lg" color="#1a56db" weight="bold" />
+              <Money amount={item.price} size="lg" color={colors.primary} weight="800" />
             ) : (
               <Text style={styles.biddingAwaitingText}>
-                {uz.loadsTab.biddingAwaiting}
+                Taklif kiritiladi
               </Text>
             )}
           </View>
 
-          <View style={styles.actionPrompt}>
-            <Text style={styles.actionPromptText}>
-              {isFixed ? `${uz.loadDetails.bookButton} →` : `${uz.loadDetails.placeBidButton} →`}
+          <View style={[styles.actionBtn, isFixed ? styles.actionBtnFixed : styles.actionBtnBid]}>
+            <Text style={styles.actionBtnText}>
+              {isFixed ? uz.loadDetails.bookButton : uz.loadDetails.placeBidButton}
             </Text>
+            <Ionicons name="arrow-forward" size={15} color="#FFFFFF" style={styles.actionBtnIcon} />
           </View>
         </View>
       </Pressable>
@@ -167,11 +184,14 @@ export default function LoadsFeedScreen() {
 
   return (
     <Screen style={styles.screen}>
-      {/* Header bar with 'Takliflarim' shortcut */}
+      {/* Top Header Bar */}
       <View style={styles.topBar}>
         <View>
           <Text style={styles.screenTitle}>{uz.loadsTab.title}</Text>
-          <Text style={styles.screenSubtitle}>{uz.loadsTab.autoRefreshInfo}</Text>
+          <View style={styles.liveIndicator}>
+            <View style={styles.liveDot} />
+            <Text style={styles.screenSubtitle}>Jonli lentalar • Har daqiqa yangilanadi</Text>
+          </View>
         </View>
 
         <Pressable
@@ -183,7 +203,7 @@ export default function LoadsFeedScreen() {
           accessibilityRole="button"
           accessibilityLabel={uz.loadsTab.myBids}
         >
-          <Text style={styles.bidsButtonIcon}>📑</Text>
+          <Ionicons name="receipt-outline" size={16} color={colors.primary} style={styles.bidsIcon} />
           <Text style={styles.bidsButtonText}>{uz.loadsTab.myBids}</Text>
         </Pressable>
       </View>
@@ -203,20 +223,23 @@ export default function LoadsFeedScreen() {
           styles.listContent,
           (!feedItems || feedItems.length === 0) && styles.emptyListContent,
         ]}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching || (isLoading && !feedItems)}
             onRefresh={refetch}
-            colors={['#1a56db']}
-            tintColor="#1a56db"
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
         ListEmptyComponent={
           !isLoading ? (
             <EmptyState
-              icon="📦"
+              iconName="cube-outline"
               title={uz.loadsTab.emptyTitle}
               description={uz.loadsTab.emptyDesc}
+              actionTitle="Yangilash"
+              onAction={refetch}
             />
           ) : null
         }
@@ -228,212 +251,288 @@ export default function LoadsFeedScreen() {
 const styles = StyleSheet.create({
   screen: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 6,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
     paddingVertical: 4,
   },
   screenTitle: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.slate900,
+    letterSpacing: -0.4,
+  },
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 3,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.success,
+    marginRight: 6,
   },
   screenSubtitle: {
     fontSize: 12,
-    color: '#6b7280',
-    marginTop: 2,
+    fontWeight: '500',
+    color: colors.slate500,
   },
   bidsButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eff6ff',
-    borderWidth: 1.5,
-    borderColor: '#bfdbfe',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    minHeight: 44,
+    backgroundColor: colors.primary50,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: radii.md,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minHeight: 38,
   },
   bidsButtonPressed: {
-    backgroundColor: '#dbeafe',
+    backgroundColor: '#DBEAFE',
   },
-  bidsButtonIcon: {
-    fontSize: 16,
-    marginRight: 6,
+  bidsIcon: {
+    marginRight: 5,
   },
   bidsButtonText: {
-    fontSize: 15,
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#1a56db',
+    color: colors.primary,
   },
   listContent: {
-    paddingBottom: 24,
-    gap: 16,
+    paddingBottom: 28,
+    gap: 14,
   },
   emptyListContent: {
     flexGrow: 1,
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: radii.lg,
     padding: 16,
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.slate200,
+    ...shadows.card,
   },
   cardPressed: {
-    borderColor: '#1a56db',
-    backgroundColor: '#f9fafb',
+    borderColor: colors.primary,
     transform: [{ scale: 0.995 }],
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
-  pickupDistanceBadge: {
-    backgroundColor: '#f0fdf4',
+  proximityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
     borderWidth: 1,
-    borderColor: '#bbf7d0',
-    borderRadius: 8,
+    borderColor: '#A7F3D0',
+    borderRadius: radii.full,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
   },
-  pickupDistanceText: {
-    fontSize: 12,
+  badgeIcon: {
+    marginRight: 4,
+  },
+  proximityText: {
+    fontSize: 11.5,
     fontWeight: '700',
-    color: '#166534',
+    color: colors.successDark,
   },
-  companyName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4b5563',
+  companyWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
     maxWidth: '55%',
   },
-  routeContainer: {
-    marginBottom: 12,
+  companyName: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: colors.slate600,
+  },
+  routeSection: {
+    marginBottom: 14,
   },
   routeRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
-  routeDot: {
+  nodeOriginWrap: {
+    width: 20,
+    alignItems: 'center',
+    paddingTop: 3,
+  },
+  nodeOrigin: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    marginRight: 10,
+    backgroundColor: colors.successDark,
+    borderWidth: 2,
+    borderColor: '#A7F3D0',
   },
-  dotPickup: {
-    backgroundColor: '#16a34a',
+  nodeDestWrap: {
+    width: 20,
+    alignItems: 'center',
+    paddingTop: 3,
   },
-  dotDropoff: {
-    backgroundColor: '#dc2626',
+  nodeDest: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.dangerDark,
+    borderWidth: 2,
+    borderColor: '#FECACA',
   },
-  routeLine: {
-    width: 2,
-    height: 14,
-    backgroundColor: '#d1d5db',
-    marginLeft: 4,
+  connectorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginVertical: 2,
   },
-  addressText: {
+  connectorLine: {
+    width: 2,
+    height: 20,
+    backgroundColor: colors.slate300,
+    marginLeft: 9,
+    marginRight: 10,
+  },
+  routeDistancePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.slate100,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radii.sm,
+  },
+  pillIcon: {
+    marginRight: 4,
+  },
+  routeDistanceText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.slate600,
+  },
+  addressBlock: {
     flex: 1,
-    fontSize: 16,
+    marginLeft: 8,
+  },
+  addressCity: {
+    fontSize: 15.5,
     fontWeight: '700',
-    color: '#111827',
-    lineHeight: 22,
+    color: colors.slate900,
+    lineHeight: 20,
+  },
+  dateSubtext: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.slate500,
+    marginTop: 2,
   },
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   chip: {
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.slate100,
+    borderRadius: radii.sm,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 4.5,
+  },
+  chipIcon: {
+    marginRight: 4,
   },
   chipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.slate700,
   },
   insuranceChip: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primary50,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: '#BFDBFE',
   },
   insuranceChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#1a56db',
-  },
-  dateRow: {
-    marginBottom: 10,
-  },
-  dateText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4b5563',
+    color: colors.primary,
   },
   myBidBanner: {
-    backgroundColor: '#fef3c7',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBEB',
     borderWidth: 1,
-    borderColor: '#fde68a',
-    borderRadius: 8,
+    borderColor: '#FDE68A',
+    borderRadius: radii.md,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginBottom: 10,
+    paddingVertical: 7,
+    marginBottom: 12,
+  },
+  myBidIcon: {
+    marginRight: 6,
   },
   myBidBannerText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#92400e',
+    color: '#92400E',
   },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    borderTopColor: colors.slate100,
     paddingTop: 12,
-    marginTop: 4,
+    marginTop: 2,
   },
-  priceLabel: {
-    fontSize: 12,
+  priceContainer: {
+    flex: 1,
+  },
+  priceTypeLabel: {
+    fontSize: 11.5,
     fontWeight: '600',
-    color: '#6b7280',
+    color: colors.slate500,
     marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   biddingAwaitingText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
-    color: '#d97706',
+    color: colors.accentDark,
   },
-  actionPrompt: {
-    backgroundColor: '#1a56db',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    minHeight: 38,
-    justifyContent: 'center',
+  actionBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
+    borderRadius: radii.md,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    minHeight: 40,
   },
-  actionPromptText: {
-    color: '#ffffff',
-    fontSize: 14,
+  actionBtnFixed: {
+    backgroundColor: colors.primary,
+  },
+  actionBtnBid: {
+    backgroundColor: colors.accentDark,
+  },
+  actionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13.5,
     fontWeight: '700',
+    marginRight: 4,
+  },
+  actionBtnIcon: {
+    marginLeft: 2,
   },
 });

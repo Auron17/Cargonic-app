@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { authApi } from '../../src/api/client';
 import { ErrorBanner, PrimaryButton, Screen, TextField } from '../../src/components';
 import { uz } from '../../src/i18n/uz';
 import { cleanPhoneNumber, formatPhoneDisplay } from '../../src/utils/format';
+import { colors, radii, shadows } from '../../src/theme';
 
 export default function PhoneScreen() {
   const [phoneInput, setPhoneInput] = useState('');
@@ -13,13 +15,11 @@ export default function PhoneScreen() {
   const router = useRouter();
 
   const handlePhoneChange = (text: string) => {
-    // Only accept numbers
     const digits = text.replace(/\D/g, '');
     let localDigits = digits;
     if (localDigits.startsWith('998')) {
       localDigits = localDigits.slice(3);
     }
-    // Limit to 9 local digits
     localDigits = localDigits.slice(0, 9);
 
     if (localDigits.length === 0) {
@@ -75,13 +75,14 @@ export default function PhoneScreen() {
           onPress={handleSendCode}
           loading={isLoading}
           disabled={!isPhoneValid}
+          icon={<Ionicons name="paper-plane" size={16} color="#FFFFFF" />}
           accessibilityLabel={uz.auth.sendCode}
         />
       }
     >
       <View style={styles.header}>
         <View style={styles.iconCircle}>
-          <Text style={styles.truckIcon}>🚛</Text>
+          <Ionicons name="cube" size={36} color={colors.primary} />
         </View>
         <Text style={styles.brandTitle}>{uz.app.name}</Text>
         <Text style={styles.brandTagline}>{uz.app.tagline}</Text>
@@ -94,17 +95,16 @@ export default function PhoneScreen() {
         <ErrorBanner message={error} onDismiss={() => setError(null)} />
 
         <TextField
-          label=""
           placeholder="+998 (90) 123-45-67"
           value={phoneInput}
           onChangeText={handlePhoneChange}
           keyboardType="phone-pad"
           autoFocus
           maxLength={19}
-          style={styles.phoneInput}
+          leftIcon={<Ionicons name="call-outline" size={18} color={colors.slate400} />}
         />
 
-        <Text style={styles.termsText}>{uz.auth.termsNotice}</Text>
+        <Text style={styles.termsNotice}>{uz.auth.termsNotice}</Text>
       </View>
     </Screen>
   );
@@ -116,57 +116,54 @@ const styles = StyleSheet.create({
     marginVertical: 24,
   },
   iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#eff6ff',
+    width: 76,
+    height: 76,
+    borderRadius: radii.full,
+    backgroundColor: colors.primary50,
+    borderWidth: 1.5,
+    borderColor: '#BFDBFE',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
-  },
-  truckIcon: {
-    fontSize: 36,
+    marginBottom: 16,
+    ...shadows.subtle,
   },
   brandTitle: {
     fontSize: 26,
     fontWeight: '800',
-    color: '#1a56db',
-    letterSpacing: -0.5,
+    color: colors.slate900,
+    letterSpacing: -0.4,
+    marginBottom: 4,
   },
   brandTagline: {
-    fontSize: 15,
-    color: '#4b5563',
-    marginTop: 4,
-    textAlign: 'center',
+    fontSize: 14,
+    color: colors.slate500,
+    fontWeight: '500',
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: radii.xl,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.slate200,
+    ...shadows.card,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.slate900,
     marginBottom: 6,
   },
   sectionLead: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.slate600,
     lineHeight: 20,
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  phoneInput: {
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: 1,
-    height: 56,
-  },
-  termsText: {
+  termsNotice: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: colors.slate400,
     textAlign: 'center',
-    lineHeight: 18,
-    marginTop: 12,
+    marginTop: 8,
+    lineHeight: 16,
   },
 });

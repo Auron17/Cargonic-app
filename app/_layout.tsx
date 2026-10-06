@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../src/auth/AuthProvider';
+import { OtaProvider } from '../src/updates';
 import { usePushNotifications } from '../src/notifications/usePushNotifications';
 import { useForegroundLocation } from '../src/tracking/useForegroundLocation';
 import '../src/tracking/backgroundTask';
@@ -31,21 +32,23 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <AppServices />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              animation: 'slide_from_right',
-              contentStyle: { backgroundColor: '#ffffff' },
-            }}
-          >
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="loads/[id]" options={{ headerShown: false }} />
-            <Stack.Screen name="bids" options={{ headerShown: false }} />
-            <Stack.Screen name="trips/[id]" options={{ headerShown: false }} />
-          </Stack>
+          <OtaProvider>
+            <AppServices />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                contentStyle: { backgroundColor: '#F8FAFC' },
+              }}
+            >
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="loads/[id]" options={{ headerShown: false }} />
+              <Stack.Screen name="bids" options={{ headerShown: false }} />
+              <Stack.Screen name="trips/[id]" options={{ headerShown: false }} />
+            </Stack>
+          </OtaProvider>
         </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

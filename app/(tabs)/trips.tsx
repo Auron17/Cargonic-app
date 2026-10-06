@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 import { tripsApi } from '../../src/api/client';
 import { TripListItem } from '../../src/api/types';
 import {
@@ -23,6 +24,7 @@ import { uz } from '../../src/i18n/uz';
 import { isTrackingActive } from '../../src/tracking/backgroundTask';
 import { isActiveTrip } from '../../src/trips/nextStatus';
 import { formatDate } from '../../src/utils/format';
+import { colors, radii, shadows } from '../../src/theme';
 
 export default function TripsTabScreen() {
   const router = useRouter();
@@ -62,7 +64,7 @@ export default function TripsTabScreen() {
   if (isLoading && !trips) {
     return (
       <Screen style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#1a56db" />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>{uz.common.loading}</Text>
       </Screen>
     );
@@ -88,26 +90,44 @@ export default function TripsTabScreen() {
         accessibilityLabel={`Reys ${item.pickupAddress} dan ${item.dropoffAddress} ga`}
       >
         <View style={styles.historyCardHeader}>
-          <Text style={styles.historyDate}>{formatDate(item.pickupDate)}</Text>
-          <StatusBadge status={item.status} />
+          <View style={styles.historyDateWrap}>
+            <Ionicons name="calendar-outline" size={13} color={colors.slate500} style={styles.historyIcon} />
+            <Text style={styles.historyDate}>{formatDate(item.pickupDate)}</Text>
+          </View>
+          <StatusBadge status={item.status} size="sm" />
         </View>
 
-        <Text style={styles.historyCompany} numberOfLines={1}>
-          🏢 {item.companyName || 'Yuk beruvchi'}
-        </Text>
+        <View style={styles.historyCompanyRow}>
+          <Ionicons name="business-outline" size={14} color={colors.slate600} style={styles.historyIcon} />
+          <Text style={styles.historyCompany} numberOfLines={1}>
+            {item.companyName || 'Yuk beruvchi'}
+          </Text>
+        </View>
 
         <View style={styles.historyRouteBox}>
-          <Text style={styles.routeText} numberOfLines={2}>
-            📍 {item.pickupAddress} → {item.dropoffAddress}
-          </Text>
+          <View style={styles.routeBulletRow}>
+            <View style={styles.bulletPickup} />
+            <Text style={styles.routeBulletText} numberOfLines={1}>
+              {item.pickupAddress}
+            </Text>
+          </View>
+          <View style={styles.routeBulletRow}>
+            <View style={styles.bulletDropoff} />
+            <Text style={styles.routeBulletText} numberOfLines={1}>
+              {item.dropoffAddress}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.historyCardFooter}>
           <View>
             <Text style={styles.historyPriceLabel}>{uz.tripsScreen.agreedPrice}</Text>
-            <Money amount={item.agreedPrice} size="md" color="#111827" weight="bold" />
+            <Money amount={item.agreedPrice} size="md" color={colors.slate900} weight="800" />
           </View>
-          <Text style={styles.detailsArrow}>Batafsil →</Text>
+          <View style={styles.detailsBtn}>
+            <Text style={styles.detailsBtnText}>Batafsil</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+          </View>
         </View>
       </Pressable>
     );
@@ -122,13 +142,23 @@ export default function TripsTabScreen() {
         {activeTrip ? (
           <View style={styles.activeSection}>
             <View style={styles.activeSectionHeader}>
-              <Text style={styles.activeSectionTitle}>{uz.tripsScreen.activeTitle}</Text>
+              <View style={styles.activeTitleRow}>
+                <View style={styles.pulsingDot} />
+                <Text style={styles.activeSectionTitle}>{uz.tripsScreen.activeTitle}</Text>
+              </View>
+
               <View
                 style={[
                   styles.gpsBadge,
                   isGpsActive ? styles.gpsBadgeActive : styles.gpsBadgeInactive,
                 ]}
               >
+                <Ionicons
+                  name={isGpsActive ? 'navigate' : 'navigate-outline'}
+                  size={12}
+                  color={isGpsActive ? colors.successDark : colors.slate500}
+                  style={styles.gpsIcon}
+                />
                 <Text
                   style={[
                     styles.gpsBadgeText,
@@ -154,12 +184,15 @@ export default function TripsTabScreen() {
               <View style={styles.activeCardTop}>
                 <View style={styles.activeCompanyWrap}>
                   <Text style={styles.activeCompany} numberOfLines={1}>
-                    🏢 {activeTrip.companyName || 'Yuk beruvchi'}
+                    {activeTrip.companyName || 'Yuk beruvchi'}
                   </Text>
                   {activeTrip.plateNumber ? (
-                    <Text style={styles.activePlate}>
-                      🚛 {activeTrip.plateNumber}
-                    </Text>
+                    <View style={styles.plateBadge}>
+                      <Ionicons name="car-outline" size={12} color={colors.slate600} style={styles.plateIcon} />
+                      <Text style={styles.activePlate}>
+                        {activeTrip.plateNumber}
+                      </Text>
+                    </View>
                   ) : null}
                 </View>
                 <StatusBadge status={activeTrip.status} />
@@ -168,11 +201,14 @@ export default function TripsTabScreen() {
               <View style={styles.activePriceRow}>
                 <View>
                   <Text style={styles.activePriceLabel}>{uz.tripsScreen.agreedPrice}</Text>
-                  <Money amount={activeTrip.agreedPrice} size="xl" color="#1a56db" weight="bold" />
+                  <Money amount={activeTrip.agreedPrice} size="xl" color={colors.primary} weight="800" />
                 </View>
-                <Text style={styles.activeDate}>
-                  📅 {formatDate(activeTrip.pickupDate)}
-                </Text>
+                <View style={styles.pickupDateBadge}>
+                  <Ionicons name="calendar-outline" size={13} color={colors.slate600} style={styles.calIcon} />
+                  <Text style={styles.activeDate}>
+                    {formatDate(activeTrip.pickupDate)}
+                  </Text>
+                </View>
               </View>
 
               {/* Marshrut sxemasi */}
@@ -200,18 +236,14 @@ export default function TripsTabScreen() {
                 </View>
               </View>
 
-              {/* Katta amal tugmasi */}
+              {/* Amal tugmasi */}
               <View style={styles.activeButtonWrap}>
-                <Pressable
-                  onPress={() => router.push(`/trips/${activeTrip.id}`)}
-                  style={styles.openTripButton}
-                  accessibilityRole="button"
-                  accessibilityLabel={uz.tripsScreen.openTrip}
-                >
+                <View style={styles.openTripButton}>
                   <Text style={styles.openTripButtonText}>
-                    {uz.tripsScreen.openTrip} →
+                    {uz.tripsScreen.openTrip}
                   </Text>
-                </Pressable>
+                  <Ionicons name="arrow-forward" size={16} color="#FFFFFF" style={styles.actionArrow} />
+                </View>
               </View>
             </Pressable>
           </View>
@@ -220,7 +252,9 @@ export default function TripsTabScreen() {
         {/* Tarix bo'limi sarlavhasi */}
         <View style={styles.historySectionHeader}>
           <Text style={styles.historySectionTitle}>{uz.tripsScreen.historyTitle}</Text>
-          <Text style={styles.historyCountText}>{historyTrips.length} ta</Text>
+          <View style={styles.historyBadge}>
+            <Text style={styles.historyCountText}>{historyTrips.length} ta reys</Text>
+          </View>
         </View>
       </View>
     );
@@ -234,9 +268,11 @@ export default function TripsTabScreen() {
         <View style={styles.emptyContainer}>
           <Text style={styles.screenTitle}>{uz.tripsScreen.title}</Text>
           <EmptyState
+            iconName="navigate-outline"
             title={uz.tripsScreen.emptyTitle}
             description={uz.tripsScreen.emptyDesc}
-            icon="🚚"
+            actionTitle="Yuklar lentasini ko‘rish"
+            onAction={() => router.push('/(tabs)')}
           />
         </View>
       ) : (
@@ -246,12 +282,13 @@ export default function TripsTabScreen() {
           renderItem={renderHistoryItem}
           ListHeaderComponent={renderHeader}
           contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
               onRefresh={refetch}
-              colors={['#1a56db']}
-              tintColor="#1a56db"
+              colors={[colors.primary]}
+              tintColor={colors.primary}
             />
           }
           ListEmptyComponent={
@@ -270,7 +307,7 @@ export default function TripsTabScreen() {
 const styles = StyleSheet.create({
   screen: {
     paddingHorizontal: 0,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.background,
   },
   centerContainer: {
     justifyContent: 'center',
@@ -278,9 +315,9 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#4b5563',
+    color: colors.slate600,
   },
   emptyContainer: {
     flex: 1,
@@ -289,7 +326,8 @@ const styles = StyleSheet.create({
   screenTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.slate900,
+    letterSpacing: -0.4,
     marginBottom: 16,
   },
   listContent: {
@@ -297,10 +335,10 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   headerContainer: {
-    marginBottom: 8,
+    marginBottom: 10,
   },
   activeSection: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   activeSectionHeader: {
     flexDirection: 'row',
@@ -308,89 +346,119 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
+  activeTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pulsingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.success,
+    marginRight: 8,
+  },
   activeSectionTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.slate900,
   },
   gpsBadge: {
-    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 9,
     paddingVertical: 4,
-    borderRadius: 20,
+    borderRadius: radii.full,
+    borderWidth: 1,
+  },
+  gpsIcon: {
+    marginRight: 4,
   },
   gpsBadgeActive: {
-    backgroundColor: '#dcfce7',
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
   },
   gpsBadgeInactive: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.slate100,
+    borderColor: colors.slate200,
   },
   gpsBadgeText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '700',
   },
   gpsTextActive: {
-    color: '#166534',
+    color: colors.successDark,
   },
   gpsTextInactive: {
-    color: '#6b7280',
+    color: colors.slate500,
   },
   activeCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: radii.xl,
     padding: 18,
-    borderWidth: 2,
-    borderColor: '#2563eb',
-    shadowColor: '#1d4ed8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 4,
+    borderWidth: 1.5,
+    borderColor: '#BFDBFE',
+    ...shadows.card,
   },
   cardPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.99 }],
+    borderColor: colors.primary,
+    transform: [{ scale: 0.995 }],
   },
   activeCardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   activeCompanyWrap: {
     flex: 1,
-    marginRight: 8,
+    marginRight: 10,
   },
   activeCompany: {
     fontSize: 17,
-    fontWeight: '800',
-    color: '#1f2937',
-    marginBottom: 2,
+    fontWeight: '700',
+    color: colors.slate900,
+  },
+  plateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  plateIcon: {
+    marginRight: 4,
   },
   activePlate: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '600',
-    color: '#4b5563',
+    color: colors.slate600,
   },
   activePriceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primary50,
     padding: 12,
-    borderRadius: 12,
-    marginBottom: 14,
+    borderRadius: radii.md,
+    marginBottom: 16,
   },
   activePriceLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#3b82f6',
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: colors.slate500,
     textTransform: 'uppercase',
+    letterSpacing: 0.3,
     marginBottom: 2,
   },
+  pickupDateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  calIcon: {
+    marginRight: 4,
+  },
   activeDate: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '600',
-    color: '#4b5563',
+    color: colors.slate700,
   },
   routeContainer: {
     marginBottom: 16,
@@ -400,23 +468,27 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   routeDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 10,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     marginTop: 4,
+    marginRight: 12,
   },
   dotPickup: {
-    backgroundColor: '#16a34a',
+    backgroundColor: colors.successDark,
+    borderWidth: 2,
+    borderColor: '#A7F3D0',
   },
   dotDropoff: {
-    backgroundColor: '#dc2626',
+    backgroundColor: colors.dangerDark,
+    borderWidth: 2,
+    borderColor: '#FECACA',
   },
   routeLine: {
     width: 2,
-    height: 16,
-    backgroundColor: '#cbd5e1',
-    marginLeft: 5,
+    height: 18,
+    backgroundColor: colors.slate300,
+    marginLeft: 4,
     marginVertical: 2,
   },
   routeTextWrap: {
@@ -424,107 +496,157 @@ const styles = StyleSheet.create({
   },
   routeLabel: {
     fontSize: 11,
-    color: '#6b7280',
     fontWeight: '600',
-    marginBottom: 1,
+    color: colors.slate400,
+    textTransform: 'uppercase',
   },
   routeValue: {
-    fontSize: 14,
+    fontSize: 14.5,
     fontWeight: '700',
-    color: '#1f2937',
+    color: colors.slate900,
+    marginTop: 1,
   },
   activeButtonWrap: {
     marginTop: 4,
   },
   openTripButton: {
-    minHeight: 50,
-    backgroundColor: '#1a56db',
-    borderRadius: 14,
-    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: radii.md,
+    flexDirection: 'row',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    alignItems: 'center',
+    paddingVertical: 13,
   },
   openTripButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '800',
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    marginRight: 6,
+  },
+  actionArrow: {
+    marginLeft: 2,
   },
   historySectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 8,
     marginBottom: 12,
   },
   historySectionTitle: {
     fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
+    fontWeight: '700',
+    color: colors.slate900,
+  },
+  historyBadge: {
+    backgroundColor: colors.slate100,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.full,
   },
   historyCountText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#6b7280',
+    color: colors.slate600,
   },
   historyCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: radii.lg,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.slate200,
+    ...shadows.card,
   },
   historyCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
+  },
+  historyDateWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  historyIcon: {
+    marginRight: 5,
   },
   historyDate: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '600',
-    color: '#6b7280',
+    color: colors.slate500,
+  },
+  historyCompanyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   historyCompany: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#374151',
-    marginBottom: 8,
+    color: colors.slate800,
   },
   historyRouteBox: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.slate50,
+    borderRadius: radii.sm,
     padding: 10,
-    borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 12,
+    gap: 6,
   },
-  routeText: {
+  routeBulletRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bulletPickup: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.successDark,
+    marginRight: 8,
+  },
+  bulletDropoff: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.dangerDark,
+    marginRight: 8,
+  },
+  routeBulletText: {
     fontSize: 13,
-    color: '#1f2937',
     fontWeight: '600',
-    lineHeight: 18,
+    color: colors.slate700,
+    flex: 1,
   },
   historyCardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: colors.slate100,
+    paddingTop: 10,
   },
   historyPriceLabel: {
     fontSize: 11,
-    color: '#6b7280',
     fontWeight: '600',
+    color: colors.slate400,
+    textTransform: 'uppercase',
   },
-  detailsArrow: {
-    fontSize: 14,
+  detailsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  detailsBtnText: {
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#1a56db',
+    color: colors.primary,
+    marginRight: 2,
   },
   emptyHistoryBox: {
-    paddingVertical: 24,
+    padding: 24,
     alignItems: 'center',
   },
   emptyHistoryText: {
     fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '500',
+    color: colors.slate500,
   },
 });

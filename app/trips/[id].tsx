@@ -39,7 +39,9 @@ import {
   isActiveTrip,
   requiresPhoto,
 } from '../../src/trips/nextStatus';
+import { Ionicons } from '@expo/vector-icons';
 import { formatDate, formatDateTime, formatMoney } from '../../src/utils/format';
+import { colors } from '../../src/theme';
 
 export default function TripDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -276,7 +278,7 @@ export default function TripDetailScreen() {
           accessibilityRole="button"
           accessibilityLabel={uz.common.back}
         >
-          <Text style={styles.backButtonText}>← {uz.common.back}</Text>
+          <Ionicons name="arrow-back" size={20} color={colors.slate800} />
         </Pressable>
 
         <View style={styles.headerRight}>
@@ -287,13 +289,19 @@ export default function TripDetailScreen() {
                 isGpsActive ? styles.gpsBadgeActive : styles.gpsBadgeInactive,
               ]}
             >
+              <Ionicons
+                name={isGpsActive ? 'navigate' : 'navigate-outline'}
+                size={12}
+                color={isGpsActive ? colors.successDark : colors.slate500}
+                style={{ marginRight: 4 }}
+              />
               <Text
                 style={[
                   styles.gpsBadgeText,
                   isGpsActive ? styles.gpsTextActive : styles.gpsTextInactive,
                 ]}
               >
-                {isGpsActive ? '🛰️ GPS faol' : 'GPS nofaol'}
+                {isGpsActive ? uz.tripsScreen.trackingActive : uz.tripsScreen.trackingInactive}
               </Text>
             </View>
           ) : null}
@@ -305,9 +313,12 @@ export default function TripDetailScreen() {
         {/* GPS ruxsati banneri */}
         {isActiveTrip(trip.status) && !permissionsGranted ? (
           <View style={styles.permissionBanner}>
-            <Text style={styles.permissionTitle}>
-              ⚠️ {uz.tripView.locationPermissionBannerTitle}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <Ionicons name="warning" size={18} color={colors.dangerDark} style={{ marginRight: 6 }} />
+              <Text style={styles.permissionTitle}>
+                {uz.tripView.locationPermissionBannerTitle}
+              </Text>
+            </View>
             <Text style={styles.permissionDesc}>
               {uz.tripView.locationPermissionBannerDesc}
             </Text>
@@ -326,14 +337,17 @@ export default function TripDetailScreen() {
 
         {/* Reys ma'lumotlari va narxi */}
         <View style={styles.card}>
-          <Text style={styles.companyName}>
-            🏢 {trip.companyName || uz.tripView.companySection}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <Ionicons name="business-outline" size={17} color={colors.slate700} style={{ marginRight: 6 }} />
+            <Text style={styles.companyName}>
+              {trip.companyName || uz.tripView.companySection}
+            </Text>
+          </View>
 
           <View style={styles.priceRow}>
             <View>
               <Text style={styles.label}>{uz.tripView.agreedPrice}</Text>
-              <Money amount={trip.agreedPrice} size="xl" color="#1a56db" weight="bold" />
+              <Money amount={trip.agreedPrice} size="xl" color={colors.primary} weight="800" />
             </View>
 
             {trip.commissionAmount != null ? (
@@ -352,12 +366,18 @@ export default function TripDetailScreen() {
           <Text style={styles.cardTitle}>{uz.tripView.shipperContact}</Text>
           <View style={styles.contactRow}>
             <View style={styles.contactInfo}>
-              <Text style={styles.contactName}>
-                👤 {trip.shipperContactName || 'Zavod logisti'}
-              </Text>
-              <Text style={styles.contactPhone}>
-                📞 {trip.shipperPhone || 'Raqam kiritilmagan'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                <Ionicons name="person-outline" size={14} color={colors.slate600} style={{ marginRight: 6 }} />
+                <Text style={styles.contactName}>
+                  {trip.shipperContactName || 'Zavod logisti'}
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="call-outline" size={14} color={colors.slate600} style={{ marginRight: 6 }} />
+                <Text style={styles.contactPhone}>
+                  {trip.shipperPhone || 'Raqam kiritilmagan'}
+                </Text>
+              </View>
             </View>
 
             {trip.shipperPhone ? (
@@ -367,7 +387,8 @@ export default function TripDetailScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={uz.tripView.callLogistics}
               >
-                <Text style={styles.callButtonText}>📞 Qo‘ng‘iroq</Text>
+                <Ionicons name="call" size={14} color="#FFFFFF" style={{ marginRight: 5 }} />
+                <Text style={styles.callButtonText}>Qo‘ng‘iroq</Text>
               </Pressable>
             ) : null}
           </View>

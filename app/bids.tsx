@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 import { bidsApi, carrierApi } from '../src/api/client';
 import { MyBid } from '../src/api/types';
 import {
@@ -24,18 +25,17 @@ import {
 } from '../src/components';
 import { formatDate, formatDateTime } from '../src/utils/format';
 import { uz } from '../src/i18n/uz';
+import { colors, radii, shadows } from '../src/theme';
 
 export default function MyBidsScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // Edit Bid modal state
   const [editingBid, setEditingBid] = useState<MyBid | null>(null);
   const [editPriceInput, setEditPriceInput] = useState('');
   const [editCommentInput, setEditCommentInput] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // 1. Fetch carrier's bids
   const {
     data: bids,
     isLoading,
@@ -47,7 +47,6 @@ export default function MyBidsScreen() {
     queryFn: carrierApi.getMyBids,
   });
 
-  // 2. Update bid mutation
   const updateBidMutation = useMutation({
     mutationFn: ({ id, price, comment }: { id: string; price: number; comment?: string }) =>
       bidsApi.updateBid(id, { price, comment }),
@@ -64,7 +63,6 @@ export default function MyBidsScreen() {
     },
   });
 
-  // 3. Withdraw bid mutation
   const withdrawBidMutation = useMutation({
     mutationFn: (id: string) => bidsApi.withdrawBid(id),
     onSuccess: () => {
@@ -129,7 +127,7 @@ export default function MyBidsScreen() {
       <View style={styles.card}>
         {/* Top header: Status & date */}
         <View style={styles.cardHeader}>
-          <StatusBadge status={item.status} />
+          <StatusBadge status={item.status} size="sm" />
           <Text style={styles.createdDateText}>
             {formatDateTime(item.createdAt)}
           </Text>
@@ -161,15 +159,16 @@ export default function MyBidsScreen() {
 
         {/* Pickup date */}
         <View style={styles.pickupDateRow}>
+          <Ionicons name="calendar-outline" size={13} color={colors.slate500} style={styles.dateIcon} />
           <Text style={styles.pickupDateText}>
-            📅 {uz.loadsTab.pickupDate.replace('{{date}}', formatDate(item.pickupDate))}
+            {formatDate(item.pickupDate)}
           </Text>
         </View>
 
         {/* Price & Comment */}
         <View style={styles.priceContainer}>
           <Text style={styles.priceLabel}>{uz.bidsScreen.myPrice}</Text>
-          <Money amount={item.price} size="lg" color="#1a56db" weight="bold" />
+          <Money amount={item.price} size="lg" color={colors.primary} weight="800" />
 
           {item.comment ? (
             <Text style={styles.commentText}>“{item.comment}”</Text>
@@ -184,7 +183,8 @@ export default function MyBidsScreen() {
             accessibilityRole="button"
             accessibilityLabel={uz.bidsScreen.viewLoad}
           >
-            <Text style={styles.viewLoadBtnText}>📦 {uz.bidsScreen.viewLoad}</Text>
+            <Ionicons name="cube-outline" size={14} color={colors.slate700} style={styles.btnIcon} />
+            <Text style={styles.viewLoadBtnText}>{uz.bidsScreen.viewLoad}</Text>
           </Pressable>
 
           {isPending ? (
@@ -195,7 +195,8 @@ export default function MyBidsScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={uz.bidsScreen.editBid}
               >
-                <Text style={styles.editBtnText}>✏️ {uz.bidsScreen.editBid}</Text>
+                <Ionicons name="pencil-outline" size={14} color={colors.primary} style={styles.btnIcon} />
+                <Text style={styles.editBtnText}>{uz.bidsScreen.editBid}</Text>
               </Pressable>
 
               <Pressable
@@ -204,7 +205,7 @@ export default function MyBidsScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={uz.bidsScreen.withdrawBid}
               >
-                <Text style={styles.withdrawBtnText}>✕</Text>
+                <Ionicons name="close-circle-outline" size={16} color={colors.danger} />
               </Pressable>
             </>
           ) : null}
@@ -224,7 +225,7 @@ export default function MyBidsScreen() {
           accessibilityRole="button"
           accessibilityLabel={uz.common.back}
         >
-          <Text style={styles.backButtonText}>← {uz.common.back}</Text>
+          <Ionicons name="arrow-back" size={20} color={colors.slate800} />
         </Pressable>
         <Text style={styles.screenTitle}>{uz.bidsScreen.title}</Text>
         <View style={styles.navRightPlaceholder} />
@@ -245,20 +246,23 @@ export default function MyBidsScreen() {
           styles.listContent,
           (!bids || bids.length === 0) && styles.emptyListContent,
         ]}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching || (isLoading && !bids)}
             onRefresh={refetch}
-            colors={['#1a56db']}
-            tintColor="#1a56db"
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
         ListEmptyComponent={
           !isLoading ? (
             <EmptyState
-              icon="📑"
+              iconName="receipt-outline"
               title={uz.bidsScreen.emptyTitle}
               description={uz.bidsScreen.emptyDesc}
+              actionTitle="Yuklar lentasini ko‘rish"
+              onAction={() => router.push('/(tabs)')}
             />
           ) : null
         }
@@ -324,7 +328,7 @@ export default function MyBidsScreen() {
 const styles = StyleSheet.create({
   screen: {
     paddingHorizontal: 0,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.background,
   },
   navHeader: {
     flexDirection: 'row',
@@ -332,205 +336,190 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: colors.slate200,
   },
   backButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    backgroundColor: '#f3f4f6',
-  },
-  backButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1f2937',
+    width: 36,
+    height: 36,
+    borderRadius: radii.md,
+    backgroundColor: colors.slate100,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   screenTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.slate900,
   },
   navRightPlaceholder: {
-    width: 60,
+    width: 36,
   },
   listContent: {
     padding: 16,
-    gap: 14,
-    paddingBottom: 24,
+    paddingBottom: 40,
+    gap: 12,
   },
   emptyListContent: {
     flexGrow: 1,
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: radii.xl,
     padding: 16,
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.slate200,
+    ...shadows.card,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   createdDateText: {
     fontSize: 12,
-    color: '#6b7280',
-    fontWeight: '600',
+    color: colors.slate400,
   },
   routeContainer: {
     marginBottom: 10,
   },
   routeRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   routeDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 4,
     marginRight: 10,
   },
   dotPickup: {
-    backgroundColor: '#16a34a',
+    backgroundColor: colors.successDark,
   },
   dotDropoff: {
-    backgroundColor: '#dc2626',
+    backgroundColor: colors.dangerDark,
   },
   routeLine: {
     width: 2,
     height: 14,
-    backgroundColor: '#d1d5db',
-    marginLeft: 4,
+    backgroundColor: colors.slate300,
+    marginLeft: 3,
     marginVertical: 2,
   },
   addressText: {
-    flex: 1,
     fontSize: 15,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.slate900,
+    flex: 1,
+    lineHeight: 19,
   },
   pickupDateRow: {
-    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  dateIcon: {
+    marginRight: 5,
   },
   pickupDateText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4b5563',
+    fontSize: 12.5,
+    color: colors.slate600,
+    fontWeight: '500',
   },
   priceContainer: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
+    backgroundColor: colors.primary50,
+    borderRadius: radii.md,
     padding: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
     marginBottom: 12,
   },
   priceLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.slate500,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
     marginBottom: 2,
   },
   commentText: {
     fontSize: 13,
-    color: '#334155',
+    color: colors.slate700,
     fontStyle: 'italic',
-    marginTop: 6,
+    marginTop: 4,
   },
   cardActions: {
     flexDirection: 'row',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.slate100,
+    paddingTop: 10,
+  },
+  btnIcon: {
+    marginRight: 4,
   },
   viewLoadBtn: {
-    flex: 1,
-    backgroundColor: '#eff6ff',
-    borderWidth: 1.5,
-    borderColor: '#bfdbfe',
-    borderRadius: 10,
-    paddingVertical: 10,
+    flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 44,
-    justifyContent: 'center',
+    backgroundColor: colors.slate100,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: radii.sm,
   },
   viewLoadBtnText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#1a56db',
+    color: colors.slate700,
   },
   editBtn: {
-    backgroundColor: '#f0fdf4',
-    borderWidth: 1.5,
-    borderColor: '#bbf7d0',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    minHeight: 44,
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.primary50,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: radii.sm,
   },
   editBtnText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#166534',
+    color: colors.primary,
   },
   withdrawBtn: {
-    backgroundColor: '#fee2e2',
-    borderWidth: 1.5,
-    borderColor: '#fca5a5',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    minHeight: 44,
+    padding: 6,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  withdrawBtnText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#991b1b',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'center',
-    padding: 20,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
     padding: 20,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 10,
+    paddingBottom: 36,
+    ...shadows.floating,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.slate900,
     marginBottom: 16,
-    textAlign: 'center',
   },
   modalButtons: {
+    marginTop: 12,
     gap: 10,
-    marginTop: 8,
   },
   modalPrimaryBtn: {
-    minHeight: 48,
+    width: '100%',
   },
   modalSecondaryBtn: {
-    minHeight: 48,
+    width: '100%',
   },
 });
