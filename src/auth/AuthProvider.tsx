@@ -160,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } else {
       // Approved carrier
-      if (!inTabsGroup) {
+      if (inAuthGroup || inOnboardingGroup) {
         router.replace('/(tabs)');
       }
     }
