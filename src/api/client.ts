@@ -263,10 +263,6 @@ export const carrierApi = {
     await apiClient.post('/carrier/location', { lat, lng } as LocationRequest);
   },
 
-  getVehicles: async (): Promise<VehicleDto[]> => {
-    const res = await apiClient.get<VehicleDto[]>('/carrier/vehicles');
-    return res.data;
-  },
 
   createVehicle: async (data: VehicleRequest): Promise<VehicleDto> => {
     const res = await apiClient.post<VehicleDto>('/carrier/vehicles', data);
@@ -278,10 +274,6 @@ export const carrierApi = {
     return res.data;
   },
 
-  getDocuments: async (): Promise<DocumentDto[]> => {
-    const res = await apiClient.get<DocumentDto[]>('/carrier/documents');
-    return res.data;
-  },
 
   uploadDocument: async (data: DocumentRequest): Promise<DocumentDto> => {
     const res = await apiClient.post<DocumentDto>('/carrier/documents', data);

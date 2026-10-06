@@ -85,10 +85,10 @@ export default function OnboardingDocumentsScreen() {
   const loadDocs = async () => {
     try {
       setLoading(true);
-      const docs = await carrierApi.getDocuments();
-      setDocuments(docs);
+      // Server hujjatlarni GET /carrier/profile javobida qaytaradi
+      const fresh = await carrierApi.getProfile();
+      setDocuments(fresh.documents ?? []);
     } catch {
-      // Fallback to profile.documents if API fails
       if (profile?.documents) {
         setDocuments(profile.documents);
       }
