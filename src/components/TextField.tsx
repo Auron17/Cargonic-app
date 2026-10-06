@@ -1,5 +1,8 @@
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import {
+  Keyboard,
+  Platform,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -28,9 +31,42 @@ export function TextField({
   style,
   onFocus,
   onBlur,
+  onPressIn,
+  autoFocus,
   ...props
 }: TextFieldProps) {
   const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef<TextInput>(null);
+
+  // Android (ayniqsa MIUI) da `autoFocus` ekran animatsiyasi paytida fokus beradi,
+  // lekin klaviatura ochilmaydi va keyingi bosishlar ham uni ochmaydi.
+  // Shuning uchun fokus ekran ochilib bo'lgach beriladi.
+  useEffect(() => {
+    if (!autoFocus) return;
+    // Ekran almashish animatsiyasi paytida focus() e'tiborsiz qolishi mumkin,
+    // shuning uchun maydon fokus olguncha bir necha marta urinadi.
+    // (InteractionManager ishlatilmaydi: doimiy animatsiya bo'lsa u hech qachon chaqirilmaydi.)
+    const timers = [300, 700, 1200].map((delay) =>
+      setTimeout(() => {
+        const input = inputRef.current;
+        if (input && !input.isFocused()) input.focus();
+      }, delay),
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [autoFocus]);
+
+  // Maydon fokusda, lekin klaviatura yopiq qolib ketgan bo'lsa — fokusni qayta berib klaviaturani ochadi.
+  const openKeyboard = () => {
+    const input = inputRef.current;
+    if (!input || props.editable === false) return;
+    if (Platform.OS === 'android' && input.isFocused()) {
+      if (Keyboard.isVisible()) return;
+      input.blur();
+      setTimeout(() => input.focus(), 50);
+    } else {
+      input.focus();
+    }
+  };
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -40,7 +76,9 @@ export function TextField({
         </Text>
       ) : null}
 
-      <View
+      <Pressable
+        onPress={openKeyboard}
+        accessible={false}
         style={[
           styles.inputWrapper,
           isFocused && styles.inputWrapperFocused,
@@ -51,7 +89,9 @@ export function TextField({
         {leftIcon ? <View style={styles.leftIconBox}>{leftIcon}</View> : null}
 
         <TextInput
+          ref={inputRef}
           style={[styles.input, style]}
+          showSoftInputOnFocus
           placeholderTextColor={colors.textMuted}
           onFocus={(e) => {
             setIsFocused(true);
@@ -66,10 +106,14 @@ export function TextField({
             disabled: props.editable === false,
           }}
           {...props}
+          onPressIn={(e) => {
+            if (Platform.OS === 'android' && inputRef.current?.isFocused()) openKeyboard();
+            onPressIn?.(e);
+          }}
         />
 
         {rightIcon ? <View style={styles.rightIconBox}>{rightIcon}</View> : null}
-      </View>
+      </Pressable>
 
       {error ? (
         <Text style={styles.errorText} accessibilityRole="alert">

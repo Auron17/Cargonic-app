@@ -97,16 +97,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (authResponse.refreshToken) {
       await setRefreshToken(authResponse.refreshToken);
     }
-    setUser(authResponse.user);
-
+    // Profil foydalanuvchidan OLDIN olinadi: aks holda navigatsiya bir lahza "profil yo'q"
+    // holatini ko'rib, tasdiqlangan haydovchini ro'yxatdan o'tish formasiga yuborib qo'yadi.
+    let carrierProfile: ProfileDto | null = null;
     if (authResponse.user.role === 'CARRIER') {
       try {
-        const carrierProfile = await carrierApi.getProfile();
-        setProfile(carrierProfile);
+        carrierProfile = await carrierApi.getProfile();
       } catch {
-        setProfile(null);
+        carrierProfile = null;
       }
     }
+    setProfile(carrierProfile);
+    setUser(authResponse.user);
   };
 
   const logout = async () => {
