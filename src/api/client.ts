@@ -1,4 +1,5 @@
-import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+import axios from 'axios';
+import type { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { generateUuid } from '../utils/uuid';
 import {
   clearTokens,
@@ -17,7 +18,6 @@ import {
   DocumentRequest,
   ErrorResponse,
   FeedItem,
-  LiveTripDto,
   LoadDto,
   LocationBatch,
   LocationRequest,
@@ -68,6 +68,7 @@ export function onUnauthorized(handler: UnauthorizedHandler): () => void {
   };
 }
 
+// eslint-disable-next-line import/no-named-as-default-member -- axios default instance API
 export const apiClient: AxiosInstance = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
   headers: {
@@ -98,10 +99,10 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
 
 // Mutex for handling concurrent 401 refresh requests
 let isRefreshing = false;
-let failedQueue: Array<{
+let failedQueue: {
   resolve: (value?: unknown) => void;
   reject: (reason?: unknown) => void;
-}> = [];
+}[] = [];
 
 const processQueue = (error: unknown = null) => {
   failedQueue.forEach((prom) => {

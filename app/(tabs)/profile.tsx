@@ -71,7 +71,12 @@ export default function ProfileTabScreen() {
       bottomAction={
         <PrimaryButton
           title={uz.auth.logout}
-          onPress={logout}
+          onPress={() => {
+            Alert.alert(uz.auth.logoutConfirmTitle, uz.auth.logoutConfirmBody, [
+              { text: uz.common.cancel, style: 'cancel' },
+              { text: uz.auth.logout, style: 'destructive', onPress: () => { void logout(); } },
+            ]);
+          }}
           variant="secondary"
           icon={<Ionicons name="log-out-outline" size={18} color={colors.slate700} />}
           accessibilityLabel={uz.auth.logout}
@@ -102,7 +107,7 @@ export default function ProfileTabScreen() {
             </Text>
             {profile?.verificationStatus ? (
               <View style={styles.statusBadgeWrap}>
-                <StatusBadge status={profile.verificationStatus} />
+                <StatusBadge kind="verification" status={profile.verificationStatus} />
               </View>
             ) : null}
           </View>
@@ -113,12 +118,17 @@ export default function ProfileTabScreen() {
           <View style={styles.statBox}>
             <Ionicons name="star" size={18} color="#F59E0B" style={styles.statIcon} />
             <Text style={styles.statValue}>
-              {profile?.ratingAvg ? Number(profile.ratingAvg).toFixed(1) : '5.0'}
+              {profile?.ratingCount
+                ? Number(profile.ratingAvg).toFixed(1)
+                : '—'}
             </Text>
             <Text style={styles.statSub}>
               {profile?.ratingCount
-                ? `${profile.ratingCount} ta baho`
-                : 'Yangi haydovchi'}
+                ? uz.profileTab.ratingCount.replace(
+                    '{{count}}',
+                    String(profile.ratingCount)
+                  )
+                : uz.profileTab.noRating}
             </Text>
           </View>
 
@@ -294,7 +304,7 @@ export default function ProfileTabScreen() {
                 <Ionicons name="car" size={14} color={colors.slate800} style={styles.plateIcon} />
                 <Text style={styles.plateText}>{vehicle.plateNumber}</Text>
               </View>
-              <StatusBadge status={vehicle.verificationStatus} />
+              <StatusBadge kind="verification" status={vehicle.verificationStatus} />
             </View>
 
             <View style={styles.infoRow}>
@@ -369,7 +379,7 @@ export default function ProfileTabScreen() {
                     <Text style={styles.docRejectText}>{doc.rejectReason}</Text>
                   ) : null}
                 </View>
-                <StatusBadge status={doc.status} size="sm" />
+                <StatusBadge kind="verification" status={doc.status} size="sm" />
               </View>
             ))}
           </View>

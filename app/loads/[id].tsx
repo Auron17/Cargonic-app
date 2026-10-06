@@ -269,7 +269,7 @@ export default function LoadDetailsScreen() {
           <Ionicons name="arrow-back" size={20} color={colors.slate800} />
         </Pressable>
 
-        <StatusBadge status={load.status} />
+        <StatusBadge kind="load" status={load.status} />
       </View>
 
       <ScrollView
@@ -418,7 +418,7 @@ export default function LoadDetailsScreen() {
           <View style={[styles.sectionCard, styles.existingBidCard]}>
             <View style={styles.existingBidHeader}>
               <Text style={styles.existingBidTitle}>{uz.loadDetails.myBidSection}</Text>
-              <StatusBadge status={existingBid.status} size="sm" />
+              <StatusBadge kind="bid" status={existingBid.status} size="sm" />
             </View>
 
             <View style={styles.existingBidPriceRow}>

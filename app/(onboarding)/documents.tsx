@@ -81,25 +81,34 @@ export default function OnboardingDocumentsScreen() {
   const [savingDocType, setSavingDocType] = useState<DocType | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  // Fetch current documents from server
-  const loadDocs = async () => {
-    try {
-      setLoading(true);
-      // Server hujjatlarni GET /carrier/profile javobida qaytaradi
-      const fresh = await carrierApi.getProfile();
-      setDocuments(fresh.documents ?? []);
-    } catch {
-      if (profile?.documents) {
-        setDocuments(profile.documents);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  const profileId = profile?.id;
+  const fallbackDocs = profile?.documents;
 
   useEffect(() => {
-    loadDocs();
-  }, []);
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const fresh = await carrierApi.getProfile();
+        if (!cancelled) {
+          setDocuments(fresh.documents ?? []);
+        }
+      } catch {
+        if (!cancelled && fallbackDocs) {
+          setDocuments(fallbackDocs);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // profileId: qayta fetch faqat boshqa profilga o‘tganda
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId]);
 
   // Build map of latest document by docType
   const documentsMap: Partial<Record<DocType, DocumentDto>> = {};
@@ -148,7 +157,11 @@ export default function OnboardingDocumentsScreen() {
     }
 
     await refreshProfile();
-    router.replace('/(onboarding)/status');
+    if (profile?.verificationStatus === 'APPROVED') {
+      router.replace('/(tabs)/profile');
+    } else {
+      router.replace('/(onboarding)/status');
+    }
   };
 
   return (
@@ -156,10 +169,18 @@ export default function OnboardingDocumentsScreen() {
       scrollable
       bottomAction={
         <PrimaryButton
-          title={uz.onboarding.sendForReview}
+          title={
+            profile?.verificationStatus === 'APPROVED'
+              ? uz.common.save
+              : uz.onboarding.sendForReview
+          }
           onPress={handleFinish}
           disabled={!allRequiredUploaded}
-          accessibilityLabel={uz.onboarding.sendForReview}
+          accessibilityLabel={
+            profile?.verificationStatus === 'APPROVED'
+              ? uz.common.save
+              : uz.onboarding.sendForReview
+          }
         />
       }
     >
@@ -220,7 +241,7 @@ export default function OnboardingDocumentsScreen() {
               </View>
 
               {doc ? (
-                <StatusBadge status={doc.status} />
+                <StatusBadge kind="verification" status={doc.status} />
               ) : (
                 <View style={styles.unloadedBadge}>
                   <Text style={styles.unloadedText}>

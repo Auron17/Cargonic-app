@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { authApi } from '../../src/api/client';
@@ -81,9 +81,11 @@ export default function PhoneScreen() {
       }
     >
       <View style={styles.header}>
-        <View style={styles.iconCircle}>
-          <Ionicons name="cube" size={36} color={colors.primary} />
-        </View>
+        <Image
+          source={require('../../assets/logo.png')}
+          style={styles.brandLogo}
+          accessibilityLabel={uz.app.name}
+        />
         <Text style={styles.brandTitle}>{uz.app.name}</Text>
         <Text style={styles.brandTagline}>{uz.app.tagline}</Text>
       </View>
@@ -115,15 +117,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 24,
   },
-  iconCircle: {
-    width: 76,
-    height: 76,
-    borderRadius: radii.full,
-    backgroundColor: colors.primary50,
-    borderWidth: 1.5,
-    borderColor: '#BFDBFE',
-    alignItems: 'center',
-    justifyContent: 'center',
+  brandLogo: {
+    width: 88,
+    height: 88,
+    borderRadius: 20,
     marginBottom: 16,
     ...shadows.subtle,
   },

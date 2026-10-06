@@ -10,6 +10,7 @@ export default function OnboardingLayout() {
         contentStyle: { backgroundColor: '#ffffff' },
       }}
     >
+      <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="profile" options={{ headerShown: false }} />
       <Stack.Screen name="vehicle" options={{ headerShown: false }} />
       <Stack.Screen name="documents" options={{ headerShown: false }} />

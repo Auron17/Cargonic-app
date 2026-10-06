@@ -127,7 +127,7 @@ export default function MyBidsScreen() {
       <View style={styles.card}>
         {/* Top header: Status & date */}
         <View style={styles.cardHeader}>
-          <StatusBadge status={item.status} size="sm" />
+          <StatusBadge kind="bid" status={item.status} size="sm" />
           <Text style={styles.createdDateText}>
             {formatDateTime(item.createdAt)}
           </Text>

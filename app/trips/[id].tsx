@@ -305,7 +305,7 @@ export default function TripDetailScreen() {
               </Text>
             </View>
           ) : null}
-          <StatusBadge status={trip.status} />
+          <StatusBadge kind="trip" status={trip.status} />
         </View>
       </View>
 

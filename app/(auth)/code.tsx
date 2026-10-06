@@ -145,6 +145,8 @@ export default function CodeScreen() {
             keyboardType="number-pad"
             maxLength={6}
             autoFocus
+            autoComplete="sms-otp"
+            textContentType="oneTimeCode"
             style={styles.codeInput}
           />
 

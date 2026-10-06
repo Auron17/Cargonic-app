@@ -94,7 +94,7 @@ export default function TripsTabScreen() {
             <Ionicons name="calendar-outline" size={13} color={colors.slate500} style={styles.historyIcon} />
             <Text style={styles.historyDate}>{formatDate(item.pickupDate)}</Text>
           </View>
-          <StatusBadge status={item.status} size="sm" />
+          <StatusBadge kind="trip" status={item.status} size="sm" />
         </View>
 
         <View style={styles.historyCompanyRow}>
@@ -195,7 +195,7 @@ export default function TripsTabScreen() {
                     </View>
                   ) : null}
                 </View>
-                <StatusBadge status={activeTrip.status} />
+                <StatusBadge kind="trip" status={activeTrip.status} />
               </View>
 
               <View style={styles.activePriceRow}>

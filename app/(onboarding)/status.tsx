@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Alert, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/auth/AuthProvider';
@@ -86,7 +86,12 @@ export default function OnboardingStatusScreen() {
 
           <PrimaryButton
             title={uz.auth.logout}
-            onPress={logout}
+            onPress={() => {
+              Alert.alert(uz.auth.logoutConfirmTitle, uz.auth.logoutConfirmBody, [
+                { text: uz.common.cancel, style: 'cancel' },
+                { text: uz.auth.logout, style: 'destructive', onPress: () => { void logout(); } },
+              ]);
+            }}
             variant="secondary"
             icon={<Ionicons name="log-out-outline" size={16} color={colors.slate700} />}
             accessibilityLabel={uz.auth.logout}
@@ -100,7 +105,7 @@ export default function OnboardingStatusScreen() {
             <View style={[styles.iconBox, styles.iconBoxDanger]}>
               <Ionicons name="alert-circle" size={42} color={colors.danger} />
             </View>
-            <StatusBadge status="REJECTED" style={styles.badge} />
+            <StatusBadge kind="verification" status="REJECTED" style={styles.badge} />
             <Text style={styles.title}>{uz.onboarding.rejectedTitle}</Text>
 
             <View style={styles.reasonCard}>
@@ -138,7 +143,7 @@ export default function OnboardingStatusScreen() {
             <View style={[styles.iconBox, styles.iconBoxSuccess]}>
               <Ionicons name="checkmark-circle" size={44} color={colors.success} />
             </View>
-            <StatusBadge status="APPROVED" style={styles.badge} />
+            <StatusBadge kind="verification" status="APPROVED" style={styles.badge} />
             <Text style={styles.title}>{uz.onboarding.approvedTitle}</Text>
             <Text style={styles.lead}>
               Tabriklaymiz! Sizning tashuvchi profilingiz muvaffaqiyatli tasdiqlandi.
@@ -150,7 +155,7 @@ export default function OnboardingStatusScreen() {
             <View style={[styles.iconBox, styles.iconBoxPending]}>
               <Ionicons name="hourglass" size={40} color={colors.accentDark} />
             </View>
-            <StatusBadge status="PENDING" style={styles.badge} />
+            <StatusBadge kind="verification" status="PENDING" style={styles.badge} />
             <Text style={styles.title}>
               {uz.onboarding.pendingVerificationTitle}
             </Text>

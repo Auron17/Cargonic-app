@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -110,7 +107,11 @@ export default function OnboardingProfileScreen() {
       }
 
       await refreshProfile();
-      router.push('/(onboarding)/vehicle');
+      if (profile?.verificationStatus === 'APPROVED') {
+        router.replace('/(tabs)/profile');
+      } else {
+        router.push('/(onboarding)/vehicle');
+      }
     } catch (err: unknown) {
       const apiErr = err as { message?: string };
       setServerError(apiErr?.message || 'Profilni saqlashda xatolik yuz berdi. Qayta urinib ko‘ring.');
@@ -124,10 +125,18 @@ export default function OnboardingProfileScreen() {
       scrollable
       bottomAction={
         <PrimaryButton
-          title={uz.onboarding.saveAndContinue}
+          title={
+            profile?.verificationStatus === 'APPROVED'
+              ? uz.common.save
+              : uz.onboarding.saveAndContinue
+          }
           onPress={handleSubmit}
           loading={loading}
-          accessibilityLabel={uz.onboarding.saveAndContinue}
+          accessibilityLabel={
+            profile?.verificationStatus === 'APPROVED'
+              ? uz.common.save
+              : uz.onboarding.saveAndContinue
+          }
         />
       }
     >

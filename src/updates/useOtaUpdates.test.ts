@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 import * as Updates from 'expo-updates';
-import { useOtaUpdates, OtaState } from './useOtaUpdates';
+import { useOtaUpdates, type OtaState } from './useOtaUpdates';
 
 // Mock expo-updates
 jest.mock('expo-updates', () => ({
@@ -28,13 +28,9 @@ describe('useOtaUpdates hook', () => {
   }
 
   it('initializes with default state when enabled', () => {
-    let capturedState: OtaState | null = null;
     act(() => {
-      // In jest-expo with React, we can test state
       const element = React.createElement(TestComponent, {
-        onState: (state) => {
-          capturedState = state;
-        },
+        onState: () => {},
       });
       expect(element).toBeDefined();
     });

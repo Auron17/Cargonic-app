@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports, import/first */
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );

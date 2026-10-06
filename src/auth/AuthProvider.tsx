@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useRouter, useSegments } from 'expo-router';
 import { carrierApi, meApi, onUnauthorized } from '../api/client';
 import { clearTokens, getAccessToken, setAccessToken, setRefreshToken } from '../api/storage';
 import { AuthResponse, ProfileDto, UserDto } from '../api/types';
@@ -23,8 +22,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<UserDto | null>(null);
   const [profile, setProfile] = useState<ProfileDto | null>(null);
-  const segments = useSegments();
-  const router = useRouter();
 
   // Load user info and profile on app start
   const initAuth = async () => {
@@ -67,7 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onUnauthorized(() => {
       setUser(null);
       setProfile(null);
-      router.replace('/(auth)/phone');
     });
 
     return () => {
@@ -117,54 +113,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await clearTokens();
     setUser(null);
     setProfile(null);
-    router.replace('/(auth)/phone');
   };
 
   const isAuthenticated = !!user;
   const isCarrier = user?.role === 'CARRIER';
   const isVerified = profile?.verificationStatus === 'APPROVED';
-
-  // Navigation guard logic
-  useEffect(() => {
-    if (isLoading) return;
-
-    const inAuthGroup = segments[0] === '(auth)';
-    const inOnboardingGroup = segments[0] === '(onboarding)';
-    const inTabsGroup = segments[0] === '(tabs)';
-
-    if (!isAuthenticated) {
-      if (!inAuthGroup) {
-        router.replace('/(auth)/phone');
-      }
-      return;
-    }
-
-    // User is authenticated
-    if (!isCarrier) {
-      // User is SHIPPER or ADMIN
-      // If not already in code or wrong role screen, send to code screen (or auth area showing wrong role banner)
-      return;
-    }
-
-    // Role is CARRIER
-    if (!profile || profile.verificationStatus !== 'APPROVED') {
-      // Needs onboarding
-      if (!inOnboardingGroup) {
-        if (!profile) {
-          router.replace('/(onboarding)/profile');
-        } else if (!profile.vehicle) {
-          router.replace('/(onboarding)/vehicle');
-        } else {
-          router.replace('/(onboarding)/status');
-        }
-      }
-    } else {
-      // Approved carrier
-      if (inAuthGroup || inOnboardingGroup) {
-        router.replace('/(tabs)');
-      }
-    }
-  }, [isLoading, isAuthenticated, isCarrier, profile, segments]);
 
   return (
     <AuthContext.Provider

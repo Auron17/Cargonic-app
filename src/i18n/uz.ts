@@ -30,6 +30,8 @@ export const uz = {
     wrongRoleTitle: 'Bu ilova haydovchilar uchun',
     wrongRoleLead: 'Zavodlar va administratorlar veb-kabinetdan foydalanadi.',
     logout: 'Chiqish',
+    logoutConfirmTitle: 'Hisobdan chiqasizmi?',
+    logoutConfirmBody: 'Qayta kirish uchun SMS kod kerak bo‘ladi.',
     termsNotice: 'Davom etish orqali xizmat shartlariga rozilik bildirasiz.',
   },
   onboarding: {
@@ -135,6 +137,7 @@ export const uz = {
     empty: 'Hali ma’lumot yo‘q',
     emptyHint: 'Bu yerda yangi ma’lumotlar ko‘rinadi.',
     errorTitle: 'Xatolik yuz berdi',
+    unexpectedError: 'Kutilmagan xatolik yuz berdi. Qayta urinib ko‘ring.',
     networkError: 'Internet bilan aloqa yo‘q yoki server javob bermadi.',
     selectOption: 'Tanlang',
     takePhoto: 'Kameradan rasmga olish',
@@ -341,7 +344,7 @@ export const uz = {
     completedNotice: 'Reys muvaffaqiyatli topshirildi va yakunlandi!',
     cancelledNotice: 'Reys bekor qilingan.',
     locationPermissionBannerTitle: 'GPS ruxsati kerak',
-    locationPermissionBannerDesc: 'Reys davomida joylashuvingiz uzatilishi uchun doimiy joylashuvga (fon rejimiga) ruxsat bering.',
+    locationPermissionBannerDesc: 'Reys davomida joylashuvingiz uzatilishi uchun joylashuv ruxsatini bering.',
     grantPermission: 'Ruxsat berish',
   },
 } as const;

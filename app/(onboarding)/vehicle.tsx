@@ -115,7 +115,11 @@ export default function OnboardingVehicleScreen() {
       }
 
       await refreshProfile();
-      router.push('/(onboarding)/documents');
+      if (profile?.verificationStatus === 'APPROVED') {
+        router.replace('/(tabs)/profile');
+      } else {
+        router.push('/(onboarding)/documents');
+      }
     } catch (err: unknown) {
       const apiErr = err as { message?: string };
       setServerError(apiErr?.message || 'Mashina ma’lumotlarini saqlashda xatolik yuz berdi.');
@@ -129,10 +133,18 @@ export default function OnboardingVehicleScreen() {
       scrollable
       bottomAction={
         <PrimaryButton
-          title={uz.onboarding.saveAndContinue}
+          title={
+            profile?.verificationStatus === 'APPROVED'
+              ? uz.common.save
+              : uz.onboarding.saveAndContinue
+          }
           onPress={handleSubmit}
           loading={loading}
-          accessibilityLabel={uz.onboarding.saveAndContinue}
+          accessibilityLabel={
+            profile?.verificationStatus === 'APPROVED'
+              ? uz.common.save
+              : uz.onboarding.saveAndContinue
+          }
         />
       }
     >
