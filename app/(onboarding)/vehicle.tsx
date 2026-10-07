@@ -16,6 +16,7 @@ import {
   Select,
   SelectOption,
   TextField,
+  RegistrationLaterButton,
 } from '../../src/components';
 import { useCopy } from '../../src/i18n';
 import { colors } from '../../src/theme';
@@ -160,6 +161,7 @@ export default function OnboardingVehicleScreen() {
         >
           <Text style={styles.backButtonText}>← {uz.common.back}</Text>
         </Pressable>
+        <RegistrationLaterButton />
       </View>
 
       <View style={styles.header}>
@@ -254,6 +256,9 @@ export default function OnboardingVehicleScreen() {
 
 const styles = StyleSheet.create({
   topNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
   backButton: {

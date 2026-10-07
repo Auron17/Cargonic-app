@@ -8,12 +8,14 @@ import {
   EmptyState,
   ErrorBanner,
   Money,
+  RegistrationLocked,
   Screen,
   ScreenTitle,
   SectionTitle,
   Skeleton,
   TAB_EDGES_NO_HEADER,
 } from '../../src/components';
+import { useAuth } from '../../src/auth/AuthProvider';
 import { useCopy } from '../../src/i18n';
 import { formatDateTime, formatMoney } from '../../src/utils/format';
 import { colors, ink } from '../../src/theme';
@@ -59,13 +61,16 @@ function EntryRow({ entry, route, last }: { entry: EntryDto; route?: string; las
 
 export default function BalanceTabScreen() {
   const uz = useCopy();
+  const { profile } = useAuth();
+  // Profil yaratilmaguncha hamyon yo'q — o'rniga ro'yxatdan o'tish taklifi
+  const locked = !profile;
   const [wallet, setWallet] = useState<WalletDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Hisob yozuvidagi reys kodi o'rniga yo'nalishni ko'rsatish uchun
-  const { data: trips } = useQuery({ queryKey: ['trips'], queryFn: () => tripsApi.getTrips() });
+  const { data: trips } = useQuery({ queryKey: ['trips'], queryFn: () => tripsApi.getTrips(), enabled: !locked });
   const routeByTrip = useMemo(() => {
     const map = new Map<string, string>();
     trips?.forEach((t) => map.set(t.id, `${city(t.pickupAddress)} → ${city(t.dropoffAddress)}`));
@@ -86,8 +91,8 @@ export default function BalanceTabScreen() {
   }, [uz.wallet.loadError]);
 
   useEffect(() => {
-    fetchWallet();
-  }, [fetchWallet]);
+    if (!locked) fetchWallet();
+  }, [fetchWallet, locked]);
 
   const entries = useMemo(() => wallet?.entries ?? [], [wallet]);
   const spentThisMonth = useMemo(() => {
@@ -110,6 +115,7 @@ export default function BalanceTabScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => {
+              if (locked) return;
               setRefreshing(true);
               fetchWallet();
             }}
@@ -119,64 +125,69 @@ export default function BalanceTabScreen() {
         }
       >
         <ScreenTitle title={uz.wallet.title} />
-        {error && !wallet ? <ErrorBanner message={error} onRetry={fetchWallet} /> : null}
+        {locked ? <RegistrationLocked /> : null}
+        {!locked ? (
+          <>
+            {error && !wallet ? <ErrorBanner message={error} onRetry={fetchWallet} /> : null}
 
-        <View style={styles.hero}>
-          <Text style={styles.heroLabel}>{uz.wallet.currentBalance}</Text>
-          {loading && !wallet ? (
-            <Skeleton width={200} height={38} radius={10} style={styles.heroSkeleton} />
-          ) : (
-            <Money amount={wallet?.balance ?? 0} size="xl" weight="800" color="#FFFFFF" style={styles.heroAmount} />
-          )}
-          <Text style={styles.heroSub}>Bu oy komissiyaga: {formatMoney(spentThisMonth)}</Text>
+            <View style={styles.hero}>
+              <Text style={styles.heroLabel}>{uz.wallet.currentBalance}</Text>
+              {loading && !wallet ? (
+                <Skeleton width={200} height={38} radius={10} style={styles.heroSkeleton} />
+              ) : (
+                <Money amount={wallet?.balance ?? 0} size="xl" weight="800" color="#FFFFFF" style={styles.heroAmount} />
+              )}
+              <Text style={styles.heroSub}>Bu oy komissiyaga: {formatMoney(spentThisMonth)}</Text>
 
-          <View style={styles.heroDivider} />
-          <Text style={styles.heroHint}>{uz.wallet.topUpInstruction}</Text>
-          <Pressable
-            onPress={() => Linking.openURL(`tel:${ADMIN_PHONE}`).catch(() => undefined)}
-            style={({ pressed }) => [styles.topUp, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel={uz.wallet.callAdmin}
-          >
-            <Ionicons name="call" size={17} color={ink[900]} />
-            <Text style={styles.topUpText}>To‘ldirish · {ADMIN_PHONE_DISPLAY}</Text>
-          </Pressable>
-        </View>
+              <View style={styles.heroDivider} />
+              <Text style={styles.heroHint}>{uz.wallet.topUpInstruction}</Text>
+              <Pressable
+                onPress={() => Linking.openURL(`tel:${ADMIN_PHONE}`).catch(() => undefined)}
+                style={({ pressed }) => [styles.topUp, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={uz.wallet.callAdmin}
+              >
+                <Ionicons name="call" size={17} color={ink[900]} />
+                <Text style={styles.topUpText}>To‘ldirish · {ADMIN_PHONE_DISPLAY}</Text>
+              </Pressable>
+            </View>
 
-        <SectionTitle
-          title={uz.wallet.entriesTitle}
-          right={entries.length > 0 ? <Text style={styles.count}>{entries.length} ta</Text> : undefined}
-        />
-        {loading && !wallet ? (
-          <View style={styles.listCard}>
-            {[0, 1, 2].map((i) => (
-              <View key={i} style={[styles.row, i < 2 && styles.rowDivider]}>
-                <Skeleton width={38} height={38} radius={12} />
-                <View style={styles.rowMain}>
-                  <Skeleton width="50%" height={13} />
-                  <Skeleton width="70%" height={11} style={styles.skeletonGap} />
-                </View>
+            <SectionTitle
+              title={uz.wallet.entriesTitle}
+              right={entries.length > 0 ? <Text style={styles.count}>{entries.length} ta</Text> : undefined}
+            />
+            {loading && !wallet ? (
+              <View style={styles.listCard}>
+                {[0, 1, 2].map((i) => (
+                  <View key={i} style={[styles.row, i < 2 && styles.rowDivider]}>
+                    <Skeleton width={38} height={38} radius={12} />
+                    <View style={styles.rowMain}>
+                      <Skeleton width="50%" height={13} />
+                      <Skeleton width="70%" height={11} style={styles.skeletonGap} />
+                    </View>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
-        ) : entries.length > 0 ? (
-          <View style={styles.listCard}>
-            {entries.map((e, i) => (
-              <EntryRow
-                key={e.id}
-                entry={e}
-                route={e.tripId ? routeByTrip.get(e.tripId) : undefined}
-                last={i === entries.length - 1}
+            ) : entries.length > 0 ? (
+              <View style={styles.listCard}>
+                {entries.map((e, i) => (
+                  <EntryRow
+                    key={e.id}
+                    entry={e}
+                    route={e.tripId ? routeByTrip.get(e.tripId) : undefined}
+                    last={i === entries.length - 1}
+                  />
+                ))}
+              </View>
+            ) : (
+              <EmptyState
+                iconName="wallet-outline"
+                title={uz.wallet.emptyEntries}
+                description="Bajarilgan reyslar va to‘lovlar tarixi shu yerda qayd etiladi."
               />
-            ))}
-          </View>
-        ) : (
-          <EmptyState
-            iconName="wallet-outline"
-            title={uz.wallet.emptyEntries}
-            description="Bajarilgan reyslar va to‘lovlar tarixi shu yerda qayd etiladi."
-          />
-        )}
+            )}
+          </>
+        ) : null}
       </ScrollView>
     </Screen>
   );

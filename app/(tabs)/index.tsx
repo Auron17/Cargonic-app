@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -12,15 +12,19 @@ import {
   Money,
   Pill,
   PrimaryButton,
+  RegistrationBanner,
+  RegistrationSheet,
   RouteLine,
   Screen,
   ScreenTitle,
   SkeletonList,
   TAB_EDGES_NO_HEADER,
+  useRegistration,
 } from '../../src/components';
 import { formatMoney, formatPickupWindow } from '../../src/utils/format';
 import { useCopy } from '../../src/i18n';
 import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
+import { useDeviceCoords } from '../../src/hooks/useDeviceCoords';
 import { colors } from '../../src/theme';
 
 function FeedCard({
@@ -119,9 +123,15 @@ export default function LoadsFeedScreen() {
   const uz = useCopy();
   const router = useRouter();
 
+  const registration = useRegistration();
+  const approved = registration.state === 'approved';
+  const [registrationOpen, setRegistrationOpen] = useState(false);
+  // Tasdiqlanmagan haydovchi joylashuvini serverga yozmaydi — lentani qurilma joylashuvi bilan so'raymiz
+  const coords = useDeviceCoords(!approved);
+
   const { data: feedItems, isLoading, error, refetch } = useQuery({
-    queryKey: ['feed'],
-    queryFn: loadsApi.getFeed,
+    queryKey: ['feed', approved ? null : coords],
+    queryFn: () => loadsApi.getFeed(approved ? undefined : coords ?? undefined),
     refetchInterval: 60000,
   });
   const pull = usePullToRefresh(refetch);
@@ -139,18 +149,21 @@ export default function LoadsFeedScreen() {
         title={uz.loadsTab.title}
         subtitle={subtitle}
         right={
-          <Pressable
-            onPress={() => router.push('/bids')}
-            hitSlop={8}
-            style={({ pressed }) => [styles.bidsButton, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel={uz.loadsTab.myBids}
-          >
-            <Ionicons name="pricetags-outline" size={16} color={colors.slate900} />
-            <Text style={styles.bidsButtonText}>{uz.loadsTab.myBids}</Text>
-          </Pressable>
+          approved ? (
+            <Pressable
+              onPress={() => router.push('/bids')}
+              hitSlop={8}
+              style={({ pressed }) => [styles.bidsButton, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel={uz.loadsTab.myBids}
+            >
+              <Ionicons name="pricetags-outline" size={16} color={colors.slate900} />
+              <Text style={styles.bidsButtonText}>{uz.loadsTab.myBids}</Text>
+            </Pressable>
+          ) : undefined
         }
       />
+      <RegistrationBanner />
       {error ? (
         <ErrorBanner message={error instanceof Error ? error.message : uz.common.networkError} onRetry={refetch} />
       ) : null}
@@ -168,7 +181,9 @@ export default function LoadsFeedScreen() {
             item={item}
             onOpen={() => router.push({ pathname: '/loads/[id]', params: { id: item.loadId } })}
             onAction={() =>
-              router.push({
+              !approved
+                ? setRegistrationOpen(true)
+                : router.push({
                 pathname: '/loads/[id]',
                 params: {
                   id: item.loadId,
@@ -199,6 +214,7 @@ export default function LoadsFeedScreen() {
           ) : null
         }
       />
+      <RegistrationSheet visible={registrationOpen} onClose={() => setRegistrationOpen(false)} />
     </Screen>
   );
 }

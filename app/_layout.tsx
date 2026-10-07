@@ -20,13 +20,11 @@ function AppServices() {
 
 function RootNavigator() {
   const uz = useCopy();
-  const { isLoading, isAuthenticated, isCarrier, profile } = useAuth();
+  const { isLoading, isAuthenticated, isCarrier } = useAuth();
   const showAuth = isLoading || !isAuthenticated || !isCarrier;
-  const showApp =
-    !isLoading &&
-    isAuthenticated &&
-    isCarrier &&
-    profile?.verificationStatus === 'APPROVED';
+  // Ro'yxatdan to'liq o'tmagan haydovchi ham ilovaga kiradi: yuklarni ko'radi, olish uchun esa
+  // lenta/yuk sahifasidagi eslatma orqali ro'yxatdan o'tishni yakunlaydi (Yandex Pro uslubida).
+  const showApp = !isLoading && isAuthenticated && isCarrier;
   // Tasdiqlangan haydovchi ham profil/mashina/hujjatni tahrirlay olishi uchun
   // onboarding marshrutlari app bilan birga ochiq qoladi.
   const showOnboarding = !isLoading && isAuthenticated && isCarrier;

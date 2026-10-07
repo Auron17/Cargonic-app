@@ -10,6 +10,7 @@ import {
   ErrorBanner,
   Money,
   Pill,
+  RegistrationLocked,
   RouteLine,
   Screen,
   ScreenTitle,
@@ -19,6 +20,7 @@ import {
   pillToneForStatus,
   statusBadgeLabel,
 } from '../../src/components';
+import { useAuth } from '../../src/auth/AuthProvider';
 import { useCopy } from '../../src/i18n';
 import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
 import { isTrackingActive } from '../../src/tracking/backgroundTask';
@@ -103,10 +105,15 @@ export default function TripsTabScreen() {
   const router = useRouter();
   const [isGpsActive, setIsGpsActive] = useState(false);
 
+  const { profile } = useAuth();
+  // Profil yaratilmaguncha reyslar API'si ishlamaydi — o'rniga ro'yxatdan o'tish taklifi
+  const locked = !profile;
+
   const { data: trips, isLoading, error, refetch } = useQuery({
     queryKey: ['trips'],
     queryFn: () => tripsApi.getTrips(),
     refetchInterval: 15000,
+    enabled: !locked,
   });
   const pull = usePullToRefresh(refetch);
 
@@ -141,10 +148,11 @@ export default function TripsTabScreen() {
               title={uz.tripsScreen.title}
               subtitle={activeTrip ? uz.tripsScreen.activeCount : trips ? uz.tripsScreen.historyCount.replace('{{count}}', String(history.length)) : undefined}
             />
+            {locked ? <RegistrationLocked /> : null}
             {error ? (
               <ErrorBanner message={error instanceof Error ? error.message : uz.common.networkError} onRetry={refetch} />
             ) : null}
-            {isLoading ? <SkeletonList count={2} /> : null}
+            {isLoading && !locked ? <SkeletonList count={2} /> : null}
 
             {activeTrip ? (
               <ActiveTripCard trip={activeTrip} gpsActive={isGpsActive} onPress={() => openTrip(activeTrip.id)} />

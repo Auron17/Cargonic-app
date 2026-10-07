@@ -17,6 +17,7 @@ import {
   PrimaryButton,
   Screen,
   StatusBadge,
+  RegistrationLaterButton,
 } from '../../src/components';
 import { useCopy } from '../../src/i18n';
 import { colors } from '../../src/theme';
@@ -161,6 +162,7 @@ export default function OnboardingDocumentsScreen() {
         >
           <Text style={styles.backButtonText}>← {uz.common.back}</Text>
         </Pressable>
+        <RegistrationLaterButton />
       </View>
 
       {/* Header */}
@@ -247,6 +249,9 @@ export default function OnboardingDocumentsScreen() {
 
 const styles = StyleSheet.create({
   topNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
   backButton: {

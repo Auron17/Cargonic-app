@@ -180,6 +180,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.slate900,
     paddingVertical: 12,
+    // iOS (Fabric) native TextInput'ni qayta ishlatadi: SMS-kod maydonidagi letterSpacing: 14
+    // keyingi ekrandagi maydonga "yopishib" qoladi. Aniq qiymat berib, buni oldini olamiz.
+    letterSpacing: 0,
   },
   errorText: {
     fontSize: 13,

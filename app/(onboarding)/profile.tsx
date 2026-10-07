@@ -16,6 +16,7 @@ import {
   Select,
   SelectOption,
   TextField,
+  RegistrationLaterButton,
 } from '../../src/components';
 import { useCopy } from '../../src/i18n';
 import { colors } from '../../src/theme';
@@ -145,6 +146,23 @@ export default function OnboardingProfileScreen() {
         />
       }
     >
+      <View style={styles.topNav}>
+        {router.canGoBack() ? (
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={12}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel={uz.common.back}
+          >
+            <Text style={styles.backButtonText}>← {uz.common.back}</Text>
+          </Pressable>
+        ) : (
+          <View />
+        )}
+        <RegistrationLaterButton />
+      </View>
+
       {/* Progress & Header */}
       <View style={styles.header}>
         <View style={styles.stepBadge}>
@@ -258,6 +276,21 @@ export default function OnboardingProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  topNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    minHeight: 32,
+  },
+  backButton: {
+    paddingVertical: 6,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '700',
+  },
   header: {
     marginBottom: 20,
   },

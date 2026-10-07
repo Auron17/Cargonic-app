@@ -13,6 +13,7 @@ import {
   Money,
   Pill,
   PrimaryButton,
+  RegistrationSheet,
   RouteLine,
   Screen,
   SectionTitle,
@@ -22,6 +23,7 @@ import {
   TextField,
   pillToneForStatus,
   statusBadgeLabel,
+  useRegistration,
 } from '../../src/components';
 import { Ionicons } from '@expo/vector-icons';
 import { formatMoney, formatPickupWindow } from '../../src/utils/format';
@@ -46,6 +48,9 @@ export default function LoadDetailsScreen() {
   const [isEditingBid, setIsEditingBid] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  // Ro'yxatdan to'liq o'tmagan haydovchi yukni ko'radi, lekin olish/taklif o'rniga ro'yxatdan o'tish oynasi chiqadi
+  const approved = useRegistration().state === 'approved';
+  const [showRegistration, setShowRegistration] = useState(false);
 
   // 1. Fetch load details
   const {
@@ -63,6 +68,7 @@ export default function LoadDetailsScreen() {
   const { data: myBids, isFetched: bidsFetched } = useQuery({
     queryKey: ['myBids'],
     queryFn: carrierApi.getMyBids,
+    enabled: approved,
   });
 
   const existingBid: MyBid | undefined = myBids?.find(
@@ -190,12 +196,16 @@ export default function LoadDetailsScreen() {
 
   useEffect(() => {
     if (!load || load.status !== 'OPEN' || !actionParam) return;
-    if (actionParam === 'bid' && !bidsFetched) return;
+    if (approved && actionParam === 'bid' && !bidsFetched) return;
     if (consumedActionRef.current === `${loadId}:${actionParam}`) return;
 
     // iOS sahifa o'tish animatsiyasi paytida Modal ochilmaydi — animatsiya tugashini kutamiz
     const timer = setTimeout(() => {
       consumedActionRef.current = `${loadId}:${actionParam}`;
+      if (!approved) {
+        setShowRegistration(true);
+        return;
+      }
 
       if (actionParam === 'book' && load.priceMode === 'FIXED') {
         setShowConfirmBookModal(true);
@@ -216,7 +226,7 @@ export default function LoadDetailsScreen() {
       }
     }, 450);
     return () => clearTimeout(timer);
-  }, [load, loadId, actionParam, existingBid, bidsFetched]);
+  }, [load, loadId, actionParam, existingBid, bidsFetched, approved]);
 
   const handleSubmitBidForm = () => {
     const numericPrice = Number(bidPriceInput.replace(/\D/g, ''));
@@ -294,6 +304,14 @@ export default function LoadDetailsScreen() {
       <Ionicons name="lock-closed-outline" size={16} color={colors.textMuted} />
       <Text style={styles.closedText}>Bu yuk endi ochiq emas</Text>
     </View>
+  ) : !approved ? (
+    <PrimaryButton
+      title={isFixed ? `${uz.loadDetails.bookButton} · ${formatMoney(load.price)}` : uz.loadDetails.placeBidButton}
+      variant={isFixed ? 'primary' : 'accent'}
+      onPress={() => setShowRegistration(true)}
+      size="lg"
+      accessibilityLabel={isFixed ? uz.loadDetails.bookButton : uz.loadDetails.placeBidButton}
+    />
   ) : isFixed ? (
     <PrimaryButton
       title={`${uz.loadDetails.bookButton} · ${formatMoney(load.price)}`}
@@ -351,6 +369,15 @@ export default function LoadDetailsScreen() {
             </View>
             <Text style={styles.companyText} numberOfLines={1}>
               {load.companyName}
+            </Text>
+          </View>
+        ) : !approved ? (
+          <View style={styles.companyRow}>
+            <View style={styles.companyIcon}>
+              <Ionicons name="lock-closed" size={13} color={colors.slate500} />
+            </View>
+            <Text style={styles.companyHidden} numberOfLines={1}>
+              {uz.registration.hiddenCompany}
             </Text>
           </View>
         ) : null}
@@ -427,6 +454,8 @@ export default function LoadDetailsScreen() {
           </Card>
         </>
       ) : null}
+
+      <RegistrationSheet visible={showRegistration} onClose={() => setShowRegistration(false)} />
 
       {/* Band qilishni tasdiqlash */}
       <BottomSheet
@@ -512,6 +541,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   companyText: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.slate800 },
+  companyHidden: { flex: 1, fontSize: 14, color: colors.textMuted },
   factsGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 16 },
   fact: { width: '50%', paddingRight: 8 },
   factLabel: { fontSize: 13, color: colors.textMuted },

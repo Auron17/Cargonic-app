@@ -488,6 +488,28 @@ export const uz = {
     docsApprovedCount: '{{count}} ta tasdiqlangan',
     carrierFallback: 'Tashuvchi',
   },
+  registration: {
+    bannerTitle: 'Yuk olish uchun ro‘yxatdan o‘ting',
+    bannerProgress: '{{done}}/{{total}} qadam bajarildi',
+    bannerReviewTitle: 'Hujjatlaringiz tekshirilmoqda',
+    bannerReviewDesc: 'Tasdiqlangach yuk olishingiz mumkin. Hozircha yuklarni ko‘rib turing.',
+    bannerRejectedTitle: 'Hujjatlarni tuzatish kerak',
+    bannerRejectedDesc: 'Admin izohini ko‘ring va hujjatni qayta yuklang.',
+    sheetTitle: 'Yuk olish uchun ro‘yxatdan o‘ting',
+    sheetSubtitle: 'Bir marta to‘ldirasiz — keyin yuklarni bir bosishda olasiz. Taxminan 5 daqiqa.',
+    sheetReviewSubtitle: 'Hujjatlaringiz yuborilgan. Admin tasdiqlagach yuk olish va taklif berish ochiladi.',
+    stepProfile: 'Shaxsiy ma’lumotlar',
+    stepVehicle: 'Yuk mashinasi',
+    stepDocuments: 'Hujjatlar rasmi',
+    stepReview: 'Admin tasdig‘i',
+    continue: 'Davom etish',
+    viewStatus: 'Holatni ko‘rish',
+    later: 'Keyinroq',
+    browseLoads: 'Yuklarni ko‘rish',
+    hiddenCompany: 'Yuk beruvchi ro‘yxatdan o‘tgach ko‘rinadi',
+    lockedTabTitle: 'Avval ro‘yxatdan o‘ting',
+    lockedTabDesc: 'Reyslar va balans ro‘yxatdan o‘tganingizdan keyin shu yerda ko‘rinadi.',
+  },
 } as const;
 
 type DeepString<T> = {

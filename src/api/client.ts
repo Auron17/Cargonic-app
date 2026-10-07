@@ -321,8 +321,9 @@ export const filesApi = {
 };
 
 export const loadsApi = {
-  getFeed: async (): Promise<FeedItem[]> => {
-    const res = await apiClient.get<FeedItem[]>('/feed');
+  /** coords — ro'yxatdan o'tmagan haydovchi uchun: lenta qurilma joylashuvi atrofida ko'rsatiladi */
+  getFeed: async (coords?: { lat: number; lng: number }): Promise<FeedItem[]> => {
+    const res = await apiClient.get<FeedItem[]>('/feed', { params: coords });
     return res.data;
   },
 

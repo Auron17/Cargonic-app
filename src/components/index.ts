@@ -19,3 +19,4 @@ export * from './BottomSheet';
 export * from './HeaderBackButton';
 export * from './LanguageSheet';
 export * from './LanguageChips';
+export * from './Registration';

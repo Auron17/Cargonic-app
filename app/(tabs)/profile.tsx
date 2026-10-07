@@ -8,6 +8,7 @@ import {
   InfoRow,
   LanguageSheet,
   Pill,
+  RegistrationBanner,
   Screen,
   ScreenTitle,
   SectionTitle,
@@ -62,6 +63,7 @@ export default function ProfileTabScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.slate500} />}
     >
       <ScreenTitle title={uz.profileTab.title} />
+      <RegistrationBanner />
 
       {/* Haydovchi */}
       <View style={styles.header}>

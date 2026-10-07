@@ -62,7 +62,7 @@ export default function OnboardingStatusScreen() {
           ) : isApproved ? (
             <PrimaryButton
               title={uz.onboarding.goToLoads}
-              onPress={() => router.replace('/(tabs)')}
+              onPress={() => router.dismissTo('/(tabs)')}
               icon={<Ionicons name="cube" size={16} color="#FFFFFF" />}
               accessibilityLabel={uz.onboarding.goToLoads}
             />
@@ -77,11 +77,18 @@ export default function OnboardingStatusScreen() {
                 />
               ) : null}
               <PrimaryButton
+                title={uz.registration.browseLoads}
+                onPress={() => router.dismissTo('/(tabs)')}
+                variant={rejectedDocs.length > 0 ? 'outline' : 'primary'}
+                icon={<Ionicons name="cube" size={16} color={rejectedDocs.length > 0 ? colors.primary : '#FFFFFF'} />}
+                accessibilityLabel={uz.registration.browseLoads}
+              />
+              <PrimaryButton
                 title={uz.onboarding.refreshStatus}
                 onPress={handleRefresh}
                 loading={refreshing}
-                variant={rejectedDocs.length > 0 ? 'outline' : 'primary'}
-                icon={<Ionicons name="refresh" size={16} color={rejectedDocs.length > 0 ? colors.primary : '#FFFFFF'} />}
+                variant="outline"
+                icon={<Ionicons name="refresh" size={16} color={colors.primary} />}
                 accessibilityLabel={uz.onboarding.refreshStatus}
               />
               <PrimaryButton
