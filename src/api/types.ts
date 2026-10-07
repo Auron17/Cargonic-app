@@ -593,3 +593,16 @@ export interface AiCheckDto {
   }
   checkedAt?: string
 }
+
+// Telegram bot orqali kirish
+export interface TelegramStartResponse {
+  code: string
+  deepLink: string
+  botUsername: string
+  expiresInSeconds: number
+}
+
+export interface TelegramStatusResponse {
+  status: 'PENDING' | 'CONFIRMED' | 'EXPIRED' | 'CONSUMED' | 'NOT_FOUND'
+  auth?: AuthResponse
+}

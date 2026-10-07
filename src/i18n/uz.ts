@@ -536,6 +536,21 @@ export const uz = {
       EXPIRED: 'Hujjat muddati o‘tgan',
     },
   },
+  telegramLogin: {
+    button: 'Telegram orqali kirish',
+    hint: 'Telegram orqali kiring yoki SMS kod oling',
+    orSms: 'yoki SMS kod orqali',
+    waitingTitle: 'Telegram’da raqamingizni ulashing',
+    step1: '«Start» tugmasini bosing',
+    step2: '«📱 Raqamni ulashish» tugmasini bosing',
+    step3: 'Ilovaga qayting — kirish o‘zi bo‘ladi',
+    waiting: 'Tasdiq kutilmoqda…',
+    reopen: 'Telegram’ni qayta ochish',
+    cancel: 'Bekor qilish',
+    expired: 'Havola eskirdi. «Telegram orqali kirish»ni qaytadan bosing.',
+    noTelegram: 'Telegram ochilmadi. Telegram o‘rnatilganini tekshiring.',
+    wrongRole: 'Bu raqam yuk beruvchi yoki admin sifatida ro‘yxatdan o‘tgan. Zavod kabinetidan foydalaning.',
+  },
 } as const;
 
 type DeepString<T> = {

@@ -18,6 +18,8 @@ import {
   DocumentDto,
   DocumentRequest,
   ErrorResponse,
+  TelegramStartResponse,
+  TelegramStatusResponse,
   FeedItem,
   LoadDto,
   LocationBatch,
@@ -223,6 +225,16 @@ export const authApi = {
       code,
       role,
     } as VerifyRequest);
+    return res.data;
+  },
+
+  telegramStart: async (): Promise<TelegramStartResponse> => {
+    const res = await apiClient.post<TelegramStartResponse>('/auth/telegram/start', { role: 'CARRIER' });
+    return res.data;
+  },
+
+  telegramStatus: async (code: string): Promise<TelegramStatusResponse> => {
+    const res = await apiClient.post<TelegramStatusResponse>('/auth/telegram/status', { code });
     return res.data;
   },
 
