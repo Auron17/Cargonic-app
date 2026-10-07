@@ -9,9 +9,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { carrierApi } from '../../src/api/client';
-import { DocType, DocumentDto } from '../../src/api/types';
+import { AiCheckDto, DocType, DocumentDto } from '../../src/api/types';
 import { useAuth } from '../../src/auth/AuthProvider';
 import {
+  BottomSheet,
   ErrorBanner,
   PhotoPicker,
   PrimaryButton,
@@ -19,6 +20,7 @@ import {
   StatusBadge,
   RegistrationLaterButton,
 } from '../../src/components';
+import { Ionicons } from '@expo/vector-icons';
 import { useCopy } from '../../src/i18n';
 import { colors } from '../../src/theme';
 
@@ -47,6 +49,12 @@ export default function OnboardingDocumentsScreen() {
   const [loading, setLoading] = useState(false);
   const [savingDocType, setSavingDocType] = useState<DocType | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+  // AI tekshiruvi: qaysi hujjat tekshirilyapti, oxirgi natijalar va haydovchi qaror qilishi kerak bo'lgan rasm
+  const [checkingDocType, setCheckingDocType] = useState<DocType | null>(null);
+  const [aiChecks, setAiChecks] = useState<Partial<Record<DocType, AiCheckDto>>>({});
+  const [review, setReview] = useState<{ docType: DocType; fileKey: string; check: AiCheckDto } | null>(null);
+  // "Qayta olish"da PhotoPicker'ni eski holatiga qaytarish uchun
+  const [pickerResets, setPickerResets] = useState<Partial<Record<DocType, number>>>({});
 
   const profileId = profile?.id;
   const fallbackDocs = profile?.documents;
@@ -93,7 +101,7 @@ export default function OnboardingDocumentsScreen() {
   ).length;
   const allRequiredUploaded = uploadedRequiredCount === requiredConfigs.length;
 
-  const handleDocumentUpload = async (docType: DocType, fileKey: string) => {
+  const attachDocument = async (docType: DocType, fileKey: string) => {
     setSavingDocType(docType);
     setServerError(null);
 
@@ -112,6 +120,40 @@ export default function OnboardingDocumentsScreen() {
     } finally {
       setSavingDocType(null);
     }
+  };
+
+  /** Rasm yuklangach: avval AI tekshiradi, muammo bo'lsa haydovchidan so'raydi, aks holda darhol biriktiradi */
+  const handleDocumentUpload = async (docType: DocType, fileKey: string) => {
+    setCheckingDocType(docType);
+    let check: AiCheckDto | null = null;
+    try {
+      check = await carrierApi.checkDocument({ docType, fileKey });
+    } catch {
+      // Tekshiruv ishlamasa ham hujjat yuklanadi — admin baribir ko'radi
+    } finally {
+      setCheckingDocType(null);
+    }
+    setAiChecks((prev) => ({ ...prev, [docType]: check ?? undefined }));
+    if (check && (check.verdict === 'WARN' || check.verdict === 'FAIL')) {
+      setReview({ docType, fileKey, check });
+      return;
+    }
+    await attachDocument(docType, fileKey);
+  };
+
+  const retake = () => {
+    if (!review) return;
+    const { docType } = review;
+    setReview(null);
+    setAiChecks((prev) => ({ ...prev, [docType]: undefined }));
+    setPickerResets((prev) => ({ ...prev, [docType]: (prev[docType] ?? 0) + 1 }));
+  };
+
+  const uploadAnyway = () => {
+    if (!review) return;
+    const { docType, fileKey } = review;
+    setReview(null);
+    void attachDocument(docType, fileKey);
   };
 
   const handleFinish = async () => {
@@ -184,6 +226,11 @@ export default function OnboardingDocumentsScreen() {
         </View>
       </View>
 
+      <View style={styles.consentBox}>
+        <Ionicons name="sparkles-outline" size={16} color={colors.slate500} />
+        <Text style={styles.consentText}>{uz.aiCheck.consent}</Text>
+      </View>
+
       <ErrorBanner message={serverError} onDismiss={() => setServerError(null)} />
 
       {loading ? (
@@ -197,6 +244,8 @@ export default function OnboardingDocumentsScreen() {
       {DOCUMENT_CONFIGS.map((config) => {
         const doc = documentsMap[config.docType];
         const isSavingThis = savingDocType === config.docType;
+        const isCheckingThis = checkingDocType === config.docType;
+        const check = aiChecks[config.docType];
 
         return (
           <View key={config.docType} style={styles.docCard}>
@@ -227,6 +276,17 @@ export default function OnboardingDocumentsScreen() {
               </View>
             ) : null}
 
+            {isCheckingThis ? (
+              <View style={styles.savingBox}>
+                <ActivityIndicator color={colors.primary} size="small" />
+                <Text style={styles.savingText}>{uz.aiCheck.checking}</Text>
+              </View>
+            ) : null}
+
+            {!isCheckingThis && check && check.verdict !== 'SKIPPED' && doc?.fileKey === check.fileKey ? (
+              <AiCheckLine check={check} />
+            ) : null}
+
             {isSavingThis ? (
               <View style={styles.savingBox}>
                 <ActivityIndicator color={colors.primary} size="small" />
@@ -235,6 +295,7 @@ export default function OnboardingDocumentsScreen() {
             ) : null}
 
             <PhotoPicker
+              key={`${config.docType}-${pickerResets[config.docType] ?? 0}`}
               label=""
               value={doc?.fileKey}
               onUploaded={(fileKey) => handleDocumentUpload(config.docType, fileKey)}
@@ -243,7 +304,59 @@ export default function OnboardingDocumentsScreen() {
           </View>
         );
       })}
+
+      <BottomSheet
+        visible={!!review}
+        onClose={retake}
+        title={review?.check.verdict === 'FAIL' ? uz.aiCheck.failTitle : uz.aiCheck.warnTitle}
+        subtitle={uz.aiCheck.subtitle}
+      >
+        <View style={styles.issueList}>
+          {review?.check.issues.map((issue) => (
+            <View key={issue} style={styles.issueRow}>
+              <Ionicons name="alert-circle" size={18} color={colors.warningDark} />
+              <Text style={styles.issueText}>{uz.aiCheck.issues[issue]}</Text>
+            </View>
+          ))}
+        </View>
+        <PrimaryButton
+          title={uz.aiCheck.retake}
+          onPress={retake}
+          icon={<Ionicons name="camera" size={16} color="#FFFFFF" />}
+        />
+        <PrimaryButton title={uz.aiCheck.uploadAnyway} variant="secondary" onPress={uploadAnyway} />
+      </BottomSheet>
     </Screen>
+  );
+}
+
+/** Hujjat kartasidagi qisqa AI xulosasi: "✓ Rasm aniq · Raqam 01A202AA · Muddati 12.03.2027" */
+function AiCheckLine({ check }: { check: AiCheckDto }) {
+  const uz = useCopy();
+  if (check.verdict === 'OK') {
+    const e = check.extracted;
+    const parts = [
+      e?.plateNumber ? `${uz.aiCheck.plate} ${e.plateNumber}` : null,
+      e?.documentNumber && !e.plateNumber ? `${uz.aiCheck.number} ${e.documentNumber}` : null,
+      e?.expiryDate ? `${uz.aiCheck.expiry} ${e.expiryDate.split('-').reverse().join('.')}` : null,
+    ].filter(Boolean);
+    return (
+      <View style={styles.aiLine}>
+        <Ionicons name="checkmark-circle" size={16} color={colors.successDark} />
+        <Text style={[styles.aiLineText, styles.aiLineOk]} numberOfLines={2}>
+          {[uz.aiCheck.okLine, ...parts].join(' · ')}
+        </Text>
+      </View>
+    );
+  }
+  const first = check.issues[0];
+  return (
+    <View style={styles.aiLine}>
+      <Ionicons name="warning" size={16} color={colors.warningDark} />
+      <Text style={[styles.aiLineText, styles.aiLineWarn]} numberOfLines={2}>
+        {uz.aiCheck.warnLine.replace('{{issue}}', first ? uz.aiCheck.issues[first] : '')}
+      </Text>
+    </View>
   );
 }
 
@@ -389,6 +502,22 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 8,
   },
+  consentBox: {
+    flexDirection: 'row',
+    gap: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceMuted,
+  },
+  consentText: { flex: 1, fontSize: 12.5, lineHeight: 17, color: colors.slate600 },
+  aiLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  aiLineText: { flex: 1, fontSize: 13, fontWeight: '600' },
+  aiLineOk: { color: colors.successDark },
+  aiLineWarn: { color: colors.warningDark },
+  issueList: { gap: 10, marginBottom: 4 },
+  issueRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  issueText: { flex: 1, fontSize: 15, color: colors.slate800 },
   savingText: {
     fontSize: 13,
     color: colors.primary,

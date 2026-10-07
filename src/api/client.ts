@@ -14,6 +14,7 @@ import {
   BidRequest,
   BidView,
   CancelRequest,
+  AiCheckDto,
   DocumentDto,
   DocumentRequest,
   ErrorResponse,
@@ -275,6 +276,12 @@ export const carrierApi = {
     return res.data;
   },
 
+
+  /** AI rasmni tekshiradi; hech qachon jarayonni to'xtatmaydi (ishlamasa verdict = SKIPPED) */
+  checkDocument: async (data: DocumentRequest): Promise<AiCheckDto> => {
+    const res = await apiClient.post<AiCheckDto>('/carrier/documents/ai-check', data, { timeout: 30000 });
+    return res.data;
+  },
 
   uploadDocument: async (data: DocumentRequest): Promise<DocumentDto> => {
     const res = await apiClient.post<DocumentDto>('/carrier/documents', data);

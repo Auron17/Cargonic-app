@@ -510,6 +510,32 @@ export const uz = {
     lockedTabTitle: 'Avval ro‘yxatdan o‘ting',
     lockedTabDesc: 'Reyslar va balans ro‘yxatdan o‘tganingizdan keyin shu yerda ko‘rinadi.',
   },
+  aiCheck: {
+    consent: 'Guvohnoma, texpasport, litsenziya kartochkasi va mashina rasmi sifatini avtomatik tekshirish uchun AI xizmatiga yuboriladi. Pasport va selfi yuborilmaydi.',
+    checking: 'Rasm tekshirilmoqda…',
+    failTitle: 'Bu rasm yaroqsiz ko‘rinadi',
+    warnTitle: 'Rasmni tekshirib ko‘ring',
+    subtitle: 'Avtomatik tekshiruv quyidagilarni topdi. Qayta olsangiz, hujjat tezroq tasdiqlanadi.',
+    retake: 'Qayta olish',
+    uploadAnyway: 'Baribir yuklash',
+    okLine: 'Rasm aniq',
+    warnLine: 'Ogohlantirish: {{issue}}',
+    plate: 'Raqam',
+    expiry: 'Muddati',
+    number: 'Hujjat №',
+    issues: {
+      WRONG_TYPE: 'Boshqa hujjat rasmi yuklanganga o‘xshaydi',
+      UNREADABLE: 'Hujjat o‘qilmayapti',
+      BLURRY: 'Rasm xira — telefonni qimirlatmang',
+      GLARE: 'Yaltirash bor — chiroq yoki quyosh tushmasin',
+      CROPPED: 'Hujjat chetlari kadrga sig‘magan',
+      TOO_DARK: 'Rasm juda qorong‘i',
+      PLATE_MISMATCH: 'Davlat raqami mashina raqamiga mos emas',
+      NAME_MISMATCH: 'Ism profildagi ismga mos emas',
+      NUMBER_MISMATCH: 'Kartochka raqami kiritilgan raqamga mos emas',
+      EXPIRED: 'Hujjat muddati o‘tgan',
+    },
+  },
 } as const;
 
 type DeepString<T> = {

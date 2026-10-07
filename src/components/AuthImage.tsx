@@ -30,6 +30,8 @@ export function AuthImage({
 }: AuthImageProps) {
   const uz = useCopy();
   const [token, setToken] = useState<string | null>(null);
+  // Token o'qilmaguncha rasm so'ralmaydi: aks holda birinchi so'rov 401 oladi va xato holati qolib ketadi
+  const [tokenReady, setTokenReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
@@ -38,6 +40,7 @@ export function AuthImage({
     getAccessToken().then((t) => {
       if (isMounted) {
         setToken(t);
+        setTokenReady(true);
       }
     });
     return () => {
@@ -48,7 +51,7 @@ export function AuthImage({
   useEffect(() => {
     setHasError(false);
     setIsLoading(true);
-  }, [fileKey]);
+  }, [fileKey, token]);
 
   const imageLabel = accessibilityLabel || uz.common.image;
   const errorLabel = uz.common.imageUnavailable;
@@ -67,6 +70,16 @@ export function AuthImage({
   }
 
   const imageUrl = filesApi.getFileContentUrl(fileKey);
+
+  if (!tokenReady) {
+    return (
+      <View style={[styles.container, containerStyle]} accessibilityState={{ busy: true }}>
+        <View style={[StyleSheet.absoluteFill, styles.loadingOverlay]}>
+          <ActivityIndicator color={colors.primary} size="small" />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View

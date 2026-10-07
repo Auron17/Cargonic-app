@@ -563,3 +563,33 @@ export interface InAppNotification {
   body: string
   data?: Record<string, string>
 }
+
+// AI hujjat tekshiruvi (rasm yuklangach, hujjatga biriktirishdan oldin)
+export type AiVerdict = 'OK' | 'WARN' | 'FAIL' | 'SKIPPED'
+export type AiIssue =
+  | 'WRONG_TYPE'
+  | 'UNREADABLE'
+  | 'BLURRY'
+  | 'GLARE'
+  | 'CROPPED'
+  | 'TOO_DARK'
+  | 'PLATE_MISMATCH'
+  | 'NAME_MISMATCH'
+  | 'NUMBER_MISMATCH'
+  | 'EXPIRED'
+
+export interface AiCheckDto {
+  fileKey: string
+  docType: DocType
+  verdict: AiVerdict
+  skipReason?: string
+  detectedType?: string
+  issues: AiIssue[]
+  extracted?: {
+    fullName?: string
+    documentNumber?: string
+    expiryDate?: string
+    plateNumber?: string
+  }
+  checkedAt?: string
+}
