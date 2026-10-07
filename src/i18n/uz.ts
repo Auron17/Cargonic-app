@@ -574,6 +574,11 @@ export const uz = {
       c40hc: '40 fut HC',
     },
   },
+  multiTruck: {
+    chip: '{{total}} ta mashina · {{free}} bo‘sh',
+    detail: '{{total}} ta mashina kerak, {{free}} ta joy bo‘sh. Narx — 1 mashina uchun.',
+    usdNote: 'Narx dollarda. Komissiya Markaziy bank kursi bilan so‘mda yechiladi.',
+  },
 } as const;
 
 type DeepString<T> = {

@@ -55,7 +55,7 @@ function ActiveTripCard({ trip, gpsActive, onPress }: { trip: TripListItem; gpsA
         </View>
       </View>
 
-      <Money amount={trip.agreedPrice} size="xl" weight="800" color="#FFFFFF" style={styles.activePrice} />
+      <Money amount={trip.agreedPrice} currency={trip.currency} size="xl" weight="800" color="#FFFFFF" style={styles.activePrice} />
       <Text style={styles.activeMeta} numberOfLines={1}>
         {[trip.companyName, trip.plateNumber, formatDate(trip.pickupDate)].filter(Boolean).join(' · ')}
       </Text>
@@ -78,7 +78,7 @@ function HistoryRow({ trip, onPress, last }: { trip: TripListItem; onPress: () =
       onPress={onPress}
       style={({ pressed }) => [styles.row, !last && styles.rowDivider, pressed && styles.rowPressed]}
       accessibilityRole="button"
-      accessibilityLabel={`${trip.pickupAddress} dan ${trip.dropoffAddress} gacha, ${formatMoney(trip.agreedPrice)}`}
+      accessibilityLabel={`${trip.pickupAddress} dan ${trip.dropoffAddress} gacha, ${formatMoney(trip.agreedPrice, trip.currency)}`}
     >
       <View style={styles.rowIcon}>
         <Ionicons name="cube-outline" size={18} color={colors.slate700} />
@@ -93,7 +93,7 @@ function HistoryRow({ trip, onPress, last }: { trip: TripListItem; onPress: () =
         </Text>
       </View>
       <View style={styles.rowRight}>
-        <Text style={styles.rowPrice}>{formatMoney(trip.agreedPrice)}</Text>
+        <Text style={styles.rowPrice}>{formatMoney(trip.agreedPrice, trip.currency)}</Text>
         <Pill tone={pillToneForStatus(trip.status)} label={statusBadgeLabel(trip.status, 'trip')} />
       </View>
     </Pressable>

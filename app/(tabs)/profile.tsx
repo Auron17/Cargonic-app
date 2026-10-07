@@ -13,6 +13,7 @@ import {
   ScreenTitle,
   SectionTitle,
   TAB_EDGES_NO_HEADER,
+  VehicleCard,
   pillToneForStatus,
   statusBadgeLabel,
 } from '../../src/components';
@@ -136,22 +137,14 @@ export default function ProfileTabScreen() {
       ) : null}
 
       <SectionTitle title={uz.profileTab.vehicleSection} />
-      <Group>
-        {vehicle ? (
-          <>
-            <InfoRow icon="car-outline" label={uz.settings.bodyTypeLabel} value={uz.bodyType[vehicle.bodyType] ?? vehicle.bodyType} />
-            <InfoRow
-              icon="barbell-outline"
-              label={uz.settings.capacityShort}
-              value={`${vehicle.capacityTons} t${vehicle.volumeM3 ? ` · ${vehicle.volumeM3} m³` : ''}`}
-            />
-            <InfoRow icon="card-outline" label={uz.onboarding.licenseCardNumber} value={vehicle.licenseCardNumber} />
-            <InfoRow icon="create-outline" label={uz.profileTab.editVehicle} onPress={() => router.push('/(onboarding)/vehicle')} last />
-          </>
-        ) : (
-          <InfoRow icon="add-circle-outline" label={uz.profileTab.addVehicle} onPress={() => router.push('/(onboarding)/vehicle')} last />
-        )}
-      </Group>
+      <VehicleCard vehicle={vehicle} onPress={() => router.push('/(onboarding)/vehicle')} />
+      {vehicle ? (
+        <View style={styles.vehicleExtra}>
+          <Group>
+            <InfoRow icon="card-outline" label={uz.onboarding.licenseCardNumber} value={vehicle.licenseCardNumber} last />
+          </Group>
+        </View>
+      ) : null}
 
       <SectionTitle title={uz.profileTab.driverSection} />
       <Group>
@@ -232,6 +225,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FDECEC',
   },
   rejectText: { flex: 1, fontSize: 14, lineHeight: 20, color: colors.slate800 },
+  vehicleExtra: { marginTop: 10 },
   group: { backgroundColor: colors.surface, borderRadius: 18, paddingHorizontal: 14 },
   okText: { fontSize: 14, color: '#0F7A45', fontWeight: '600' },
   footer: { alignItems: 'center', marginTop: 24 },

@@ -305,6 +305,11 @@ export interface LoadDto {
   status: LoadStatus
   pendingBids?: number
   createdAt: string
+  currency?: Currency
+  truckCount?: number
+  bookedTrucks?: number
+  /** Belgilangan narxda yechiladigan komissiya, so'mda */
+  commissionEstimate?: number
 }
 
 export interface LocationRequest {
@@ -335,6 +340,10 @@ export interface FeedItem {
   insuranceRequired: boolean
   notes?: string
   myBidPrice?: number
+  currency?: Currency
+  truckCount?: number
+  /** Bo'sh qolgan mashina joylari */
+  freeTrucks?: number
 }
 
 export interface BidRequest {
@@ -380,6 +389,7 @@ export interface MyBid {
   pickupAddress: string
   dropoffAddress: string
   pickupDate: string
+  currency?: Currency
 }
 
 export interface TripSummaryDto {
@@ -388,6 +398,7 @@ export interface TripSummaryDto {
   status: TripStatus
   agreedPrice: number
   commissionAmount: number
+  currency?: Currency
 }
 
 export interface StatusRequest {
@@ -438,6 +449,7 @@ export interface TripListItem {
   plateNumber?: string
   disputed: boolean
   createdAt: string
+  currency?: Currency
 }
 
 export interface TripDetailDto {
@@ -464,6 +476,7 @@ export interface TripDetailDto {
   cancelledBy?: string
   cancelReason?: string
   createdAt: string
+  currency?: Currency
 }
 
 export interface LocationPoint {
@@ -606,3 +619,6 @@ export interface TelegramStatusResponse {
   status: 'PENDING' | 'CONFIRMED' | 'EXPIRED' | 'CONSUMED' | 'NOT_FOUND'
   auth?: AuthResponse
 }
+
+/** Yuk narxi valyutasi; hamyon va komissiya doim so'mda */
+export type Currency = 'UZS' | 'USD'

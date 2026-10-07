@@ -314,7 +314,7 @@ export default function TripDetailScreen() {
             </View>
           ) : null}
         </View>
-        <Money amount={trip.agreedPrice} size="xl" weight="800" style={styles.heroPrice} />
+        <Money amount={trip.agreedPrice} currency={trip.currency} size="xl" weight="800" style={styles.heroPrice} />
         <Text style={styles.heroMeta} numberOfLines={1}>
           {[trip.companyName, trip.commissionAmount != null ? `komissiya ${formatMoney(trip.commissionAmount)}` : null]
             .filter(Boolean)

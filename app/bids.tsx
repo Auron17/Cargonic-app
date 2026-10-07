@@ -127,7 +127,7 @@ export default function MyBidsScreen() {
     return (
       <Card onPress={() => handleOpenLoad(item.loadId)} accessibilityLabel={`${item.pickupAddress} dan ${item.dropoffAddress} gacha yuk`}>
         <View style={styles.cardTop}>
-          <Money amount={item.price} size="lg" weight="800" />
+          <Money amount={item.price} currency={item.currency} size="lg" weight="800" />
           <Pill tone={pillToneForStatus(item.status)} label={statusBadgeLabel(item.status, 'bid')} />
         </View>
         <Text style={styles.meta}>Taklif: {formatDateTime(item.createdAt)}</Text>

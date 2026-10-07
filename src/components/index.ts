@@ -20,3 +20,4 @@ export * from './HeaderBackButton';
 export * from './LanguageSheet';
 export * from './LanguageChips';
 export * from './Registration';
+export * from './VehicleCard';

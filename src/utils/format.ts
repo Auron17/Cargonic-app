@@ -3,13 +3,14 @@ import dayjs from 'dayjs';
 /**
  * Pul summasini formatlaydi: `6 000 000 so‘m`
  */
-export function formatMoney(amount: number | null | undefined): string {
+export function formatMoney(amount: number | null | undefined, currency: 'UZS' | 'USD' = 'UZS'): string {
+  const unit = currency === 'USD' ? '$' : 'so‘m';
   if (amount == null || isNaN(amount)) {
-    return '0 so‘m';
+    return `0 ${unit}`;
   }
   const rounded = Math.round(amount);
   const formatted = rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  return `${formatted} so‘m`;
+  return `${formatted} ${unit}`;
 }
 
 /**

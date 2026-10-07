@@ -291,7 +291,10 @@ export default function LoadDetailsScreen() {
   const isFixed = load.priceMode === 'FIXED';
   const isOpen = load.status === 'OPEN';
   const bodyTypeName = uz.bodyType[load.requiredBodyType] || load.requiredBodyType;
-  const estimatedCommission = isFixed && load.price ? Math.round(load.price * 0.03) : null;
+  // Komissiya doim so'mda: dollar narxda backend Markaziy bank kursi bilan hisoblaydi
+  const estimatedCommission =
+    load.commissionEstimate ?? (isFixed && load.price && load.currency !== 'USD' ? Math.round(load.price * 0.03) : null);
+  const priceText = formatMoney(load.price, load.currency);
   const facts: { label: string; value: string }[] = [
     { label: uz.loadDetails.cargoType, value: load.cargoType },
     { label: 'Og‘irlik', value: `${load.weightTons} ${uz.common.tons}` },
@@ -306,7 +309,7 @@ export default function LoadDetailsScreen() {
     </View>
   ) : !approved ? (
     <PrimaryButton
-      title={isFixed ? `${uz.loadDetails.bookButton} · ${formatMoney(load.price)}` : uz.loadDetails.placeBidButton}
+      title={isFixed ? `${uz.loadDetails.bookButton} · ${priceText}` : uz.loadDetails.placeBidButton}
       variant={isFixed ? 'primary' : 'accent'}
       onPress={() => setShowRegistration(true)}
       size="lg"
@@ -314,7 +317,7 @@ export default function LoadDetailsScreen() {
     />
   ) : isFixed ? (
     <PrimaryButton
-      title={`${uz.loadDetails.bookButton} · ${formatMoney(load.price)}`}
+      title={`${uz.loadDetails.bookButton} · ${priceText}`}
       onPress={() => setShowConfirmBookModal(true)}
       loading={bookMutation.isPending}
       size="lg"
@@ -355,13 +358,21 @@ export default function LoadDetailsScreen() {
           <Pill tone={pillToneForStatus(load.status)} label={statusBadgeLabel(load.status, 'load')} />
         </View>
         {isFixed && load.price != null ? (
-          <Money amount={load.price} size="xl" weight="800" style={styles.heroPrice} />
+          <Money amount={load.price} currency={load.currency} size="xl" weight="800" style={styles.heroPrice} />
         ) : (
           <Text style={styles.heroBidding}>Narxni siz taklif qilasiz</Text>
         )}
         {estimatedCommission != null ? (
           <Text style={styles.heroHint}>Platforma komissiyasi taxminan {formatMoney(estimatedCommission)} (3%)</Text>
         ) : null}
+        {(load.truckCount ?? 1) > 1 ? (
+          <Text style={styles.heroHint}>
+            {uz.multiTruck.detail
+              .replace('{{total}}', String(load.truckCount))
+              .replace('{{free}}', String(Math.max(0, (load.truckCount ?? 1) - (load.bookedTrucks ?? 0))))}
+          </Text>
+        ) : null}
+        {load.currency === 'USD' ? <Text style={styles.heroHint}>{uz.multiTruck.usdNote}</Text> : null}
         {load.companyName ? (
           <View style={styles.companyRow}>
             <View style={styles.companyIcon}>
@@ -439,7 +450,7 @@ export default function LoadDetailsScreen() {
             right={<Pill tone={pillToneForStatus(existingBid.status)} label={statusBadgeLabel(existingBid.status, 'bid')} />}
           />
           <Card>
-            <Money amount={existingBid.price} size="lg" weight="800" />
+            <Money amount={existingBid.price} currency={load.currency} size="lg" weight="800" />
             {existingBid.comment ? <Text style={styles.bidComment}>“{existingBid.comment}”</Text> : null}
             <View style={styles.bidActions}>
               <Pressable onPress={handleOpenEditBid} style={styles.linkBtn} accessibilityRole="button">
@@ -466,7 +477,7 @@ export default function LoadDetailsScreen() {
         subtitle="Band qilsangiz, balansingizdan komissiya yechiladi va reys darhol boshlanadi."
       >
         <View style={styles.summaryBox}>
-          <SummaryRow label="Yuk narxi" value={formatMoney(load.price)} />
+          <SummaryRow label="Yuk narxi" value={priceText} />
           {estimatedCommission != null ? (
             <SummaryRow label="Komissiya (3%)" value={`−${formatMoney(estimatedCommission)}`} />
           ) : null}
@@ -495,8 +506,12 @@ export default function LoadDetailsScreen() {
       >
         {errorMessage ? <ErrorBanner message={errorMessage} onDismiss={() => setErrorMessage(null)} /> : null}
         <TextField
-          label={uz.loadDetails.bidPriceLabel}
-          placeholder={uz.loadDetails.bidPricePlaceholder}
+          label={
+            load.currency === 'USD'
+              ? uz.loadDetails.bidPriceLabel.replace(/\(.*\)/, '($)')
+              : uz.loadDetails.bidPriceLabel
+          }
+          placeholder={load.currency === 'USD' ? '1 200' : uz.loadDetails.bidPricePlaceholder}
           value={bidPriceInput}
           onChangeText={setBidPriceInput}
           keyboardType="number-pad"

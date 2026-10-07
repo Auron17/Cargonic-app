@@ -9,6 +9,8 @@ interface MoneyProps {
   style?: TextStyle;
   color?: string;
   weight?: 'normal' | '500' | '600' | '700' | '800' | 'bold';
+  /** Standart: so'm */
+  currency?: 'UZS' | 'USD';
 }
 
 export function Money({
@@ -17,6 +19,7 @@ export function Money({
   style,
   color,
   weight = '700',
+  currency,
 }: MoneyProps) {
   const getFontSize = () => {
     switch (size) {
@@ -44,9 +47,9 @@ export function Money({
         style,
       ]}
       accessibilityRole="text"
-      accessibilityLabel={formatMoney(amount)}
+      accessibilityLabel={formatMoney(amount, currency)}
     >
-      {formatMoney(amount)}
+      {formatMoney(amount, currency)}
     </Text>
   );
 }

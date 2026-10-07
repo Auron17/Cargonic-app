@@ -60,7 +60,7 @@ function FeedCard({
       >
         <View style={styles.topRow}>
           {isFixed && item.price != null ? (
-            <Money amount={item.price} size="xl" weight="800" />
+            <Money amount={item.price} currency={item.currency} size="xl" weight="800" />
           ) : (
             <View>
               <Text style={styles.biddingTitle}>{uz.priceMode.BIDDING}</Text>
@@ -72,6 +72,17 @@ function FeedCard({
             <Text style={styles.nearText}>{Math.round(item.distanceKm)} km</Text>
           </View>
         </View>
+
+        {(item.truckCount ?? 1) > 1 ? (
+          <View style={styles.trucksChip}>
+            <Pill
+              tone="accent"
+              label={uz.multiTruck.chip
+                .replace('{{total}}', String(item.truckCount))
+                .replace('{{free}}', String(item.freeTrucks ?? item.truckCount))}
+            />
+          </View>
+        ) : null}
 
         <View style={styles.route}>
           <RouteLine
@@ -101,7 +112,7 @@ function FeedCard({
               <View />
             )}
             {item.myBidPrice != null ? (
-              <Pill tone="accent" label={uz.loadsTab.myBidAmount.replace('{{amount}}', formatMoney(item.myBidPrice))} />
+              <Pill tone="accent" label={uz.loadsTab.myBidAmount.replace('{{amount}}', formatMoney(item.myBidPrice, item.currency))} />
             ) : null}
           </View>
         ) : null}
@@ -250,6 +261,7 @@ const styles = StyleSheet.create({
   },
   nearText: { fontSize: 12.5, fontWeight: '600', color: colors.slate700 },
   route: { marginTop: 16 },
+  trucksChip: { marginTop: 10, alignSelf: 'flex-start' },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
