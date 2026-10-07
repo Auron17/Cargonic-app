@@ -551,6 +551,29 @@ export const uz = {
     noTelegram: 'Telegram ochilmadi. Telegram o‘rnatilganini tekshiring.',
     wrongRole: 'Bu raqam yuk beruvchi yoki admin sifatida ro‘yxatdan o‘tgan. Zavod kabinetidan foydalaning.',
   },
+  vehicleSize: {
+    presetsTitle: 'Tayyor o‘lchamlar — bosing, maydonlar to‘ladi',
+    capacityRange: '{{min}}–{{max}} t',
+    volumeRange: '{{min}}–{{max}} m³',
+    capacityError: 'Bu kuzov uchun sig‘im {{min}}–{{max}} t bo‘lishi kerak',
+    volumeError: 'Bu kuzov uchun hajm {{min}}–{{max}} m³ bo‘lishi kerak',
+    volumeRequired: 'Kuzov hajmini kiriting',
+    flatbedNoVolume: 'Ochiq bortli kuzov — hajm kiritilmaydi',
+    presets: {
+      gazel: 'Gazel',
+      small: 'Kichik',
+      medium: 'O‘rta',
+      fura: 'Fura',
+      mega: 'Mega',
+      heavy: 'Og‘ir',
+      kamaz: 'Kamaz',
+      howo: 'Howo / Shacman',
+      semi: 'Yarim tirkama',
+      c20: '20 fut',
+      c40: '40 fut',
+      c40hc: '40 fut HC',
+    },
+  },
 } as const;
 
 type DeepString<T> = {

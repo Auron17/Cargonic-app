@@ -20,6 +20,7 @@ import {
 } from '../../src/components';
 import { useCopy } from '../../src/i18n';
 import { colors } from '../../src/theme';
+import { BODY_TYPE_SPECS, checkCapacity, checkVolume } from '../../src/vehicles/bodyTypeSpecs';
 
 export default function OnboardingVehicleScreen() {
   const uz = useCopy();
@@ -48,6 +49,22 @@ export default function OnboardingVehicleScreen() {
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const spec = BODY_TYPE_SPECS[bodyType];
+  const rangeText = (template: string, [min, max]: [number, number]) =>
+    template.replace('{{min}}', String(min)).replace('{{max}}', String(max));
+
+  const changeBodyType = (val: BodyType) => {
+    setBodyType(val);
+    // Bortlida hajm yo'q — eski qiymat chalg'itmasin
+    if (!BODY_TYPE_SPECS[val].volume) setVolumeM3('');
+    setErrors((prev) => ({ ...prev, bodyType: '', capacityTons: '', volumeM3: '' }));
+  };
+
+  const applyPreset = (capacity: number, volume?: number) => {
+    setCapacityTons(String(capacity));
+    setVolumeM3(volume != null ? String(volume) : '');
+    setErrors((prev) => ({ ...prev, capacityTons: '', volumeM3: '' }));
+  };
   const [serverError, setServerError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -64,24 +81,21 @@ export default function OnboardingVehicleScreen() {
       newErrors.bodyType = uz.onboarding.errors.bodyTypeRequired;
     }
 
-    const capNum = parseFloat(capacityTons.replace(',', '.'));
-    if (!capacityTons.trim() || isNaN(capNum)) {
+    // Sig'im va hajm tanlangan kuzov turiga mos bo'lishi kerak
+    const capIssue = checkCapacity(bodyType, capacityTons);
+    if (capIssue === 'required' || capIssue === 'invalid') {
       newErrors.capacityTons = uz.onboarding.errors.capacityRequired;
-    } else if (capNum < 0.5) {
-      newErrors.capacityTons = uz.onboarding.errors.capacityMin;
-    } else if (capNum > 60) {
-      newErrors.capacityTons = uz.onboarding.errors.capacityMax;
+    } else if (capIssue === 'range') {
+      newErrors.capacityTons = rangeText(uz.vehicleSize.capacityError, spec.capacity);
     }
 
-    if (volumeM3.trim()) {
-      const volNum = parseFloat(volumeM3.replace(',', '.'));
-      if (isNaN(volNum)) {
-        newErrors.volumeM3 = uz.onboarding.errors.volumeInvalid;
-      } else if (volNum < 1) {
-        newErrors.volumeM3 = uz.onboarding.errors.volumeMin;
-      } else if (volNum > 150) {
-        newErrors.volumeM3 = uz.onboarding.errors.volumeMax;
-      }
+    const volIssue = checkVolume(bodyType, volumeM3);
+    if (volIssue === 'required') {
+      newErrors.volumeM3 = uz.vehicleSize.volumeRequired;
+    } else if (volIssue === 'invalid') {
+      newErrors.volumeM3 = uz.onboarding.errors.volumeInvalid;
+    } else if (volIssue === 'range' && spec.volume) {
+      newErrors.volumeM3 = rangeText(uz.vehicleSize.volumeError, spec.volume);
     }
 
     if (!licenseCardNumber.trim()) {
@@ -99,7 +113,7 @@ export default function OnboardingVehicleScreen() {
     setServerError(null);
 
     const capNum = parseFloat(capacityTons.replace(',', '.'));
-    const volNum = volumeM3.trim() ? parseFloat(volumeM3.replace(',', '.')) : undefined;
+    const volNum = spec.volume && volumeM3.trim() ? parseFloat(volumeM3.replace(',', '.')) : undefined;
 
     const payload: VehicleRequest = {
       plateNumber: plateNumber.trim().toUpperCase(),
@@ -196,13 +210,36 @@ export default function OnboardingVehicleScreen() {
         placeholder={uz.onboarding.bodyTypePlaceholder}
         value={bodyType}
         options={BODY_TYPE_OPTIONS}
-        onChange={(val) => {
-          setBodyType(val);
-          if (errors.bodyType) setErrors((prev) => ({ ...prev, bodyType: '' }));
-        }}
+        onChange={changeBodyType}
         error={errors.bodyType}
         hint={uz.onboarding.bodyTypeFieldHint}
       />
+
+      {/* Shu kuzov turi uchun odatiy o'lchamlar */}
+      <Text style={styles.presetsTitle}>{uz.vehicleSize.presetsTitle}</Text>
+      <View style={styles.presets}>
+        {spec.presets.map((p) => {
+          const selected =
+            parseFloat(capacityTons.replace(',', '.')) === p.capacityTons &&
+            (p.volumeM3 == null || parseFloat(volumeM3.replace(',', '.')) === p.volumeM3);
+          return (
+            <Pressable
+              key={p.key}
+              onPress={() => applyPreset(p.capacityTons, p.volumeM3)}
+              style={({ pressed }) => [styles.preset, selected && styles.presetSelected, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+            >
+              <Text style={[styles.presetName, selected && styles.presetNameSelected]}>
+                {uz.vehicleSize.presets[p.key]}
+              </Text>
+              <Text style={[styles.presetSize, selected && styles.presetSizeSelected]}>
+                {p.capacityTons} t{p.volumeM3 != null ? ` · ${p.volumeM3} m³` : ''}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       {/* Capacity & Volume */}
       <View style={styles.row}>
@@ -217,24 +254,30 @@ export default function OnboardingVehicleScreen() {
             }}
             error={errors.capacityTons}
             keyboardType="decimal-pad"
-            hint={uz.onboarding.capacityHint}
+            hint={rangeText(uz.vehicleSize.capacityRange, spec.capacity)}
           />
         </View>
 
-        <View style={styles.halfCol}>
-          <TextField
-            label={uz.onboarding.volumeM3}
-            placeholder="86"
-            value={volumeM3}
-            onChangeText={(text) => {
-              setVolumeM3(text);
-              if (errors.volumeM3) setErrors((prev) => ({ ...prev, volumeM3: '' }));
-            }}
-            error={errors.volumeM3}
-            keyboardType="decimal-pad"
-            hint={uz.onboarding.volumeHint}
-          />
-        </View>
+        {spec.volume ? (
+          <View style={styles.halfCol}>
+            <TextField
+              label={uz.onboarding.volumeM3}
+              placeholder="86"
+              value={volumeM3}
+              onChangeText={(text) => {
+                setVolumeM3(text);
+                if (errors.volumeM3) setErrors((prev) => ({ ...prev, volumeM3: '' }));
+              }}
+              error={errors.volumeM3}
+              keyboardType="decimal-pad"
+              hint={rangeText(uz.vehicleSize.volumeRange, spec.volume)}
+            />
+          </View>
+        ) : (
+          <View style={[styles.halfCol, styles.noVolume]}>
+            <Text style={styles.noVolumeText}>{uz.vehicleSize.flatbedNoVolume}</Text>
+          </View>
+        )}
       </View>
 
       {/* License Card Number */}
@@ -255,6 +298,24 @@ export default function OnboardingVehicleScreen() {
 }
 
 const styles = StyleSheet.create({
+  pressed: { opacity: 0.8 },
+  presetsTitle: { marginTop: -4, marginBottom: 8, fontSize: 13, color: colors.textMuted },
+  presets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  preset: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.slate200,
+    backgroundColor: colors.surface,
+  },
+  presetSelected: { borderColor: colors.primary, backgroundColor: colors.primary50 },
+  presetName: { fontSize: 14, fontWeight: '700', color: colors.slate900 },
+  presetNameSelected: { color: colors.primary },
+  presetSize: { marginTop: 1, fontSize: 12.5, color: colors.textMuted },
+  presetSizeSelected: { color: colors.primaryDark },
+  noVolume: { justifyContent: 'center', paddingTop: 22 },
+  noVolumeText: { fontSize: 13, lineHeight: 18, color: colors.textMuted },
   topNav: {
     flexDirection: 'row',
     justifyContent: 'space-between',
