@@ -21,6 +21,7 @@ import {
 import { useCopy } from '../../src/i18n';
 import { colors } from '../../src/theme';
 import { BODY_TYPE_SPECS, checkCapacity, checkVolume } from '../../src/vehicles/bodyTypeSpecs';
+import { applyPlateInput, compactPlate, formatUzPlate, plateProblem } from '../../src/utils/uzPlate';
 
 export default function OnboardingVehicleScreen() {
   const uz = useCopy();
@@ -36,7 +37,9 @@ export default function OnboardingVehicleScreen() {
   ];
   const existingVehicle = profile?.vehicle;
 
-  const [plateNumber, setPlateNumber] = useState(existingVehicle?.plateNumber || '');
+  const [plateNumber, setPlateNumber] = useState(
+    existingVehicle?.plateNumber ? formatUzPlate(existingVehicle.plateNumber) : ''
+  );
   const [bodyType, setBodyType] = useState<BodyType>(existingVehicle?.bodyType || 'TENT');
   const [capacityTons, setCapacityTons] = useState(
     existingVehicle?.capacityTons != null ? String(existingVehicle.capacityTons) : ''
@@ -71,9 +74,12 @@ export default function OnboardingVehicleScreen() {
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!plateNumber.trim()) {
+    const plateIssue = plateProblem(plateNumber);
+    if (plateIssue === 'empty') {
       newErrors.plateNumber = uz.onboarding.errors.plateRequired;
-    } else if (plateNumber.trim().length < 5) {
+    } else if (plateIssue === 'region') {
+      newErrors.plateNumber = uz.onboarding.errors.plateRegionInvalid;
+    } else if (plateIssue === 'invalid') {
       newErrors.plateNumber = uz.onboarding.errors.plateInvalid;
     }
 
@@ -116,7 +122,7 @@ export default function OnboardingVehicleScreen() {
     const volNum = spec.volume && volumeM3.trim() ? parseFloat(volumeM3.replace(',', '.')) : undefined;
 
     const payload: VehicleRequest = {
-      plateNumber: plateNumber.trim().toUpperCase(),
+      plateNumber: compactPlate(plateNumber),
       bodyType,
       capacityTons: capNum,
       volumeM3: volNum,
@@ -196,11 +202,20 @@ export default function OnboardingVehicleScreen() {
         placeholder={uz.onboarding.plateNumberPlaceholder}
         value={plateNumber}
         onChangeText={(text) => {
-          setPlateNumber(text.toUpperCase());
-          if (errors.plateNumber) setErrors((prev) => ({ ...prev, plateNumber: '' }));
+          const next = applyPlateInput(text);
+          setPlateNumber(next);
+          const issue = plateProblem(next);
+          if (issue === 'region') {
+            setErrors((prev) => ({ ...prev, plateNumber: uz.onboarding.errors.plateRegionInvalid }));
+          } else if (errors.plateNumber) {
+            setErrors((prev) => ({ ...prev, plateNumber: '' }));
+          }
         }}
         error={errors.plateNumber}
         autoCapitalize="characters"
+        autoCorrect={false}
+        autoComplete="off"
+        maxLength={11}
         hint={uz.onboarding.plateHint}
       />
 

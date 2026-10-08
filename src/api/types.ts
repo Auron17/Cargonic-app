@@ -8,7 +8,9 @@ export type OwnerType = 'CARRIER' | 'VEHICLE' | 'COMPANY'
 export type DocType =
   | 'PASSPORT'
   | 'DRIVER_LICENSE'
+  | 'DRIVER_LICENSE_BACK'
   | 'TECH_PASSPORT'
+  | 'TECH_PASSPORT_BACK'
   | 'LICENSE_CARD'
   | 'VEHICLE_PHOTO'
   | 'INSURANCE'
@@ -590,6 +592,8 @@ export type AiIssue =
   | 'NAME_MISMATCH'
   | 'NUMBER_MISMATCH'
   | 'EXPIRED'
+  | 'NO_TRUCK_CATEGORY'
+  | 'CAPACITY_MISMATCH'
 
 export interface AiCheckDto {
   fileKey: string

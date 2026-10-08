@@ -36,12 +36,14 @@ export default function OnboardingDocumentsScreen() {
   const router = useRouter();
   const { profile, refreshProfile } = useAuth();
   const DOCUMENT_CONFIGS: DocConfig[] = [
-    { docType: 'PASSPORT', title: uz.docTypes.PASSPORT, hint: uz.docHint.PASSPORT, required: true },
     { docType: 'DRIVER_LICENSE', title: uz.docTypes.DRIVER_LICENSE, hint: uz.docHint.DRIVER_LICENSE, required: true },
+    { docType: 'DRIVER_LICENSE_BACK', title: uz.docTypes.DRIVER_LICENSE_BACK, hint: uz.docHint.DRIVER_LICENSE_BACK, required: true },
     { docType: 'DRIVER_PHOTO', title: uz.docTypes.DRIVER_PHOTO, hint: uz.docHint.DRIVER_PHOTO, required: true },
     { docType: 'TECH_PASSPORT', title: uz.docTypes.TECH_PASSPORT, hint: uz.docHint.TECH_PASSPORT, required: true },
-    { docType: 'LICENSE_CARD', title: uz.docTypes.LICENSE_CARD, hint: uz.docHint.LICENSE_CARD, required: true },
+    { docType: 'TECH_PASSPORT_BACK', title: uz.docTypes.TECH_PASSPORT_BACK, hint: uz.docHint.TECH_PASSPORT_BACK, required: true },
     { docType: 'VEHICLE_PHOTO', title: uz.docTypes.VEHICLE_PHOTO, hint: uz.docHint.VEHICLE_PHOTO, required: true },
+    { docType: 'PASSPORT', title: uz.docTypes.PASSPORT, hint: uz.docHint.PASSPORT, required: false },
+    { docType: 'LICENSE_CARD', title: uz.docTypes.LICENSE_CARD, hint: uz.docHint.LICENSE_CARD, required: false },
     { docType: 'INSURANCE', title: uz.docTypes.INSURANCE, hint: uz.docHint.INSURANCE, required: false },
   ];
 

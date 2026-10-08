@@ -1,12 +1,12 @@
 import type { DocType, ProfileDto } from '../api/types';
 
-/** Backend'dagi CARRIER_REQUIRED_DOCS + VEHICLE_REQUIRED_DOCS bilan bir xil */
+/** Backend'dagi CARRIER_REQUIRED_DOCS + VEHICLE_REQUIRED_DOCS bilan bir xil (pasport va litsenziya ixtiyoriy) */
 export const REQUIRED_DOC_TYPES: DocType[] = [
-  'PASSPORT',
   'DRIVER_LICENSE',
+  'DRIVER_LICENSE_BACK',
   'DRIVER_PHOTO',
   'TECH_PASSPORT',
-  'LICENSE_CARD',
+  'TECH_PASSPORT_BACK',
   'VEHICLE_PHOTO',
 ];
 

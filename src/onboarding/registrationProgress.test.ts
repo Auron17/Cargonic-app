@@ -23,7 +23,7 @@ const profile = (overrides: Partial<ProfileDto> = {}): ProfileDto =>
     licenseNumber: 'AA1',
     homeRegion: 'TASHKENT_CITY',
     verificationStatus: 'PENDING',
-    ratingAvg: 0,
+    ratingAvg: 5,
     ratingCount: 0,
     completedTrips: 0,
     ...overrides,
@@ -43,6 +43,19 @@ describe('registrationProgress', () => {
     const withVehicle = registrationProgress(profile({ vehicle: vehicle(), documents: docs(['PASSPORT']) }));
     expect(withVehicle.nextHref).toBe('/(onboarding)/documents');
     expect(withVehicle.doneCount).toBe(2);
+  });
+
+  it('does not require passport or licence card, but needs both driver licence sides', () => {
+    expect(REQUIRED_DOC_TYPES).not.toContain('PASSPORT');
+    expect(REQUIRED_DOC_TYPES).not.toContain('LICENSE_CARD');
+    const noBack = docs(REQUIRED_DOC_TYPES.filter((t) => t !== 'DRIVER_LICENSE_BACK'));
+    expect(registrationProgress(profile({ vehicle: vehicle(), documents: noBack })).nextHref).toBe('/(onboarding)/documents');
+  });
+
+  it('needs both tech passport sides', () => {
+    const noTechBack = docs(REQUIRED_DOC_TYPES.filter((t) => t !== 'TECH_PASSPORT_BACK'));
+    expect(REQUIRED_DOC_TYPES).toContain('TECH_PASSPORT_BACK');
+    expect(registrationProgress(profile({ vehicle: vehicle(), documents: noTechBack })).nextHref).toBe('/(onboarding)/documents');
   });
 
   it('is in review when everything is submitted', () => {
