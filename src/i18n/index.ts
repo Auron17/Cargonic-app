@@ -4,9 +4,10 @@ import { initReactI18next } from 'react-i18next';
 import { uz } from './uz';
 import { ru } from './ru';
 import { registerCatalog, type AppLanguage } from './copy';
+import { detectDeviceLanguage } from './deviceLanguage';
 
 export const defaultNS = 'translation';
-export const LANG_STORAGE_KEY = '@cargonic_lng';
+export const LANG_STORAGE_KEY = '@cargonic_lng_v2';
 
 const resources = {
   uz: {
@@ -24,8 +25,8 @@ if (!i18n.isInitialized) {
   // i18next instance method; eslint confuses it with a named export.
   // eslint-disable-next-line import/no-named-as-default-member
   i18n.use(initReactI18next).init({
-    lng: 'uz',
-    fallbackLng: 'uz',
+    lng: detectDeviceLanguage(),
+    fallbackLng: 'ru',
     resources,
     defaultNS,
     interpolation: {
@@ -39,9 +40,11 @@ export async function loadSavedLanguage(): Promise<void> {
     const saved = await AsyncStorage.getItem(LANG_STORAGE_KEY);
     if (saved === 'uz' || saved === 'ru') {
       await i18n.changeLanguage(saved);
+      return;
     }
+    await i18n.changeLanguage(detectDeviceLanguage());
   } catch {
-    // default uz
+    await i18n.changeLanguage(detectDeviceLanguage());
   }
 }
 
@@ -57,3 +60,4 @@ export type { TranslationKeys } from './uz';
 export { useCopy } from './useCopy';
 export { getCopy, APP_LANGUAGES, registerCatalog } from './copy';
 export type { AppLanguage } from './copy';
+export { detectDeviceLanguage } from './deviceLanguage';

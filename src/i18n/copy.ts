@@ -13,8 +13,9 @@ export function registerCatalog(lng: string, dict: TranslationKeys): void {
 }
 
 export function getCopy(): TranslationKeys {
-  const lng = (i18n.resolvedLanguage || i18n.language || 'uz').split('-')[0];
-  return catalogs[lng] ?? uz;
+  const lng = (i18n.resolvedLanguage || i18n.language || 'ru').split('-')[0];
+  if (lng === 'uz') return catalogs.uz ?? uz;
+  return catalogs.ru ?? catalogs.uz ?? uz;
 }
 
 export type AppLanguage = 'uz' | 'ru';
