@@ -20,6 +20,7 @@ import {
 import { useCopy } from '../../src/i18n';
 import { useTranslation } from 'react-i18next';
 import { formatPhoneDisplay } from '../../src/utils/format';
+import { formatUzPlate } from '../../src/utils/uzPlate';
 import { colors } from '../../src/theme';
 
 function Group({ children }: { children: React.ReactNode }) {
@@ -54,7 +55,7 @@ export default function ProfileTabScreen() {
   const phone = profile?.phone || user?.phone;
   const approvedDocs = documents.filter((d) => d.status === 'APPROVED').length;
   const problemDocs = documents.filter((d) => d.status !== 'APPROVED').length;
-  const rating = profile && profile.ratingCount > 0 ? Number(profile.ratingAvg).toFixed(1) : '—';
+  const rating = profile ? Number(profile.ratingAvg || 5).toFixed(1) : '—';
 
   return (
     <Screen
@@ -123,7 +124,7 @@ export default function ProfileTabScreen() {
         <View style={styles.statDivider} />
         <View style={styles.stat}>
           <Text style={styles.statValue} numberOfLines={1}>
-            {vehicle?.plateNumber ?? '—'}
+            {vehicle?.plateNumber ? formatUzPlate(vehicle.plateNumber) : '—'}
           </Text>
           <Text style={styles.statLabel}>{uz.settings.vehicleShort}</Text>
         </View>
