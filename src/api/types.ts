@@ -325,9 +325,12 @@ export interface FeedItem {
   pickupAddress: string
   pickupLat: number
   pickupLng: number
+  /** Koordinatadan aniqlanadi; O'zbekistondan tashqarida — null */
+  pickupRegion?: Region | null
   dropoffAddress: string
   dropoffLat: number
   dropoffLng: number
+  dropoffRegion?: Region | null
   distanceKm: number
   routeKm: number
   cargoType: string
@@ -346,6 +349,36 @@ export interface FeedItem {
   truckCount?: number
   /** Bo'sh qolgan mashina joylari */
   freeTrucks?: number
+}
+
+/** Yo'nalish bo'yicha qidiruvda saralash */
+export type FeedSort = 'DISTANCE' | 'PRICE' | 'PRICE_PER_KM' | 'DATE'
+
+/** Haydovchining saqlangan yo'nalishi: mos yangi yuk chiqsa SAVED_SEARCH_MATCH push keladi */
+export interface SavedSearch {
+  id: string
+  fromRegions: Region[]
+  fromLat?: number | null
+  fromLng?: number | null
+  fromRadiusKm?: number | null
+  toRegions: Region[]
+  toLat?: number | null
+  toLng?: number | null
+  toRadiusKm?: number | null
+  /** so'mda */
+  minPrice?: number | null
+  /** so'mda */
+  minPricePerKm?: number | null
+  notificationsEnabled: boolean
+  createdAt: string
+}
+
+export interface SavedSearchRequest {
+  fromRegions: Region[]
+  toRegions: Region[]
+  minPrice?: number
+  minPricePerKm?: number
+  notificationsEnabled: boolean
 }
 
 export interface BidRequest {

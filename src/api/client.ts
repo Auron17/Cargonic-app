@@ -22,6 +22,9 @@ import {
   TelegramStatusResponse,
   FeedItem,
   LoadDto,
+  PageDto,
+  SavedSearch,
+  SavedSearchRequest,
   LocationBatch,
   LocationRequest,
   MyBid,
@@ -346,6 +349,12 @@ export const loadsApi = {
     return res.data;
   },
 
+  /** Yo'nalish bo'yicha qidiruv; parametrlar — routeFilter.toSearchParams */
+  searchFeed: async (params: Record<string, string | number>): Promise<PageDto<FeedItem>> => {
+    const res = await apiClient.get<PageDto<FeedItem>>('/feed/search', { params });
+    return res.data;
+  },
+
   getLoad: async (id: string): Promise<LoadDto> => {
     const res = await apiClient.get<LoadDto>(`/loads/${id}`);
     return res.data;
@@ -403,6 +412,30 @@ export const tripsApi = {
   getTrack: async (id: string): Promise<TrackDto> => {
     const res = await apiClient.get<TrackDto>(`/trips/${id}/track`);
     return res.data;
+  },
+
+  /** Qaytish yuklari: yuk ortilgan yoki topshirilgan reys uchun; toHome — haydovchining uy viloyatiga */
+  getReturnLoads: async (id: string, toHome: boolean, size = 5): Promise<PageDto<FeedItem>> => {
+    const res = await apiClient.get<PageDto<FeedItem>>(`/trips/${id}/return-loads`, {
+      params: { toHome, size },
+    });
+    return res.data;
+  },
+};
+
+export const savedSearchesApi = {
+  list: async (): Promise<SavedSearch[]> => {
+    const res = await apiClient.get<SavedSearch[]>('/carrier/saved-searches');
+    return res.data;
+  },
+
+  create: async (data: SavedSearchRequest): Promise<SavedSearch> => {
+    const res = await apiClient.post<SavedSearch>('/carrier/saved-searches', data);
+    return res.data;
+  },
+
+  remove: async (id: string): Promise<void> => {
+    await apiClient.delete(`/carrier/saved-searches/${id}`);
   },
 };
 

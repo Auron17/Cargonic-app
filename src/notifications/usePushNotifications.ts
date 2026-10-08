@@ -94,6 +94,7 @@ export function usePushNotifications() {
 
       switch (data.type) {
         case 'NEW_LOAD':
+        case 'SAVED_SEARCH_MATCH':
           if (data.loadId) {
             router.push({
               pathname: '/loads/[id]',

@@ -45,6 +45,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { formatDateTime, formatMoney, formatPickupWindow } from '../../src/utils/format';
 import { openExternalNavigator } from '../../src/geo/openNavigator';
 import { fetchDrivingRoute, tripNavTarget } from '../../src/geo/route';
+import { ReturnLoadsCard } from '../../src/trips/ReturnLoadsCard';
 import { colors, ink } from '../../src/theme';
 
 export default function TripDetailScreen() {
@@ -442,6 +443,9 @@ export default function TripDetailScreen() {
           </View>
         </View>
       ) : null}
+
+      {/* Bo'sh qaytmaslik uchun: yuk ortilgandan keyin tugash joyi atrofidagi yuklar */}
+      {trip.status === 'LOADED' || trip.status === 'DELIVERED' ? <ReturnLoadsCard tripId={tripId} /> : null}
 
       {/* Marshrut */}
       <SectionTitle

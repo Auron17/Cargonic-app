@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
+import dayjs from 'dayjs';
 import { Ionicons } from '@expo/vector-icons';
-import { loadsApi } from '../../src/api/client';
-import { FeedItem } from '../../src/api/types';
+import { loadsApi, savedSearchesApi } from '../../src/api/client';
+import { FeedItem, SavedSearch } from '../../src/api/types';
 import {
   Card,
   EmptyState,
@@ -18,6 +19,7 @@ import {
   Screen,
   ScreenTitle,
   SkeletonList,
+  SuccessBanner,
   TAB_EDGES_NO_HEADER,
   useRegistration,
 } from '../../src/components';
@@ -26,6 +28,15 @@ import { useCopy } from '../../src/i18n';
 import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
 import { useDeviceCoords } from '../../src/hooks/useDeviceCoords';
 import { colors } from '../../src/theme';
+import { RouteBar } from '../../src/search/RouteBar';
+import {
+  EMPTY_FILTER,
+  RouteFilter,
+  fromSavedSearch,
+  isFilterActive,
+  toSavedSearchRequest,
+  toSearchParams,
+} from '../../src/search/routeFilter';
 
 function FeedCard({
   item,
@@ -140,19 +151,78 @@ export default function LoadsFeedScreen() {
   // Tasdiqlanmagan haydovchi joylashuvini serverga yozmaydi — lentani qurilma joylashuvi bilan so'raymiz
   const coords = useDeviceCoords(!approved);
 
-  const { data: feedItems, isLoading, error, refetch } = useQuery({
+  const queryClient = useQueryClient();
+  const hasProfile = registration.steps[0]?.done ?? false;
+  const [filter, setFilter] = useState<RouteFilter>(EMPTY_FILTER);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const searching = isFilterActive(filter);
+  const deviceCoords = approved ? undefined : coords ?? undefined;
+
+  // Filtr bo'lmasa — yaqin atrofdagi lenta (har daqiqada yangilanadi); filtr bilan — sahifalangan qidiruv
+  const feed = useQuery({
     queryKey: ['feed', approved ? null : coords],
-    queryFn: () => loadsApi.getFeed(approved ? undefined : coords ?? undefined),
+    queryFn: () => loadsApi.getFeed(deviceCoords),
     refetchInterval: 60000,
+    enabled: !searching,
   });
+  const search = useInfiniteQuery({
+    queryKey: ['feedSearch', filter, approved ? null : coords],
+    queryFn: ({ pageParam }) =>
+      loadsApi.searchFeed(toSearchParams(filter, dayjs().format('YYYY-MM-DD'), pageParam, deviceCoords)),
+    initialPageParam: 0,
+    getNextPageParam: (last) => ((last.page + 1) * last.size < last.total ? last.page + 1 : undefined),
+    enabled: searching,
+  });
+  const saved = useQuery({
+    queryKey: ['savedSearches'],
+    queryFn: savedSearchesApi.list,
+    enabled: hasProfile,
+  });
+
+  const feedItems = searching ? search.data?.pages.flatMap((p) => p.content) : feed.data;
+  const isLoading = searching ? search.isLoading : feed.isLoading;
+  const error = searching ? search.error : feed.error;
+  const refetch = searching ? search.refetch : feed.refetch;
   const pull = usePullToRefresh(refetch);
 
   const count = feedItems?.length ?? 0;
   const subtitle = isLoading
     ? uz.loadsTab.searching
-    : count > 0
-      ? uz.loadsTab.nearbyCount.replace('{{count}}', String(count))
-      : uz.loadsTab.autoRefreshInfo;
+    : searching
+      ? uz.routeSearch.resultCount.replace('{{count}}', String(search.data?.pages[0]?.total ?? 0))
+      : count > 0
+        ? uz.loadsTab.nearbyCount.replace('{{count}}', String(count))
+        : uz.loadsTab.autoRefreshInfo;
+
+  const saveRoute = async () => {
+    if (!hasProfile) {
+      setRegistrationOpen(true);
+      return;
+    }
+    setSaving(true);
+    setActionError(null);
+    try {
+      await savedSearchesApi.create(toSavedSearchRequest(filter));
+      await queryClient.invalidateQueries({ queryKey: ['savedSearches'] });
+      setNotice(uz.routeSearch.saved);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : uz.common.networkError);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteSaved = async (s: SavedSearch) => {
+    setActionError(null);
+    try {
+      await savedSearchesApi.remove(s.id);
+      await queryClient.invalidateQueries({ queryKey: ['savedSearches'] });
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : uz.common.networkError);
+    }
+  };
 
   const header = (
     <>
@@ -175,6 +245,17 @@ export default function LoadsFeedScreen() {
         }
       />
       <RegistrationBanner />
+      <RouteBar
+        filter={filter}
+        onChange={setFilter}
+        saved={saved.data ?? []}
+        onApplySaved={(s) => setFilter(fromSavedSearch(s))}
+        onSave={saveRoute}
+        saving={saving}
+        onDeleteSaved={deleteSaved}
+      />
+      <SuccessBanner message={notice} onDismiss={() => setNotice(null)} />
+      {actionError ? <ErrorBanner message={actionError} onDismiss={() => setActionError(null)} /> : null}
       {error ? (
         <ErrorBanner message={error instanceof Error ? error.message : uz.common.networkError} onRetry={refetch} />
       ) : null}
@@ -205,6 +286,11 @@ export default function LoadsFeedScreen() {
           />
         )}
         ListHeaderComponent={header}
+        onEndReachedThreshold={0.5}
+        onEndReached={() => {
+          if (searching && search.hasNextPage && !search.isFetchingNextPage) search.fetchNextPage();
+        }}
+        ListFooterComponent={search.isFetchingNextPage ? <SkeletonList count={1} /> : null}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
@@ -214,13 +300,23 @@ export default function LoadsFeedScreen() {
         ListEmptyComponent={
           !isLoading && !error ? (
             <View style={styles.empty}>
-              <EmptyState
-                iconName="cube-outline"
-                title={uz.loadsTab.emptyTitle}
-                description={uz.loadsTab.emptyDesc}
-                actionTitle="Yangilash"
-                onAction={refetch}
-              />
+              {searching ? (
+                <EmptyState
+                  iconName="git-branch-outline"
+                  title={uz.routeSearch.emptyTitle}
+                  description={uz.routeSearch.emptyDesc}
+                  actionTitle={uz.routeSearch.resetFilters}
+                  onAction={() => setFilter(EMPTY_FILTER)}
+                />
+              ) : (
+                <EmptyState
+                  iconName="cube-outline"
+                  title={uz.loadsTab.emptyTitle}
+                  description={uz.loadsTab.emptyDesc}
+                  actionTitle="Yangilash"
+                  onAction={refetch}
+                />
+              )}
             </View>
           ) : null
         }
