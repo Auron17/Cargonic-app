@@ -12,6 +12,7 @@ export * from './PhotoPicker';
 export * from './Card';
 export * from './Skeleton';
 export * from './RouteLine';
+export * from './RouteMap';
 export * from './Pill';
 export * from './ScreenTitle';
 export * from './InfoRow';

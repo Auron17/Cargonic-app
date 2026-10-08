@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { tripsApi } from '../../src/api/client';
@@ -16,6 +16,7 @@ import {
   Pill,
   PrimaryButton,
   RouteLine,
+  RouteMap,
   Screen,
   SectionTitle,
   SkeletonCard,
@@ -42,10 +43,13 @@ import {
 } from '../../src/trips/nextStatus';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDateTime, formatMoney, formatPickupWindow } from '../../src/utils/format';
+import { openExternalNavigator } from '../../src/geo/openNavigator';
+import { fetchDrivingRoute, tripNavTarget } from '../../src/geo/route';
 import { colors, ink } from '../../src/theme';
 
 export default function TripDetailScreen() {
   const uz = useCopy();
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
 
@@ -74,6 +78,19 @@ export default function TripDetailScreen() {
     queryFn: () => tripsApi.getTrip(tripId),
     enabled: !!tripId,
     refetchInterval: 10000, // har 10 soniyada yangilash
+  });
+
+  const pickup = trip?.load
+    ? { lat: trip.load.pickupLat, lng: trip.load.pickupLng }
+    : null;
+  const dropoff = trip?.load
+    ? { lat: trip.load.dropoffLat, lng: trip.load.dropoffLng }
+    : null;
+  const { data: tripRoute = [] } = useQuery({
+    queryKey: ['driving-route', pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng],
+    queryFn: () => fetchDrivingRoute(pickup!, dropoff!),
+    enabled: !!pickup && !!dropoff,
+    staleTime: 10 * 60 * 1000,
   });
 
   // GPS va ruxsatlarni tekshirish
@@ -143,29 +160,14 @@ export default function TripDetailScreen() {
     Linking.openURL(`tel:${trip.shipperPhone}`);
   };
 
-  const handleOpenNavigator = async () => {
+  const handleOpenInAppMap = () => {
+    if (!tripId) return;
+    router.push({ pathname: '/trips/map', params: { id: tripId } });
+  };
+
+  const handleOpenNavigator = () => {
     if (!trip?.load) return;
-
-    // Ortishga ketayotganda ortish manziliga, ortilgach esa topshirish manziliga yo'naltirish
-    const isHeadingToPickup =
-      trip.status === 'ASSIGNED' || trip.status === 'EN_ROUTE_TO_PICKUP';
-
-    const targetLat = isHeadingToPickup ? trip.load.pickupLat : trip.load.dropoffLat;
-    const targetLng = isHeadingToPickup ? trip.load.pickupLng : trip.load.dropoffLng;
-
-    const naviUrl = `yandexnavi://build_route_on_map?lat_to=${targetLat}&lon_to=${targetLng}`;
-    const webMapsUrl = `https://yandex.uz/maps/?rtext=~${targetLat},${targetLng}&rtt=auto`;
-
-    try {
-      const canOpen = await Linking.canOpenURL(naviUrl);
-      if (canOpen) {
-        await Linking.openURL(naviUrl);
-      } else {
-        await Linking.openURL(webMapsUrl);
-      }
-    } catch {
-      await Linking.openURL(webMapsUrl);
-    }
+    void openExternalNavigator(tripNavTarget(trip.status, trip.load));
   };
 
   const handleNextStatus = async () => {
@@ -331,13 +333,13 @@ export default function TripDetailScreen() {
           </Text>
           <View style={styles.targetActions}>
             <Pressable
-              onPress={handleOpenNavigator}
+              onPress={handleOpenInAppMap}
               style={({ pressed }) => [styles.navBtn, pressed && styles.pressed]}
               accessibilityRole="button"
-              accessibilityLabel={uz.tripView.openInYandexNavi}
+              accessibilityLabel={uz.tripView.openInAppMap}
             >
-              <Ionicons name="navigate" size={18} color="#FFFFFF" />
-              <Text style={styles.navBtnText}>Yo‘lni ochish</Text>
+              <Ionicons name="map" size={18} color="#FFFFFF" />
+              <Text style={styles.navBtnText}>{uz.tripView.openInAppMap}</Text>
             </Pressable>
             <Pressable
               onPress={handleCallShipper}
@@ -349,6 +351,15 @@ export default function TripDetailScreen() {
               <Ionicons name="call" size={18} color={ink[900]} />
             </Pressable>
           </View>
+          <Pressable
+            onPress={handleOpenNavigator}
+            accessibilityRole="button"
+            accessibilityLabel={uz.tripView.openInYandexNavi}
+            hitSlop={8}
+            style={styles.yandexLink}
+          >
+            <Text style={styles.yandexLinkText}>{uz.tripView.openInYandexNavi}</Text>
+          </Pressable>
         </View>
       ) : null}
 
@@ -436,13 +447,28 @@ export default function TripDetailScreen() {
       <SectionTitle
         title={uz.tripView.routeSection}
         right={
-          !active ? (
-            <Pressable onPress={handleOpenNavigator} accessibilityRole="button" hitSlop={8}>
-              <Text style={styles.link}>{uz.tripView.openInMaps}</Text>
-            </Pressable>
-          ) : undefined
+          <Pressable onPress={handleOpenInAppMap} accessibilityRole="button" hitSlop={8}>
+            <Text style={styles.link}>{uz.tripView.openInMaps}</Text>
+          </Pressable>
         }
       />
+      {pickup && dropoff ? (
+        <View style={styles.mapPreviewWrap}>
+          <RouteMap
+            style={styles.mapPreview}
+            pickup={pickup}
+            dropoff={dropoff}
+            route={tripRoute}
+            interactive={false}
+          />
+          <Pressable
+            onPress={handleOpenInAppMap}
+            accessibilityRole="button"
+            accessibilityLabel={uz.tripView.openInAppMap}
+            style={StyleSheet.absoluteFillObject}
+          />
+        </View>
+      ) : null}
       <Card>
         <RouteLine
           lines={3}
@@ -571,6 +597,8 @@ function eventLabel(type: string): string {
 
 const styles = StyleSheet.create({
   pad: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 },
+  mapPreviewWrap: { marginBottom: 10, borderRadius: 18, overflow: 'hidden' },
+  mapPreview: { height: 200, width: '100%' },
   gap: { height: 12 },
   flex: { flex: 1 },
   pressed: { opacity: 0.8 },
@@ -607,6 +635,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  yandexLink: { marginTop: 12, alignSelf: 'flex-start' },
+  yandexLinkText: { fontSize: 13, fontWeight: '600', color: ink.muted },
 
   stepper: { flexDirection: 'row', gap: 6, marginTop: 16 },
   step: { flex: 1 },

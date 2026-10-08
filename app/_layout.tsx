@@ -81,6 +81,19 @@ function RootNavigator() {
             headerShadowVisible: false,
           }}
         />
+        <Stack.Screen
+          name="trips/map"
+          options={{
+            headerShown: true,
+            title: uz.tripView.mapTitle,
+            headerBackVisible: false,
+            headerLeft: () => <HeaderBackButton fallback="/(tabs)/trips" />,
+            headerTintColor: colors.slate900,
+            headerStyle: { backgroundColor: colors.background },
+            headerTitleStyle: { fontSize: 17, fontWeight: '800', color: colors.slate900 },
+            headerShadowVisible: false,
+          }}
+        />
       </Stack.Protected>
       <Stack.Protected guard={showOnboarding}>
         <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
