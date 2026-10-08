@@ -81,6 +81,25 @@ export const BODY_TYPE_SPECS: Record<BodyType, BodyTypeSpec> = {
       { key: 'c40hc', capacityTons: 26, volumeM3: 76 },
     ],
   },
+  TANKER: {
+    capacity: [3, 30],
+    volume: [5, 40],
+    presets: [
+      { key: 'small', capacityTons: 5, volumeM3: 8 },
+      { key: 'medium', capacityTons: 10, volumeM3: 16 },
+      { key: 'heavy', capacityTons: 20, volumeM3: 25 },
+      { key: 'semi', capacityTons: 28, volumeM3: 36 },
+    ],
+  },
+  MANIPULATOR: {
+    capacity: [3, 20],
+    volume: [10, 40],
+    presets: [
+      { key: 'small', capacityTons: 5, volumeM3: 15 },
+      { key: 'medium', capacityTons: 10, volumeM3: 22 },
+      { key: 'heavy', capacityTons: 15, volumeM3: 30 },
+    ],
+  },
 };
 
 export type SizeIssue = 'required' | 'invalid' | 'range';

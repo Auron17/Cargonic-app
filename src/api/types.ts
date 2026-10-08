@@ -25,6 +25,8 @@ export type BodyType =
   | 'ISOTHERMAL'
   | 'TIPPER'
   | 'CONTAINER'
+  | 'TANKER'
+  | 'MANIPULATOR'
 
 export type Region =
   | 'TASHKENT_CITY'

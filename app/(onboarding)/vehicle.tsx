@@ -34,6 +34,8 @@ export default function OnboardingVehicleScreen() {
     { label: uz.bodyType.ISOTHERMAL, value: 'ISOTHERMAL', subtitle: uz.bodyTypeHint.ISOTHERMAL },
     { label: uz.bodyType.TIPPER, value: 'TIPPER', subtitle: uz.bodyTypeHint.TIPPER },
     { label: uz.bodyType.CONTAINER, value: 'CONTAINER', subtitle: uz.bodyTypeHint.CONTAINER },
+    { label: uz.bodyType.TANKER, value: 'TANKER', subtitle: uz.bodyTypeHint.TANKER },
+    { label: uz.bodyType.MANIPULATOR, value: 'MANIPULATOR', subtitle: uz.bodyTypeHint.MANIPULATOR },
   ];
   const existingVehicle = profile?.vehicle;
 

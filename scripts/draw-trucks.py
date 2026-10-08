@@ -163,8 +163,38 @@ def container():
     cab(img, d); wheels(d); finish(img, 'container')
 
 
+def tanker():
+    img, d = base()
+    chassis(d, W + 40)
+    # silindr sisterna: och kulrang, halqalar va lyuk
+    vgrad(img, 214, 86, W + 50, 228, (214, 222, 232, 255), (168, 180, 196, 255), r=70)
+    for x in (310, 430, 550, 670):
+        d.line([s(x), s(96), s(x), s(218)], fill=(140, 154, 170, 255), width=s(5))
+    box(d, 214, 148, W + 50, 162, 2, (150, 162, 176, 90))
+    d.ellipse([s(430), s(70), s(478), s(96)], fill=(90, 98, 110, 255))
+    d.ellipse([s(438), s(76), s(470), s(92)], fill=(176, 186, 198, 255))
+    cab(img, d); wheels(d); finish(img, 'tanker')
+
+
+def manipulator():
+    img, d = base()
+    chassis(d, W + 40)
+    # bortli platforma
+    box(d, 208, 196, W + 60, 232, 4, (120, 128, 138, 255))
+    box(d, 208, 164, W + 60, 200, 4, (226, 231, 238, 255))
+    for x in range(300, W + 40, 90):
+        d.line([s(x), s(166), s(x), s(198)], fill=(186, 194, 204, 255), width=s(3))
+    box(d, 204, 118, 220, 200, 4, (90, 98, 110, 255))
+    # kran: kabina orqasida ustun va bukilgan o'q
+    box(d, 226, 70, 258, 200, 6, (232, 140, 48, 255))
+    d.line([s(242), s(78), s(430), s(52)], fill=(232, 140, 48, 255), width=s(16))
+    d.line([s(430), s(52), s(560), s(118)], fill=(210, 118, 36, 255), width=s(12))
+    d.line([s(560), s(118), s(560), s(164)], fill=(90, 98, 110, 255), width=s(4))
+    cab(img, d); wheels(d); finish(img, 'manipulator')
+
+
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
     tent(); reefer('refrigerator', True); reefer('isothermal', False)
-    flatbed(); tipper(); container()
+    flatbed(); tipper(); container(); tanker(); manipulator()
     print('ok')

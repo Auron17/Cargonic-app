@@ -253,6 +253,8 @@ export const uz = {
     ISOTHERMAL: 'Izoterm',
     TIPPER: 'Samosval',
     CONTAINER: 'Konteyner',
+    TANKER: 'Sisterna',
+    MANIPULATOR: 'Manipulyator',
   },
   bodyTypeHint: {
     TENT: 'Tentli yarim tirkama yoki yuk mashinasi',
@@ -261,6 +263,8 @@ export const uz = {
     ISOTHERMAL: 'Termo izolyatsiyalangan furgon',
     TIPPER: 'Ag‘darma kuzov (samosval)',
     CONTAINER: 'Konteyner tashuvchi platforma',
+    TANKER: 'Suyuqlik tashuvchi (yonilg‘i, suv, sut)',
+    MANIPULATOR: 'Kran-bort — gidravlik kranli bortli mashina',
   },
   docHint: {
     PASSPORT: 'Pasport yoki ID-karta (asosiy ma’lumotlar sahifasi)',

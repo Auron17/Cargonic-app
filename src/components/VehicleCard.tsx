@@ -16,6 +16,8 @@ const TRUCK_IMAGES: Record<BodyType, ImageSourcePropType> = {
   FLATBED: require('../../assets/trucks/flatbed.png'),
   TIPPER: require('../../assets/trucks/tipper.png'),
   CONTAINER: require('../../assets/trucks/container.png'),
+  TANKER: require('../../assets/trucks/tanker.png'),
+  MANIPULATOR: require('../../assets/trucks/manipulator.png'),
 };
 
 /** O'zbekiston davlat raqami ko'rinishida: [01 | A 777 BC  UZ] */

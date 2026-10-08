@@ -30,4 +30,13 @@ describe('bodyTypeSpecs', () => {
     expect(checkVolume('FLATBED', '')).toBeUndefined();
     expect(checkVolume('FLATBED', '500')).toBeUndefined();
   });
+
+  it('accepts tanker and manipulator inside their ranges', () => {
+    expect(checkCapacity('TANKER', '20')).toBeUndefined();
+    expect(checkVolume('TANKER', '25')).toBeUndefined();
+    expect(checkCapacity('TANKER', '2')).toBe('range');
+    expect(checkCapacity('MANIPULATOR', '10')).toBeUndefined();
+    expect(checkVolume('MANIPULATOR', '22')).toBeUndefined();
+    expect(checkCapacity('MANIPULATOR', '25')).toBe('range');
+  });
 });
