@@ -35,9 +35,24 @@
       "android": {
         "buildType": "apk"
       }
+    },
+    "testflight": {
+      "extends": "production",
+      "distribution": "store",
+      "autoIncrement": false,
+      "credentialsSource": "local"
     }
   },
   "submit": {
-    "production": {}
+    "production": {},
+    "testflight": {
+      "ios": {
+        "appleTeamId": "MVT69R83S5",
+        "ascAppId": "6820460156",
+        "ascApiKeyPath": "./credentials/AuthKey_GP87J2UGDW.p8",
+        "ascApiKeyIssuerId": "1208accc-d250-45f1-a4d3-e8a715f2d16d",
+        "ascApiKeyId": "GP87J2UGDW"
+      }
+    }
   }
 }

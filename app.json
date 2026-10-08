@@ -24,16 +24,32 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "uz.cargonic.driver",
+      "appleTeamId": "MVT69R83S5",
+      "buildNumber": "1",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
           "location",
-          "fetch"
+          "fetch",
+          "remote-notification"
+        ],
+        "NSCameraUsageDescription": "Hujjat va yuk rasmlarini olish uchun kamera ruxsati kerak.",
+        "NSPhotoLibraryUsageDescription": "Hujjat va yuk rasmlarini tanlash uchun galereya ruxsati kerak.",
+        "NSPhotoLibraryAddUsageDescription": "Yuklangan rasmlarni saqlash uchun galereya ruxsati kerak.",
+        "LSApplicationQueriesSchemes": [
+          "yandexnavi",
+          "yandexmaps",
+          "tg"
         ]
       }
     },
     "android": {
       "package": "uz.cargonic.driver",
-      "versionCode": 6,
+      "versionCode": 9,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#111B2C"
@@ -66,6 +82,14 @@
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true,
           "locationAlwaysAndWhenInUsePermission": "Reys davomida yuk joylashuvini zavodga ko'rsatish uchun ilova yopiq bo'lganda ham joylashuv kerak."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Hujjat va yuk rasmlarini tanlash uchun galereya ruxsati kerak.",
+          "cameraPermission": "Hujjat va yuk rasmlarini olish uchun kamera ruxsati kerak.",
+          "microphonePermission": false
         }
       ],
       [
