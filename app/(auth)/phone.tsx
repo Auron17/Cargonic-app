@@ -159,13 +159,13 @@ export default function PhoneScreen() {
     >
       <View style={styles.brandRow}>
         <Image
-          source={require('../../assets/logo.png')}
+          source={require('../../assets/logo-horizontal.png')}
           style={styles.brandLogo}
+          resizeMode="contain"
           accessible
           accessibilityRole="image"
           accessibilityLabel={uz.app.name}
         />
-        <Text style={styles.brandName}>{uz.app.name}</Text>
       </View>
 
       <Text style={styles.title} accessibilityRole="header">
@@ -205,8 +205,8 @@ export default function PhoneScreen() {
 
 const styles = StyleSheet.create({
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, marginBottom: 36 },
-  brandLogo: { width: 40, height: 40, borderRadius: 11 },
-  brandName: { fontSize: 20, fontWeight: '800', color: colors.slate900, letterSpacing: -0.4 },
+  // logo-horizontal.png: 604×120
+  brandLogo: { height: 34, aspectRatio: 604 / 120 },
   title: { fontSize: 30, fontWeight: '800', color: colors.slate900, letterSpacing: -0.8 },
   lead: { marginTop: 8, marginBottom: 24, fontSize: 16, lineHeight: 22, color: colors.textMuted },
   phoneInput: { fontSize: 20, fontWeight: '600', letterSpacing: 0.3 },
