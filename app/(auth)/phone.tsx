@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Linking,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { authApi } from '../../src/api/client';
@@ -11,9 +20,16 @@ import { cleanPhoneNumber, formatPhoneDisplay } from '../../src/utils/format';
 import { colors } from '../../src/theme';
 
 const TELEGRAM_BLUE = '#2AABEE';
+/** logo-horizontal.png is 604×120 @1x. Image with height-only paints 604pt and clips the wordmark. */
+const LOGO_ASPECT = 604 / 120;
+const LOGO_MAX_WIDTH = 280;
+const LOGO_H_INSET = 48;
 
 export default function PhoneScreen() {
   const uz = useCopy();
+  const { width: windowWidth } = useWindowDimensions();
+  const logoWidth = Math.min(LOGO_MAX_WIDTH, Math.max(160, windowWidth - LOGO_H_INSET));
+  const logoHeight = logoWidth / LOGO_ASPECT;
   const { login } = useAuth();
   const telegram = useTelegramLogin(async (auth) => {
     if (auth.user.role !== 'CARRIER') {
@@ -160,7 +176,7 @@ export default function PhoneScreen() {
       <View style={styles.brandRow}>
         <Image
           source={require('../../assets/logo-horizontal.png')}
-          style={styles.brandLogo}
+          style={{ width: logoWidth, height: logoHeight }}
           resizeMode="contain"
           accessible
           accessibilityRole="image"
@@ -224,9 +240,11 @@ export default function PhoneScreen() {
 }
 
 const styles = StyleSheet.create({
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, marginBottom: 36 },
-  // logo-horizontal.png: 604×120
-  brandLogo: { height: 34, aspectRatio: 604 / 120 },
+  brandRow: {
+    marginTop: 12,
+    marginBottom: 28,
+    width: '100%',
+  },
   title: { fontSize: 30, fontWeight: '800', color: colors.slate900, letterSpacing: -0.8 },
   lead: { marginTop: 8, marginBottom: 24, fontSize: 16, lineHeight: 22, color: colors.textMuted },
   phoneInput: { fontSize: 20, fontWeight: '600', letterSpacing: 0.3 },
