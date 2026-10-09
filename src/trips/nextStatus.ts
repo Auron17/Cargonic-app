@@ -93,6 +93,19 @@ export function isActiveTrip(status: TripStatus): boolean {
 }
 
 /**
+ * Fon GPS faqat yuk topshirilgunga qadar. DELIVERED/COMPLETED/CANCELLED da o'chishi kerak —
+ * aks holda "Topshirdim"dan keyin ekran kuzatuvni qayta yoqadi.
+ */
+export function needsGpsTracking(status: TripStatus): boolean {
+  return (
+    status === 'ASSIGNED' ||
+    status === 'EN_ROUTE_TO_PICKUP' ||
+    status === 'AT_PICKUP' ||
+    status === 'LOADED'
+  );
+}
+
+/**
  * Keyingi holat uchun haydovchi tugmasi matnini qaytaradi.
  */
 export function getStatusActionLabel(nextStatus: TripStatus | null): string {

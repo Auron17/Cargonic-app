@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { authApi } from '../../src/api/client';
@@ -198,7 +198,27 @@ export default function PhoneScreen() {
         leftIcon={<Text style={styles.flag}>🇺🇿</Text>}
       />
 
-      <Text style={styles.termsNotice}>{uz.auth.termsNotice}</Text>
+      <Text style={styles.termsNotice}>
+        {uz.auth.termsNotice}{' '}
+        <Text
+          style={styles.termsLink}
+          onPress={() => Linking.openURL('https://cargonic.uz/terms/')}
+          accessibilityRole="link"
+        >
+          {uz.auth.termsLink}
+        </Text>
+        {' '}
+        {uz.auth.termsAnd}
+        {' '}
+        <Text
+          style={styles.termsLink}
+          onPress={() => Linking.openURL('https://cargonic.uz/privacy/')}
+          accessibilityRole="link"
+        >
+          {uz.auth.privacyLink}
+        </Text>
+        .
+      </Text>
     </Screen>
   );
 }
@@ -251,4 +271,5 @@ const styles = StyleSheet.create({
   waitingText: { fontSize: 15, color: colors.textMuted },
   waitActions: { gap: 10 },
   termsNotice: { marginTop: 16, fontSize: 12.5, lineHeight: 17, color: colors.textMuted },
+  termsLink: { color: colors.primary, fontWeight: '600' },
 });

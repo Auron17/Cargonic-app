@@ -16,7 +16,6 @@ import {
   Pill,
   PrimaryButton,
   RouteLine,
-  RouteMap,
   Screen,
   SectionTitle,
   SkeletonCard,
@@ -25,6 +24,7 @@ import {
   pillToneForStatus,
   statusBadgeLabel,
 } from '../../src/components';
+import { RouteMap } from '../../src/components/RouteMap';
 import { TripStatus } from '../../src/api/types';
 import { getCopy, useCopy } from '../../src/i18n';
 import {
@@ -41,6 +41,7 @@ import {
   getNextStatus,
   getStatusActionLabel,
   isActiveTrip,
+  needsGpsTracking,
   outOfZoneMessage,
   requiresPhoto,
 } from '../../src/trips/nextStatus';
@@ -117,8 +118,12 @@ export default function TripDetailScreen() {
       }
     }
 
-    if (trip && isActiveTrip(trip.status)) {
+    if (trip && needsGpsTracking(trip.status)) {
       checkPermsAndGps();
+    } else if (trip) {
+      stopTracking().then(() => {
+        if (isMounted) setIsGpsActive(false);
+      });
     }
 
     return () => {
@@ -126,9 +131,9 @@ export default function TripDetailScreen() {
     };
   }, [trip]);
 
-  // Agar reys ASSIGNED yoki undan keyingi faol holatda bo'lsa va tracking hali boshlanmagan bo'lsa, boshlashga urinish
+  // Yuk topshirilgach (DELIVERED) GPS qayta yoqilmasin
   useEffect(() => {
-    if (trip && isActiveTrip(trip.status) && !isGpsActive && foregroundGranted) {
+    if (trip && needsGpsTracking(trip.status) && !isGpsActive && foregroundGranted) {
       startTracking(trip.id).then((started) => {
         if (started) setIsGpsActive(true);
       });
@@ -148,7 +153,7 @@ export default function TripDetailScreen() {
   const handleGrantPermissions = async () => {
     const res = await requestLocationPermissions();
     applyPermissionResult(res);
-    if (res.foreground && trip) {
+    if (res.foreground && trip && needsGpsTracking(trip.status)) {
       const started = await startTracking(trip.id);
       setIsGpsActive(started);
       return;
@@ -303,6 +308,7 @@ export default function TripDetailScreen() {
   const zoneTarget = nextStatus && trip.load?.geofenceEnabled ? geofenceTarget(nextStatus) : null;
   const canCancel = cancellableByCarrier(trip.status);
   const active = isActiveTrip(trip.status);
+  const gpsNeeded = needsGpsTracking(trip.status);
   const headingToPickup = trip.status === 'ASSIGNED' || trip.status === 'EN_ROUTE_TO_PICKUP' || trip.status === 'AT_PICKUP';
   const targetAddress = headingToPickup ? trip.load?.pickupAddress : trip.load?.dropoffAddress;
   const stepIndex = STEPS.indexOf(trip.status);
@@ -329,7 +335,7 @@ export default function TripDetailScreen() {
       <View style={styles.hero}>
         <View style={styles.heroTop}>
           <Pill tone={pillToneForStatus(trip.status)} label={statusBadgeLabel(trip.status, 'trip')} />
-          {active ? (
+          {gpsNeeded ? (
             <View style={styles.gps}>
               <View style={[styles.gpsDot, isGpsActive && styles.gpsDotOn]} />
               <Text style={styles.gpsText}>{isGpsActive ? 'GPS yozilmoqda' : 'GPS o‘chiq'}</Text>
@@ -401,7 +407,7 @@ export default function TripDetailScreen() {
       ) : null}
 
       {/* GPS ruxsatlari */}
-      {active && !foregroundGranted ? (
+      {gpsNeeded && !foregroundGranted ? (
         <View style={[styles.notice, styles.noticeDanger]}>
           <Ionicons name="location" size={20} color={colors.dangerDark} />
           <View style={styles.noticeTexts}>
@@ -415,14 +421,20 @@ export default function TripDetailScreen() {
           </View>
         </View>
       ) : null}
-      {active && foregroundGranted && !backgroundGranted ? (
+      {gpsNeeded && foregroundGranted && !backgroundGranted ? (
         <View style={[styles.notice, styles.noticeWarn]}>
           <Ionicons name="navigate-circle" size={20} color="#9A5B00" />
           <View style={styles.noticeTexts}>
             <Text style={styles.noticeTitle}>{uz.tripView.backgroundPermissionTitle}</Text>
             <Text style={styles.noticeBody}>{uz.tripView.backgroundPermissionDesc}</Text>
-            <Pressable onPress={handleOpenAppSettings} accessibilityRole="button" style={styles.noticeAction}>
-              <Text style={styles.noticeActionText}>{uz.tripView.openAppSettings}</Text>
+            <Pressable
+              onPress={canAskForegroundAgain ? handleGrantPermissions : handleOpenAppSettings}
+              accessibilityRole="button"
+              style={styles.noticeAction}
+            >
+              <Text style={styles.noticeActionText}>
+                {canAskForegroundAgain ? uz.tripView.grantPermission : uz.tripView.openAppSettings}
+              </Text>
             </Pressable>
           </View>
         </View>

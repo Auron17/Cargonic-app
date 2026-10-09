@@ -2,6 +2,9 @@ import axios from 'axios';
 import type { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { generateUuid } from '../utils/uuid';
 import {
+  shouldLogoutOnRefreshFailure,
+} from '../auth/sessionKeep';
+import {
   clearTokens,
   getAccessToken,
   getRefreshToken,
@@ -154,9 +157,23 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const storedRefreshToken = await getRefreshToken();
-        if (!storedRefreshToken) {
-          throw new Error('No refresh token available');
+        let storedRefreshToken: string | null;
+        try {
+          storedRefreshToken = await getRefreshToken();
+        } catch {
+          processQueue(new ApiError('TOKEN_STORE_UNAVAILABLE', 'Token ombori vaqtincha ochilmadi', 0));
+          return Promise.reject(
+            new ApiError('TOKEN_STORE_UNAVAILABLE', 'Token ombori vaqtincha ochilmadi', 0)
+          );
+        }
+
+        if (shouldLogoutOnRefreshFailure({ hadRefreshToken: !!storedRefreshToken })) {
+          processQueue(new Error('No refresh token available'));
+          await clearTokens();
+          if (unauthorizedHandler) {
+            unauthorizedHandler();
+          }
+          return Promise.reject(parseApiError(error));
         }
 
         const refreshRes = await axios.post<AuthResponse>(
@@ -175,11 +192,17 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshErr) {
         processQueue(refreshErr);
-        await clearTokens();
-        if (unauthorizedHandler) {
-          unauthorizedHandler();
+        const status = axios.isAxiosError(refreshErr) ? refreshErr.response?.status : undefined;
+        if (shouldLogoutOnRefreshFailure({ hadRefreshToken: true, status })) {
+          await clearTokens();
+          if (unauthorizedHandler) {
+            unauthorizedHandler();
+          }
         }
-        return Promise.reject(parseApiError(error));
+        if (axios.isAxiosError(refreshErr)) {
+          return Promise.reject(parseApiError(refreshErr));
+        }
+        return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;
       }

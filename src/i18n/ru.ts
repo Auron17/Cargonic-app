@@ -33,7 +33,10 @@ export const ru = {
     logout: 'Выйти',
     logoutConfirmTitle: 'Выйти из аккаунта?',
     logoutConfirmBody: 'Для повторного входа потребуется SMS-код.',
-    termsNotice: 'Продолжая, вы соглашаетесь с условиями сервиса.',
+    termsNotice: 'Продолжая, вы соглашаетесь с',
+    termsLink: 'условиями сервиса',
+    privacyLink: 'политикой конфиденциальности',
+    termsAnd: 'и',
     invalidCode: 'Неверный код или срок его действия истек.',
     wrongRoleAs: 'Вход выполнен как {{role}}.',
     roleShipper: 'Завод',
@@ -532,12 +535,17 @@ export const ru = {
     cancelledNotice: 'Рейс отменен.',
     locationPermissionBannerTitle: 'Требуется доступ к GPS',
     locationPermissionBannerDesc:
-      'Разрешите геолокацию, чтобы завод видел машину и приложение показывало маршрут на карте.',
+      'Во время активного рейса собирается точная геолокация. Завод видит машину на карте, приложение показывает маршрут. После рейса передача останавливается.',
     grantPermission: 'Разрешить',
     openAppSettings: 'Открыть настройки',
     backgroundPermissionTitle: 'Передача данных в фоновом режиме',
     backgroundPermissionDesc:
       'Чтобы завод видел машину, даже когда приложение свёрнуто, выберите доступ к геолокации «Всегда». Xiaomi/Redmi: Приложения → Cargonic → Батарея → Без ограничений.',
+    locationDisclosureTitle: 'Отслеживание местоположения',
+    locationDisclosureBody:
+      'Во время активного рейса Cargonic собирает точную геолокацию — когда приложение открыто, свёрнуто или работает в фоне. Данные нужны только для карты завода по этому рейсу и прекращаются после его завершения. Для рекламы не используются.',
+    locationDisclosureAccept: 'Продолжить',
+    locationDisclosureDecline: 'Отмена',
     stepShort: {
       ASSIGNED: 'Принят',
       EN_ROUTE_TO_PICKUP: 'В пути',

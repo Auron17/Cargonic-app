@@ -33,7 +33,10 @@ export const uz = {
     logout: 'Chiqish',
     logoutConfirmTitle: 'Hisobdan chiqasizmi?',
     logoutConfirmBody: 'Qayta kirish uchun SMS kod kerak bo‘ladi.',
-    termsNotice: 'Davom etish orqali xizmat shartlariga rozilik bildirasiz.',
+    termsNotice: 'Davom etish orqali siz rozilik bildirasiz:',
+    termsLink: 'xizmat shartlari',
+    privacyLink: 'maxfiylik siyosati',
+    termsAnd: 'va',
     invalidCode: 'Kod noto‘g‘ri yoki muddati o‘tgan.',
     wrongRoleAs: 'Tizimga {{role}} sifatida kiritilgan.',
     roleShipper: 'Zavod',
@@ -532,12 +535,17 @@ export const uz = {
     cancelledNotice: 'Reys bekor qilingan.',
     locationPermissionBannerTitle: 'GPS ruxsati kerak',
     locationPermissionBannerDesc:
-      'Zavod mashina qayerdaligini ko‘rishi va ilova ichida yo‘lni ko‘rsatish uchun joylashuv ruxsatini bering.',
+      'Faol reys davomida aniq joylashuvingiz yig‘iladi. Zavod xaritada mashinani ko‘radi, ilova yo‘lni ko‘rsatadi. Reys tugagach uzatish to‘xtaydi.',
     grantPermission: 'Ruxsat berish',
     openAppSettings: 'Sozlamalarni ochish',
     backgroundPermissionTitle: 'Fon rejimida ham uzatish',
     backgroundPermissionDesc:
       'Ilova yopiq yoki boshqa ekranda bo‘lsa ham zavod xaritada ko‘rsin: joylashuvni «Har doim» qiling. Xiaomi/Redmi: Ilovalar → Cargonic → Batareya → Cheklovsiz.',
+    locationDisclosureTitle: 'Joylashuvni kuzatish',
+    locationDisclosureBody:
+      'Faol reys davomida Cargonic aniq joylashuvingizni yig‘adi — ilova ochiq, yopiq yoki fonda ishlaganda ham. Ma’lumot faqat shu reysdagi zavod xaritasi uchun ishlatiladi, reys tugagach to‘xtaydi. Reklama uchun ishlatilmaydi.',
+    locationDisclosureAccept: 'Davom etish',
+    locationDisclosureDecline: 'Bekor qilish',
     stepShort: {
       ASSIGNED: 'Olindi',
       EN_ROUTE_TO_PICKUP: 'Yo‘lda',

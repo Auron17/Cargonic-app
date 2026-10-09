@@ -1,7 +1,15 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { AppState } from 'react-native';
 import { carrierApi, meApi, onUnauthorized } from '../api/client';
-import { clearTokens, getAccessToken, setAccessToken, setRefreshToken } from '../api/storage';
+import {
+  clearTokens,
+  getAccessToken,
+  rewriteStoredTokens,
+  setAccessToken,
+  setRefreshToken,
+} from '../api/storage';
 import { AuthResponse, ProfileDto, UserDto } from '../api/types';
+import { shouldClearSessionOnInitError } from './sessionKeep';
 
 interface AuthContextType {
   isLoading: boolean;
@@ -23,7 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserDto | null>(null);
   const [profile, setProfile] = useState<ProfileDto | null>(null);
 
-  // Load user info and profile on app start
+  // Load user info and profile on app start / foreground. iOS radio or keychain
+  // xatosi sessiyani yopmasin — faqat server 401/403 bo‘lsa chiqaramiz.
   const initAuth = async () => {
     try {
       const token = await getAccessToken();
@@ -33,41 +42,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const me = await meApi.getMe();
-      setUser(me);
+      await rewriteStoredTokens();
 
-      if (me.role === 'CARRIER') {
+      for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          const carrierProfile = await carrierApi.getProfile();
-          setProfile(carrierProfile);
-        } catch (profileErr: unknown) {
-          // Profile might not exist yet (404)
-          const err = profileErr as { status?: number; code?: string };
-          if (err?.status === 404 || err?.code === 'NOT_FOUND') {
+          const me = await meApi.getMe();
+          setUser(me);
+
+          if (me.role === 'CARRIER') {
+            try {
+              const carrierProfile = await carrierApi.getProfile();
+              setProfile(carrierProfile);
+            } catch (profileErr: unknown) {
+              const err = profileErr as { status?: number; code?: string };
+              if (err?.status === 404 || err?.code === 'NOT_FOUND') {
+                setProfile(null);
+              }
+            }
+          }
+          return;
+        } catch (err: unknown) {
+          const apiErr = err as { status?: number; code?: string };
+          if (shouldClearSessionOnInitError(apiErr)) {
+            await clearTokens();
+            setUser(null);
             setProfile(null);
+            return;
+          }
+          if (attempt < 2) {
+            await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
           }
         }
       }
-    } catch {
-      await clearTokens();
-      setUser(null);
-      setProfile(null);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    initAuth();
+    void initAuth();
 
-    // Listen for unauthorized events (e.g. failed refresh token)
     const unsubscribe = onUnauthorized(() => {
       setUser(null);
       setProfile(null);
     });
 
+    const appStateSub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') {
+        void initAuth();
+      }
+    });
+
     return () => {
       unsubscribe();
+      appStateSub.remove();
     };
   }, []);
 

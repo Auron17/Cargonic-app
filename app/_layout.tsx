@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
 import { OtaProvider } from '../src/updates';
 import { usePushNotifications } from '../src/notifications/usePushNotifications';
 import { useForegroundLocation } from '../src/tracking/useForegroundLocation';
+import { useStopIdleGps } from '../src/tracking/useStopIdleGps';
 import { HeaderBackButton } from '../src/components/HeaderBackButton';
 import { loadSavedLanguage, useCopy } from '../src/i18n';
 import { colors } from '../src/theme';
@@ -15,6 +16,7 @@ export { AppErrorBoundary as ErrorBoundary } from '../src/components/AppErrorBou
 function AppServices() {
   usePushNotifications();
   useForegroundLocation();
+  useStopIdleGps();
   return null;
 }
 

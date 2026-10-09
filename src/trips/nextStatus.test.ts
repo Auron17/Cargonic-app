@@ -7,6 +7,7 @@ import {
   getStatusActionLabel,
   isActiveTrip,
   isFinalStatus,
+  needsGpsTracking,
   outOfZoneMessage,
   requiresPhoto,
 } from './nextStatus';
@@ -92,6 +93,16 @@ describe('Trip nextStatus state machine', () => {
       expect(isActiveTrip('DELIVERED')).toBe(true);
       expect(isActiveTrip('COMPLETED')).toBe(false);
       expect(isActiveTrip('CANCELLED')).toBe(false);
+    });
+
+    it('stops GPS after the driver marks the load delivered', () => {
+      expect(needsGpsTracking('ASSIGNED')).toBe(true);
+      expect(needsGpsTracking('EN_ROUTE_TO_PICKUP')).toBe(true);
+      expect(needsGpsTracking('AT_PICKUP')).toBe(true);
+      expect(needsGpsTracking('LOADED')).toBe(true);
+      expect(needsGpsTracking('DELIVERED')).toBe(false);
+      expect(needsGpsTracking('COMPLETED')).toBe(false);
+      expect(needsGpsTracking('CANCELLED')).toBe(false);
     });
   });
 

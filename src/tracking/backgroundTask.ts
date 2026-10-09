@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
+import { Alert } from 'react-native';
 import { LocationPoint } from '../api/types';
+import { getCopy } from '../i18n';
 import { enqueueLocations, flushQueue } from './queue';
 
 export const BACKGROUND_LOCATION_TASK = 'YUK_PLATFORMA_BACKGROUND_LOCATION';
@@ -107,8 +109,31 @@ export async function checkLocationPermissions(): Promise<{
   }
 }
 
+function confirmLocationDisclosure(): Promise<boolean> {
+  const copy = getCopy();
+  return new Promise((resolve) => {
+    Alert.alert(
+      copy.tripView.locationDisclosureTitle,
+      copy.tripView.locationDisclosureBody,
+      [
+        {
+          text: copy.tripView.locationDisclosureDecline,
+          style: 'cancel',
+          onPress: () => resolve(false),
+        },
+        {
+          text: copy.tripView.locationDisclosureAccept,
+          onPress: () => resolve(true),
+        },
+      ],
+      { cancelable: true, onDismiss: () => resolve(false) },
+    );
+  });
+}
+
 /**
- * Avval foreground, so'ng background ruxsatini so'rash
+ * Avval Play Store prominent disclosure, so'ng foreground va background ruxsat.
+ * Tizim dialogidan oldin foydalanuvchi roziligini olish shart.
  */
 export async function requestLocationPermissions(): Promise<{
   foreground: boolean;
@@ -116,6 +141,16 @@ export async function requestLocationPermissions(): Promise<{
   canAskForegroundAgain: boolean;
 }> {
   try {
+    const current = await checkLocationPermissions();
+    if (current.foreground && current.background) {
+      return current;
+    }
+
+    const accepted = await confirmLocationDisclosure();
+    if (!accepted) {
+      return current;
+    }
+
     let fg = await Location.getForegroundPermissionsAsync();
     if (fg.status !== 'granted') {
       fg = await Location.requestForegroundPermissionsAsync();
@@ -164,12 +199,9 @@ export async function startTracking(tripId: string): Promise<boolean> {
 
   try {
     const permissions = await checkLocationPermissions();
-    if (!permissions.foreground || !permissions.background) {
-      const requested = await requestLocationPermissions();
-      if (!requested.foreground) {
-        console.warn('Foreground location permission not granted, tracking cannot start');
-        return false;
-      }
+    if (!permissions.foreground) {
+      console.warn('Foreground location permission not granted, tracking cannot start');
+      return false;
     }
 
     const isStarted = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
@@ -181,7 +213,7 @@ export async function startTracking(tripId: string): Promise<boolean> {
         foregroundService: {
           notificationTitle: 'Cargonic',
           notificationBody: 'Reys kuzatilmoqda',
-          notificationColor: '#1a56db',
+          notificationColor: '#2457F5',
           killServiceOnDestroy: false,
         },
         pausesUpdatesAutomatically: false,
