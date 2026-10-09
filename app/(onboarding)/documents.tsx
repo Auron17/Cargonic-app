@@ -45,6 +45,7 @@ export default function OnboardingDocumentsScreen() {
     { docType: 'PASSPORT', title: uz.docTypes.PASSPORT, hint: uz.docHint.PASSPORT, required: false },
     { docType: 'LICENSE_CARD', title: uz.docTypes.LICENSE_CARD, hint: uz.docHint.LICENSE_CARD, required: false },
     { docType: 'INSURANCE', title: uz.docTypes.INSURANCE, hint: uz.docHint.INSURANCE, required: false },
+    { docType: 'INTERNATIONAL_LICENSE', title: uz.docTypes.INTERNATIONAL_LICENSE, hint: uz.docHint.INTERNATIONAL_LICENSE, required: false },
   ];
 
   const [documents, setDocuments] = useState<DocumentDto[]>(profile?.documents || []);

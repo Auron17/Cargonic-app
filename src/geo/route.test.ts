@@ -2,9 +2,28 @@ import {
   clearDrivingRouteCache,
   downsampleRoute,
   fetchDrivingRoute,
+  isInternationalRoute,
   parseOsrmRoute,
   tripNavTarget,
 } from './route';
+
+describe('isInternationalRoute', () => {
+  it('treats Toshkent–Fargona as domestic', () => {
+    expect(isInternationalRoute(41.2995, 69.2401, 40.3864, 71.7864)).toBe(false);
+  });
+
+  it('treats Toshkent–Almaty as international', () => {
+    expect(isInternationalRoute(41.2995, 69.2401, 43.238, 76.9454)).toBe(true);
+  });
+
+  it('treats Almaty–Fargona as international', () => {
+    expect(isInternationalRoute(43.238, 76.9454, 40.3864, 71.7864)).toBe(true);
+  });
+
+  it('does not call both-abroad a CIS load', () => {
+    expect(isInternationalRoute(52.52, 13.405, 43.238, 76.9454)).toBe(false);
+  });
+});
 
 describe('tripNavTarget', () => {
   const load = {

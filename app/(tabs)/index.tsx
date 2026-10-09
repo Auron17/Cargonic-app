@@ -28,6 +28,7 @@ import { useCopy } from '../../src/i18n';
 import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
 import { useDeviceCoords } from '../../src/hooks/useDeviceCoords';
 import { colors } from '../../src/theme';
+import { isInternationalRoute } from '../../src/geo/route';
 import { RouteBar } from '../../src/search/RouteBar';
 import {
   EMPTY_FILTER,
@@ -83,6 +84,12 @@ function FeedCard({
             <Text style={styles.nearText}>{Math.round(item.distanceKm)} km</Text>
           </View>
         </View>
+
+        {isInternationalRoute(item.pickupLat, item.pickupLng, item.dropoffLat, item.dropoffLng) ? (
+          <View style={styles.trucksChip}>
+            <Pill tone="accent" label={uz.loadDetails.internationalBadge} />
+          </View>
+        ) : null}
 
         {(item.truckCount ?? 1) > 1 ? (
           <View style={styles.trucksChip}>

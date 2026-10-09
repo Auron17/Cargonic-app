@@ -22,6 +22,7 @@ import {
   TelegramStatusResponse,
   FeedItem,
   LoadDto,
+  LoadFileDto,
   PageDto,
   SavedSearch,
   SavedSearchRequest,
@@ -362,6 +363,11 @@ export const loadsApi = {
 
   bookLoad: async (id: string): Promise<TripDetailDto> => {
     const res = await apiClient.post<TripDetailDto>(`/loads/${id}/book`);
+    return res.data;
+  },
+
+  getLoadFiles: async (id: string): Promise<LoadFileDto[]> => {
+    const res = await apiClient.get<LoadFileDto[]>(`/loads/${id}/files`);
     return res.data;
   },
 };

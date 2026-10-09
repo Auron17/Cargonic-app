@@ -3,7 +3,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ApiError, tripsApi } from '../../src/api/client';
+import { ApiError, loadsApi, tripsApi } from '../../src/api/client';
 import {
   AuthImage,
   BottomSheet,
@@ -82,6 +82,12 @@ export default function TripDetailScreen() {
     queryFn: () => tripsApi.getTrip(tripId),
     enabled: !!tripId,
     refetchInterval: 10000, // har 10 soniyada yangilash
+  });
+
+  const { data: loadFiles } = useQuery({
+    queryKey: ['load-files', trip?.load?.id],
+    queryFn: () => loadsApi.getLoadFiles(trip!.load.id),
+    enabled: Boolean(trip?.load?.id),
   });
 
   const pickup = trip?.load
@@ -520,6 +526,24 @@ export default function TripDetailScreen() {
         ) : null}
       </Card>
 
+      {loadFiles && loadFiles.length > 0 ? (
+        <>
+          <SectionTitle title={uz.tripView.loadFiles} />
+          <Card>
+            {loadFiles.map((file) => (
+              <View key={file.id} style={styles.fileRow}>
+                <AuthImage
+                  fileKey={file.fileKey}
+                  style={styles.fileThumb}
+                  accessibilityLabel={file.label || uz.tripView.loadFiles}
+                />
+                <Text style={styles.fileLabel}>{file.label || uz.tripView.fileUntitled}</Text>
+              </View>
+            ))}
+          </Card>
+        </>
+      ) : null}
+
       {/* Logist */}
       <SectionTitle title={uz.tripView.shipperContact} />
       <Card style={styles.contactCard}>
@@ -693,6 +717,9 @@ const styles = StyleSheet.create({
   link: { fontSize: 15, fontWeight: '600', color: colors.primary },
   cargo: { marginTop: 14, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.slate200 },
   cargoText: { fontSize: 14, fontWeight: '500', color: colors.slate700 },
+  fileRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
+  fileThumb: { width: 56, height: 56, borderRadius: 10 },
+  fileLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.slate900 },
 
   contactCard: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: {

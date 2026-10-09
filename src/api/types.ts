@@ -16,6 +16,7 @@ export type DocType =
   | 'INSURANCE'
   | 'COMPANY_CERT'
   | 'DRIVER_PHOTO'
+  | 'INTERNATIONAL_LICENSE'
 
 export type LegalType = 'YATT' | 'MCHJ'
 export type BodyType =
@@ -314,10 +315,33 @@ export interface LoadDto {
   bookedTrucks?: number
   /** Belgilangan narxda yechiladigan komissiya, so'mda */
   commissionEstimate?: number
+  pickupCountry?: string
+  dropoffCountry?: string
+  posterRole?: LoadPosterRole
+  sender?: PartyDto | null
+  receiver?: PartyDto | null
+  international?: boolean
+  commissionPercent?: number
   /** Yoqilgan bo'lsa, "Yetib keldim", "Yuk ortildi", "Topshirdim" faqat manzil radiusida ishlaydi */
   geofenceEnabled?: boolean
   /** Geozona radiusi, metrda */
   geofenceRadiusM?: number
+}
+
+export type LoadPosterRole = 'SENDER' | 'RECEIVER' | 'BROKER'
+
+export interface PartyDto {
+  companyId?: string | null
+  name?: string | null
+  phone?: string | null
+}
+
+export interface LoadFileDto {
+  id: string
+  loadId: string
+  fileKey: string
+  label?: string | null
+  createdAt: string
 }
 
 export interface LocationRequest {
@@ -399,6 +423,8 @@ export interface CarrierPublic {
   ratingCount: number
   completedTrips: number
   driverPhotoKey?: string
+  hasInternationalLicense?: boolean
+  internationalLicenseStatus?: 'NONE' | 'PENDING' | 'APPROVED'
 }
 
 export interface VehiclePublic {

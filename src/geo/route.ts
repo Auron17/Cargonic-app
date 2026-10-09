@@ -1,5 +1,20 @@
 export type LatLng = { lat: number; lng: number };
 
+/** Backend GeoZones.insideUzbekistan bilan bir xil quti. */
+export function insideUzbekistan(lat: number, lng: number): boolean {
+  return lat >= 37 && lat <= 46 && lng >= 55 && lng <= 74;
+}
+
+/** Bitta nuqta UZ, ikkinchisi chetda — MDH reys. */
+export function isInternationalRoute(
+  pickupLat: number,
+  pickupLng: number,
+  dropoffLat: number,
+  dropoffLng: number,
+): boolean {
+  return insideUzbekistan(pickupLat, pickupLng) !== insideUzbekistan(dropoffLat, dropoffLng);
+}
+
 export type TripNavLoad = {
   pickupLat: number;
   pickupLng: number;

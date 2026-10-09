@@ -3,7 +3,8 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { bidsApi, carrierApi, loadsApi } from '../../src/api/client';
-import { MyBid } from '../../src/api/types';
+import { DocumentDto, MyBid, PartyDto } from '../../src/api/types';
+import { useAuth } from '../../src/auth/AuthProvider';
 import {
   BottomSheet,
   Card,
@@ -27,11 +28,14 @@ import {
 } from '../../src/components';
 import { Ionicons } from '@expo/vector-icons';
 import { formatMoney, formatPickupWindow } from '../../src/utils/format';
+import { isInternationalRoute } from '../../src/geo/route';
 import { useCopy } from '../../src/i18n';
 import { colors } from '../../src/theme';
 
+
 export default function LoadDetailsScreen() {
   const uz = useCopy();
+  const { profile } = useAuth();
   const { id, action } = useLocalSearchParams<{ id: string; action?: string | string[] }>();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -74,6 +78,7 @@ export default function LoadDetailsScreen() {
   const existingBid: MyBid | undefined = myBids?.find(
     (b) => b.loadId === loadId && b.status === 'PENDING'
   );
+  const licenseLabel = internationalLicenseLabel(profile?.documents, uz);
 
   // 3. Book load mutation (Fixed price)
   const bookMutation = useMutation({
@@ -292,8 +297,15 @@ export default function LoadDetailsScreen() {
   const isOpen = load.status === 'OPEN';
   const bodyTypeName = uz.bodyType[load.requiredBodyType] || load.requiredBodyType;
   // Komissiya doim so'mda: dollar narxda backend Markaziy bank kursi bilan hisoblaydi
+  const commissionPercent = load.commissionPercent ?? 3;
   const estimatedCommission =
-    load.commissionEstimate ?? (isFixed && load.price && load.currency !== 'USD' ? Math.round(load.price * 0.03) : null);
+    load.commissionEstimate ??
+    (isFixed && load.price && load.currency !== 'USD'
+      ? Math.round(load.price * (Number(commissionPercent) / 100))
+      : null);
+  const international =
+    load.international ??
+    isInternationalRoute(load.pickupLat, load.pickupLng, load.dropoffLat, load.dropoffLng);
   const priceText = formatMoney(load.price, load.currency);
   const facts: { label: string; value: string }[] = [
     { label: uz.loadDetails.cargoType, value: load.cargoType },
@@ -355,7 +367,10 @@ export default function LoadDetailsScreen() {
       <View style={styles.hero}>
         <View style={styles.heroTop}>
           <Text style={styles.heroLabel}>{isFixed ? uz.loadDetails.fixedPrice : uz.loadDetails.biddingPrice}</Text>
-          <Pill tone={pillToneForStatus(load.status)} label={statusBadgeLabel(load.status, 'load')} />
+          <View style={styles.heroBadges}>
+            {international ? <Pill tone="accent" label={uz.loadDetails.internationalBadge} /> : null}
+            <Pill tone={pillToneForStatus(load.status)} label={statusBadgeLabel(load.status, 'load')} />
+          </View>
         </View>
         {isFixed && load.price != null ? (
           <Money amount={load.price} currency={load.currency} size="xl" weight="800" style={styles.heroPrice} />
@@ -363,7 +378,11 @@ export default function LoadDetailsScreen() {
           <Text style={styles.heroBidding}>Narxni siz taklif qilasiz</Text>
         )}
         {estimatedCommission != null ? (
-          <Text style={styles.heroHint}>Platforma komissiyasi taxminan {formatMoney(estimatedCommission)} (3%)</Text>
+          <Text style={styles.heroHint}>
+            {uz.loadDetails.commissionHint
+              .replace('{{amount}}', formatMoney(estimatedCommission))
+              .replace('{{percent}}', String(commissionPercent))}
+          </Text>
         ) : null}
         {(load.truckCount ?? 1) > 1 ? (
           <Text style={styles.heroHint}>
@@ -399,12 +418,23 @@ export default function LoadDetailsScreen() {
         <RouteLine
           size="lg"
           lines={3}
-          from={load.pickupAddress}
-          to={load.dropoffAddress}
+          from={countryLabel(load.pickupAddress, load.pickupCountry)}
+          to={countryLabel(load.dropoffAddress, load.dropoffCountry)}
           fromHint={formatPickupWindow(load.pickupDate, load.pickupTimeFrom, load.pickupTimeTo)}
           toHint={`${Math.round(load.routeKm)} ${uz.common.km} yo‘l`}
         />
       </Card>
+
+      {load.sender?.name || load.receiver?.name ? (
+        <Card>
+          {load.sender?.name ? (
+            <PartyLine label={uz.loadDetails.sender} party={load.sender} />
+          ) : null}
+          {load.receiver?.name ? (
+            <PartyLine label={uz.loadDetails.receiver} party={load.receiver} />
+          ) : null}
+        </Card>
+      ) : null}
 
       {/* Yuk haqida */}
       <SectionTitle title={uz.loadDetails.cargoInfo} />
@@ -479,8 +509,12 @@ export default function LoadDetailsScreen() {
         <View style={styles.summaryBox}>
           <SummaryRow label="Yuk narxi" value={priceText} />
           {estimatedCommission != null ? (
-            <SummaryRow label="Komissiya (3%)" value={`−${formatMoney(estimatedCommission)}`} />
+            <SummaryRow
+              label={uz.loadDetails.commissionRow.replace('{{percent}}', String(commissionPercent))}
+              value={`−${formatMoney(estimatedCommission)}`}
+            />
           ) : null}
+          <SummaryRow label={uz.docTypes.INTERNATIONAL_LICENSE} value={licenseLabel} />
         </View>
         <PrimaryButton
           title={uz.loadDetails.confirmBookingAction}
@@ -504,6 +538,7 @@ export default function LoadDetailsScreen() {
         title={isEditingBid ? uz.loadDetails.editBidModalTitle : uz.loadDetails.bidModalTitle}
         subtitle="Zavod barcha takliflarni ko‘radi va bittasini tanlaydi."
       >
+        <Text style={styles.licenseNote}>{licenseLabel}</Text>
         {errorMessage ? <ErrorBanner message={errorMessage} onDismiss={() => setErrorMessage(null)} /> : null}
         <TextField
           label={
@@ -537,11 +572,44 @@ export default function LoadDetailsScreen() {
   );
 }
 
+function countryLabel(address: string, country?: string): string {
+  if (!country || country === 'UZ') return address;
+  return `${address} · ${country}`;
+}
+
+function PartyLine({ label, party }: { label: string; party: PartyDto }) {
+  return (
+    <View style={styles.partyRow}>
+      <Text style={styles.partyLabel}>{label}</Text>
+      <Text style={styles.partyName} numberOfLines={2}>
+        {party.name}
+        {party.phone ? ` · ${party.phone}` : ''}
+      </Text>
+    </View>
+  );
+}
+
+function internationalLicenseLabel(
+  documents: DocumentDto[] | undefined,
+  uz: ReturnType<typeof useCopy>,
+): string {
+  const latest = (documents ?? [])
+    .filter((d) => d.docType === 'INTERNATIONAL_LICENSE' && d.status !== 'REJECTED')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+  if (!latest) return uz.loadDetails.licenseNone;
+  if (latest.status === 'APPROVED') return uz.loadDetails.licenseApproved;
+  return uz.loadDetails.licensePending;
+}
+
 const styles = StyleSheet.create({
   pad: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 },
   gap: { height: 12 },
   hero: { paddingTop: 4, paddingBottom: 18 },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  heroBadges: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  partyRow: { paddingVertical: 6, gap: 2 },
+  partyLabel: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
+  partyName: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
   heroLabel: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
   heroPrice: { marginTop: 6, fontSize: 34, letterSpacing: -1 },
   heroBidding: { marginTop: 6, fontSize: 26, fontWeight: '800', color: colors.accentDark, letterSpacing: -0.6 },
@@ -574,6 +642,7 @@ const styles = StyleSheet.create({
   noticeBody: { marginTop: 3, fontSize: 14, lineHeight: 20, color: colors.slate700 },
   notes: { fontSize: 15, lineHeight: 22, color: colors.slate800 },
   bidComment: { marginTop: 8, fontSize: 14.5, fontStyle: 'italic', color: colors.slate700 },
+  licenseNote: { fontSize: 13, fontWeight: '600', color: colors.slate700, marginBottom: 8 },
   bidActions: { flexDirection: 'row', gap: 20, marginTop: 14 },
   linkBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 },
   linkText: { fontSize: 15, fontWeight: '600', color: colors.primary },
