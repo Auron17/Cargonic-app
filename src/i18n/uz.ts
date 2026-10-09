@@ -483,6 +483,14 @@ export const uz = {
     callShort: 'Qo‘ng‘iroq',
     noShipperPhone: 'Logist telefon raqami mavjud emas',
     statusUpdateError: 'Holatni yangilashda xatolik',
+    geofenceTitle: 'Manzilda tasdiqlanadi',
+    geofenceHintPickup: '«{{action}}» faqat ortish joyidan {{radius}} ichida ishlaydi.',
+    geofenceHintDropoff: '«{{action}}» faqat topshirish manzilidan {{radius}} ichida ishlaydi.',
+    geofenceNoLocation: 'Joylashuvingiz aniqlanmadi. GPS ni yoqing va manzilda qayta urinib ko‘ring.',
+    geofenceOutOfZonePickup:
+      'Siz ortish joyidan {{distance}} uzoqdasiz. Manzilga {{radius}} gacha yaqinlashgach qayta urinib ko‘ring.',
+    geofenceOutOfZoneDropoff:
+      'Siz topshirish manzilidan {{distance}} uzoqdasiz. Manzilga {{radius}} gacha yaqinlashgach qayta urinib ko‘ring.',
     cancelSuccess: 'Reys muvaffaqiyatli bekor qilindi.',
     photoRequiredTitle: 'Fotosurat majburiy',
     photoConfirmLabel: 'Holatni tasdiqlovchi rasm',
