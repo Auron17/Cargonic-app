@@ -252,9 +252,29 @@ export interface EntryDto {
   createdAt: string
 }
 
+export interface TripEarningDto {
+  tripId: string
+  status: TripStatus
+  pickupAddress: string
+  dropoffAddress: string
+  agreedPrice: number
+  currency: Currency
+  agreedPriceUzs: number
+  commissionAmount: number
+  netUzs: number
+  completedAt?: string | null
+}
+
 export interface WalletDto {
   balance: number
   entries: EntryDto[]
+  /** COMPLETED reyslarning kelishilgan haqi (shu oy, so'm) — ilovadagi pul emas */
+  earnedThisMonth: number
+  commissionThisMonth: number
+  netThisMonth: number
+  /** DELIVERED, hali tasdiqlanmagan */
+  pendingEarned: number
+  earnings: TripEarningDto[]
 }
 
 export interface LoadRequest {

@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { carrierApi, tripsApi } from '../../src/api/client';
-import { EntryDto, EntryType, WalletDto } from '../../src/api/types';
+import { EntryDto, EntryType, TripEarningDto, WalletDto } from '../../src/api/types';
 import {
   EmptyState,
   ErrorBanner,
@@ -59,8 +60,41 @@ function EntryRow({ entry, route, last }: { entry: EntryDto; route?: string; las
   );
 }
 
+function EarningRow({ item, last, onPress }: { item: TripEarningDto; last: boolean; onPress: () => void }) {
+  const uz = useCopy();
+  const route = `${city(item.pickupAddress)} → ${city(item.dropoffAddress)}`;
+  const statusLabel = uz.status.trip[item.status] ?? item.status;
+  const pending = item.status === 'DELIVERED';
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.earningRow, !last && styles.rowDivider, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`${route}, ${statusLabel}, ${formatMoney(item.netUzs)}`}
+    >
+      <View style={styles.rowMain}>
+        <Text style={styles.rowTitle} numberOfLines={1}>
+          {route}
+        </Text>
+        <Text style={styles.rowSub}>
+          {statusLabel}
+          {item.completedAt ? ` · ${formatDateTime(item.completedAt)}` : ''}
+        </Text>
+        <Text style={styles.earningMeta}>
+          {formatMoney(item.agreedPrice, item.currency)} · {uz.wallet.commissionLine} {formatMoney(item.commissionAmount)}
+        </Text>
+      </View>
+      <View style={styles.earningRight}>
+        <Text style={[styles.rowAmount, !pending && styles.rowAmountIn]}>{formatMoney(item.netUzs)}</Text>
+        {pending ? <Text style={styles.pendingChip}>{uz.wallet.pendingEarned}</Text> : null}
+      </View>
+    </Pressable>
+  );
+}
+
 export default function BalanceTabScreen() {
   const uz = useCopy();
+  const router = useRouter();
   const { profile } = useAuth();
   // Profil yaratilmaguncha hamyon yo'q — o'rniga ro'yxatdan o'tish taklifi
   const locked = !profile;
@@ -95,16 +129,11 @@ export default function BalanceTabScreen() {
   }, [fetchWallet, locked]);
 
   const entries = useMemo(() => wallet?.entries ?? [], [wallet]);
-  const spentThisMonth = useMemo(() => {
-    const now = new Date();
-    return entries
-      .filter((e) => e.type === 'COMMISSION')
-      .filter((e) => {
-        const d = new Date(e.createdAt);
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      })
-      .reduce((sum, e) => sum + Math.abs(e.amount), 0);
-  }, [entries]);
+  const earnings = wallet?.earnings ?? [];
+  const earnedThisMonth = wallet?.earnedThisMonth ?? 0;
+  const commissionThisMonth = wallet?.commissionThisMonth ?? 0;
+  const netThisMonth = wallet?.netThisMonth ?? 0;
+  const pendingEarned = wallet?.pendingEarned ?? 0;
 
   return (
     <Screen edges={TAB_EDGES_NO_HEADER} contentContainerStyle={styles.content}>
@@ -131,16 +160,39 @@ export default function BalanceTabScreen() {
             {error && !wallet ? <ErrorBanner message={error} onRetry={fetchWallet} /> : null}
 
             <View style={styles.hero}>
-              <Text style={styles.heroLabel}>{uz.wallet.currentBalance}</Text>
+              <Text style={styles.heroLabel}>{uz.wallet.earnedThisMonth}</Text>
               {loading && !wallet ? (
                 <Skeleton width={200} height={38} radius={10} style={styles.heroSkeleton} />
               ) : (
-                <Money amount={wallet?.balance ?? 0} size="xl" weight="800" color="#FFFFFF" style={styles.heroAmount} />
+                <Money amount={earnedThisMonth} size="xl" weight="800" color="#FFFFFF" style={styles.heroAmount} />
               )}
-              <Text style={styles.heroSub}>Bu oy komissiyaga: {formatMoney(spentThisMonth)}</Text>
+              <Text style={styles.heroSub}>{uz.wallet.earnedHint}</Text>
+
+              <View style={styles.heroStats}>
+                <View style={styles.heroStat}>
+                  <Text style={styles.heroStatLabel}>{uz.wallet.commissionThisMonth}</Text>
+                  <Text style={styles.heroStatValue}>{formatMoney(commissionThisMonth)}</Text>
+                </View>
+                <View style={styles.heroStatDivider} />
+                <View style={styles.heroStat}>
+                  <Text style={styles.heroStatLabel}>{uz.wallet.netThisMonth}</Text>
+                  <Text style={styles.heroStatValue}>{formatMoney(netThisMonth)}</Text>
+                </View>
+              </View>
+
+              {pendingEarned > 0 ? (
+                <View style={styles.pendingBox}>
+                  <Text style={styles.pendingLabel}>{uz.wallet.pendingEarned}</Text>
+                  <Text style={styles.pendingAmount}>{formatMoney(pendingEarned)}</Text>
+                  <Text style={styles.pendingHint}>{uz.wallet.pendingHint}</Text>
+                </View>
+              ) : null}
 
               <View style={styles.heroDivider} />
-              <Text style={styles.heroHint}>{uz.wallet.topUpInstruction}</Text>
+              <Text style={styles.heroLabel}>{uz.wallet.currentBalance}</Text>
+              <Text style={styles.balanceAmount}>{formatMoney(wallet?.balance ?? 0)}</Text>
+              <Text style={styles.heroHint}>{uz.wallet.balanceHint}</Text>
+              <Text style={[styles.heroHint, styles.topUpHint]}>{uz.wallet.topUpInstruction}</Text>
               <Pressable
                 onPress={() => Linking.openURL(`tel:${ADMIN_PHONE}`).catch(() => undefined)}
                 style={({ pressed }) => [styles.topUp, pressed && styles.pressed]}
@@ -148,9 +200,45 @@ export default function BalanceTabScreen() {
                 accessibilityLabel={uz.wallet.callAdmin}
               >
                 <Ionicons name="call" size={17} color={ink[900]} />
-                <Text style={styles.topUpText}>To‘ldirish · {ADMIN_PHONE_DISPLAY}</Text>
+                <Text style={styles.topUpText}>
+                  {uz.wallet.topUpButton} · {ADMIN_PHONE_DISPLAY}
+                </Text>
               </Pressable>
             </View>
+
+            <SectionTitle
+              title={uz.wallet.earningsTitle}
+              right={earnings.length > 0 ? <Text style={styles.count}>{earnings.length} ta</Text> : undefined}
+            />
+            {loading && !wallet ? (
+              <View style={styles.listCard}>
+                {[0, 1].map((i) => (
+                  <View key={i} style={[styles.earningRow, i < 1 && styles.rowDivider]}>
+                    <View style={styles.rowMain}>
+                      <Skeleton width="60%" height={13} />
+                      <Skeleton width="40%" height={11} style={styles.skeletonGap} />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : earnings.length > 0 ? (
+              <View style={styles.listCard}>
+                {earnings.map((item, i) => (
+                  <EarningRow
+                    key={item.tripId}
+                    item={item}
+                    last={i === earnings.length - 1}
+                    onPress={() => router.push(`/trips/${item.tripId}`)}
+                  />
+                ))}
+              </View>
+            ) : (
+              <EmptyState
+                iconName="cube-outline"
+                title={uz.wallet.emptyEarnings}
+                description={uz.wallet.emptyEarningsHint}
+              />
+            )}
 
             <SectionTitle
               title={uz.wallet.entriesTitle}
@@ -183,7 +271,7 @@ export default function BalanceTabScreen() {
               <EmptyState
                 iconName="wallet-outline"
                 title={uz.wallet.emptyEntries}
-                description="Bajarilgan reyslar va to‘lovlar tarixi shu yerda qayd etiladi."
+                description={uz.wallet.emptyEntriesHint}
               />
             )}
           </>
@@ -201,9 +289,30 @@ const styles = StyleSheet.create({
   heroLabel: { fontSize: 14, fontWeight: '600', color: ink.muted },
   heroAmount: { marginTop: 6, fontSize: 36, letterSpacing: -1 },
   heroSkeleton: { marginTop: 8, opacity: 0.2 },
-  heroSub: { marginTop: 4, fontSize: 13.5, color: ink.muted },
+  heroSub: { marginTop: 6, fontSize: 13.5, lineHeight: 19, color: ink.muted },
+  heroStats: { flexDirection: 'row', marginTop: 16, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14, paddingVertical: 12 },
+  heroStat: { flex: 1, paddingHorizontal: 14 },
+  heroStatDivider: { width: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.15)' },
+  heroStatLabel: { fontSize: 12.5, fontWeight: '600', color: ink.muted },
+  heroStatValue: { marginTop: 4, fontSize: 16, fontWeight: '700', color: '#FFFFFF', fontVariant: ['tabular-nums'] },
+  pendingBox: {
+    marginTop: 14,
+    backgroundColor: 'rgba(249,115,22,0.16)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  pendingLabel: { fontSize: 12.5, fontWeight: '700', color: '#FDBA74' },
+  pendingAmount: { marginTop: 2, fontSize: 16, fontWeight: '700', color: '#FFFFFF', fontVariant: ['tabular-nums'] },
+  pendingHint: { marginTop: 4, fontSize: 12.5, lineHeight: 17, color: ink.muted },
+  balanceAmount: { marginTop: 4, fontSize: 22, fontWeight: '800', color: '#FFFFFF', letterSpacing: -0.4, fontVariant: ['tabular-nums'] },
   heroDivider: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.15)', marginVertical: 16 },
   heroHint: { fontSize: 13.5, lineHeight: 19, color: ink.muted },
+  topUpHint: { marginTop: 6 },
+  earningRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 13 },
+  earningMeta: { marginTop: 3, fontSize: 12.5, color: colors.textMuted },
+  earningRight: { alignItems: 'flex-end' },
+  pendingChip: { marginTop: 3, fontSize: 11.5, fontWeight: '700', color: colors.accent },
   topUp: {
     marginTop: 12,
     height: 50,
