@@ -314,6 +314,10 @@ export interface LoadDto {
   bookedTrucks?: number
   /** Belgilangan narxda yechiladigan komissiya, so'mda */
   commissionEstimate?: number
+  /** Yoqilgan bo'lsa, "Yetib keldim", "Yuk ortildi", "Topshirdim" faqat manzil radiusida ishlaydi */
+  geofenceEnabled?: boolean
+  /** Geozona radiusi, metrda */
+  geofenceRadiusM?: number
 }
 
 export interface LocationRequest {

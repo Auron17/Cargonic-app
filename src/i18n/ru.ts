@@ -483,6 +483,14 @@ export const ru = {
     callShort: 'Звонок',
     noShipperPhone: 'Номер телефона логиста отсутствует',
     statusUpdateError: 'Ошибка при обновлении статуса',
+    geofenceTitle: 'Подтверждение на месте',
+    geofenceHintPickup: '«{{action}}» работает только в радиусе {{radius}} от места погрузки.',
+    geofenceHintDropoff: '«{{action}}» работает только в радиусе {{radius}} от места выгрузки.',
+    geofenceNoLocation: 'Не удалось определить местоположение. Включите GPS и повторите на месте.',
+    geofenceOutOfZonePickup:
+      'Вы в {{distance}} от места погрузки. Подъедьте ближе чем на {{radius}} и повторите.',
+    geofenceOutOfZoneDropoff:
+      'Вы в {{distance}} от места выгрузки. Подъедьте ближе чем на {{radius}} и повторите.',
     cancelSuccess: 'Рейс успешно отменен.',
     photoRequiredTitle: 'Требуется фото',
     photoConfirmLabel: 'Фото для подтверждения статуса',

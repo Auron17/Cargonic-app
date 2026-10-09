@@ -35,6 +35,37 @@ export function requiresPhoto(toStatus: TripStatus): boolean {
   return toStatus === 'LOADED' || toStatus === 'DELIVERED';
 }
 
+export type GeofenceTarget = 'PICKUP' | 'DROPOFF';
+
+/**
+ * Geozona yoqilgan yukda holat qaysi manzil yonida o'zgartiriladi (backend GeofenceTarget bilan bir xil):
+ * "Yetib keldim" va "Yuk ortildi" — ortish joyida, "Topshirdim" — topshirish manzilida.
+ */
+export function geofenceTarget(toStatus: TripStatus): GeofenceTarget | null {
+  if (toStatus === 'AT_PICKUP' || toStatus === 'LOADED') return 'PICKUP';
+  if (toStatus === 'DELIVERED') return 'DROPOFF';
+  return null;
+}
+
+/** Masofani qisqa ko'rinishda: 850 m, 1,2 km */
+export function formatDistance(meters: number): string {
+  if (meters < 1000) return `${Math.round(meters)} m`;
+  return `${(meters / 1000).toFixed(1).replace('.', ',')} km`;
+}
+
+/**
+ * Server OUT_OF_ZONE xatosining details qismidan haydovchiga tushunarli xabar yasaydi;
+ * details to'liq bo'lmasa null (chaqiruvchi serverning o'z xabarini ko'rsatadi).
+ */
+export function outOfZoneMessage(details: Record<string, unknown> | undefined): string | null {
+  const distance = Number(details?.distanceM);
+  const radius = Number(details?.radiusM);
+  if (!details || !Number.isFinite(distance) || !Number.isFinite(radius)) return null;
+  const copy = getCopy().tripView;
+  const template = details.target === 'DROPOFF' ? copy.geofenceOutOfZoneDropoff : copy.geofenceOutOfZonePickup;
+  return template.replace('{{distance}}', formatDistance(distance)).replace('{{radius}}', formatDistance(radius));
+}
+
 /**
  * Haydovchi reysni bekor qila olishini tekshiradi.
  * Faqat LOADED gacha bo'lgan holatlarda (ASSIGNED, EN_ROUTE_TO_PICKUP, AT_PICKUP) bekor qilish mumkin.

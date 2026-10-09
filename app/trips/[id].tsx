@@ -3,7 +3,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { tripsApi } from '../../src/api/client';
+import { ApiError, tripsApi } from '../../src/api/client';
 import {
   AuthImage,
   BottomSheet,
@@ -36,9 +36,12 @@ import {
 } from '../../src/tracking/backgroundTask';
 import {
   cancellableByCarrier,
+  formatDistance,
+  geofenceTarget,
   getNextStatus,
   getStatusActionLabel,
   isActiveTrip,
+  outOfZoneMessage,
   requiresPhoto,
 } from '../../src/trips/nextStatus';
 import { Ionicons } from '@expo/vector-icons';
@@ -187,6 +190,9 @@ export default function TripDetailScreen() {
       return;
     }
 
+    // Geozona yoqilgan yukda server masofani shu koordinata bilan tekshiradi
+    const zone = trip.load?.geofenceEnabled ? geofenceTarget(nextStatus) : null;
+
     setIsUpdatingStatus(true);
     try {
       let lat: number | undefined;
@@ -194,12 +200,17 @@ export default function TripDetailScreen() {
 
       try {
         const pos = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
+          accuracy: zone ? Location.Accuracy.High : Location.Accuracy.Balanced,
         });
         lat = pos.coords.latitude;
         lng = pos.coords.longitude;
       } catch (posErr) {
         console.warn('Could not determine current position for status update', posErr);
+      }
+
+      if (zone && (lat === undefined || lng === undefined)) {
+        setErrorMessage(uz.tripView.geofenceNoLocation);
+        return;
       }
 
       await tripsApi.updateStatus(trip.id, {
@@ -227,8 +238,9 @@ export default function TripDetailScreen() {
       refetch();
     } catch (err: unknown) {
       console.error('Failed to update trip status', err);
+      const zoneMessage = err instanceof ApiError && err.code === 'OUT_OF_ZONE' ? outOfZoneMessage(err.details) : null;
       const apiErr = err as { message?: string };
-      setErrorMessage(apiErr.message || uz.tripView.statusUpdateError);
+      setErrorMessage(zoneMessage || apiErr.message || uz.tripView.statusUpdateError);
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -282,6 +294,7 @@ export default function TripDetailScreen() {
   const nextStatus = getNextStatus(trip.status);
   const nextActionLabel = getStatusActionLabel(nextStatus);
   const isPhotoRequired = nextStatus ? requiresPhoto(nextStatus) : false;
+  const zoneTarget = nextStatus && trip.load?.geofenceEnabled ? geofenceTarget(nextStatus) : null;
   const canCancel = cancellableByCarrier(trip.status);
   const active = isActiveTrip(trip.status);
   const headingToPickup = trip.status === 'ASSIGNED' || trip.status === 'EN_ROUTE_TO_PICKUP' || trip.status === 'AT_PICKUP';
@@ -405,6 +418,21 @@ export default function TripDetailScreen() {
             <Pressable onPress={handleOpenAppSettings} accessibilityRole="button" style={styles.noticeAction}>
               <Text style={styles.noticeActionText}>{uz.tripView.openAppSettings}</Text>
             </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      {/* Geozona: keyingi bosqich faqat manzil radiusida ishlaydi */}
+      {zoneTarget && trip.load?.geofenceRadiusM ? (
+        <View style={[styles.notice, styles.noticeInfo]}>
+          <Ionicons name="locate" size={20} color={colors.primary} />
+          <View style={styles.noticeTexts}>
+            <Text style={styles.noticeTitle}>{uz.tripView.geofenceTitle}</Text>
+            <Text style={styles.noticeBody}>
+              {(zoneTarget === 'PICKUP' ? uz.tripView.geofenceHintPickup : uz.tripView.geofenceHintDropoff)
+                .replace('{{action}}', nextActionLabel)
+                .replace('{{radius}}', formatDistance(trip.load.geofenceRadiusM))}
+            </Text>
           </View>
         </View>
       ) : null}
@@ -653,6 +681,7 @@ const styles = StyleSheet.create({
   notice: { flexDirection: 'row', gap: 12, marginTop: 14, padding: 14, borderRadius: 16 },
   noticeDanger: { backgroundColor: '#FDECEC' },
   noticeWarn: { backgroundColor: '#FFF4E0' },
+  noticeInfo: { backgroundColor: '#EAF6FE' },
   noticeSuccess: { backgroundColor: '#E8F7EF', alignItems: 'center' },
   noticeTexts: { flex: 1 },
   noticeTitle: { fontSize: 15, fontWeight: '700', color: colors.slate900 },

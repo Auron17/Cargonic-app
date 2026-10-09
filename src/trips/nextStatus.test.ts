@@ -1,10 +1,13 @@
 import {
   canCarrierMove,
   cancellableByCarrier,
+  formatDistance,
+  geofenceTarget,
   getNextStatus,
   getStatusActionLabel,
   isActiveTrip,
   isFinalStatus,
+  outOfZoneMessage,
   requiresPhoto,
 } from './nextStatus';
 
@@ -99,6 +102,32 @@ describe('Trip nextStatus state machine', () => {
       expect(getStatusActionLabel('LOADED')).toBe('Yuk ortildi');
       expect(getStatusActionLabel('DELIVERED')).toBe('Topshirdim');
       expect(getStatusActionLabel(null)).toBe('');
+    });
+  });
+
+  describe('geofence', () => {
+    it('checks arrival and loading at pickup, delivery at dropoff', () => {
+      expect(geofenceTarget('AT_PICKUP')).toBe('PICKUP');
+      expect(geofenceTarget('LOADED')).toBe('PICKUP');
+      expect(geofenceTarget('DELIVERED')).toBe('DROPOFF');
+      expect(geofenceTarget('EN_ROUTE_TO_PICKUP')).toBeNull();
+    });
+
+    it('formats distances in metres and kilometres', () => {
+      expect(formatDistance(300)).toBe('300 m');
+      expect(formatDistance(849.6)).toBe('850 m');
+      expect(formatDistance(1234)).toBe('1,2 km');
+    });
+
+    it('builds an out-of-zone message from server details', () => {
+      expect(outOfZoneMessage({ target: 'PICKUP', distanceM: 1234, radiusM: 300 })).toBe(
+        'Siz ortish joyidan 1,2 km uzoqdasiz. Manzilga 300 m gacha yaqinlashgach qayta urinib ko‘ring.'
+      );
+      expect(outOfZoneMessage({ target: 'DROPOFF', distanceM: 640, radiusM: 300 })).toContain(
+        'topshirish manzilidan 640 m'
+      );
+      expect(outOfZoneMessage(undefined)).toBeNull();
+      expect(outOfZoneMessage({ target: 'PICKUP' })).toBeNull();
     });
   });
 });
