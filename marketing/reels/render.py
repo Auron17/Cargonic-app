@@ -421,7 +421,7 @@ def screen_bid(typed, sent=0.0):
     d.text((40, top + 380), "Platforma komissiyasi taxminan ko‘rsatiladi", font=font(22, "Medium", False), fill=MUTED)
     col = mix(ORANGE, GREEN, clamp(sent))
     rrect(d, (40, top + 450, SW - 40, top + 550), 26, col)
-    lbl = "Taklif yuborildi ✓" if sent > 0.5 else "Taklifni yuborish"
+    lbl = "Taklif yuborildi" if sent > 0.5 else "Taklifni yuborish"
     fb = font(34, "Bold")
     d.text((SW / 2 - fb.getlength(lbl) / 2, top + 478), lbl, font=fb, fill=WHITE)
     return scr
@@ -464,6 +464,42 @@ def screen_balance(n_rows):
         fa = font(30, "Bold")
         d.text((SW - 52 - fa.getlength(rows[i][1]), y + 38), rows[i][1], font=fa, fill=rows[i][2])
     app_header(d, "Balans")
+    return scr
+
+
+
+def screen_trip(progress):
+    """Active-trip screen: step tracker with photo proof, filled by progress 0..1."""
+    scr = Image.new("RGBA", (SW, SH), APP_BG)
+    d = ImageDraw.Draw(scr)
+    rrect(d, (24, 210, SW - 24, 430), 28, WHITE)
+    d.text((52, 232), "Samarqand → Toshkent", font=font(34, "Bold"), fill=SLATE)
+    d.text((52, 282), "Reys #1042 · 20 t · 6 800 000 so‘m", font=font(24, "Medium", False), fill=MUTED)
+    rrect(d, (52, 340, 300, 394), 27, (219, 234, 254))
+    d.text((74, 350), "Kelishilgan narx", font=font(24, "SemiBold", False), fill=BLUE)
+    steps = ["Olindi", "Yo‘lda", "Ortishda", "Ortildi", "Topshirildi"]
+    photo = {3: "Rasm yuklandi", 4: "Hujjat yuklandi"}
+    done = progress * len(steps)
+    y0 = 470
+    for i, name in enumerate(steps):
+        y = y0 + i * 130
+        ok = done >= i + 1
+        cur = i <= done < i + 1
+        col = GREEN if ok else (ORANGE if cur else (203, 213, 225))
+        if i < len(steps) - 1:
+            d.line((70, y + 46, 70, y + 130), fill=GREEN if ok else (226, 232, 240), width=6)
+        d.ellipse((44, y, 96, y + 52), fill=col)
+        if ok:
+            d.line([(58, y + 27), (68, y + 38), (84, y + 15)], fill=WHITE, width=6)
+        d.text((126, y + 6), name, font=font(34, "Bold"), fill=SLATE if (ok or cur) else MUTED)
+        if ok and i in photo:
+            rrect(d, (360, y - 4, SW - 36, y + 56), 18, (209, 250, 229))
+            d.text((380, y + 8), photo[i], font=font(24, "SemiBold", False), fill=(5, 150, 105))
+    rrect(d, (24, SH - 150, SW - 24, SH - 40), 26, BLUE)
+    lbl = "Zavod xaritada ko‘rmoqda"
+    fl = font(30, "Bold")
+    d.text((SW / 2 - fl.getlength(lbl) / 2, SH - 118), lbl, font=fl, fill=WHITE)
+    app_header(d, "Reys")
     return scr
 
 
@@ -673,10 +709,67 @@ def sc_cta(im, s, t, lt, dur):
         pop(im, tl("link", ["Havola — profilda ↑"], 52, fill=(219, 228, 255), weight="Bold"), W / 2, 1260, lt, 0.9)
 
 
+
+def sc_chat(im, s, t, lt, dur):
+    im.alpha_composite(flat_bg((17, 27, 41), (8, 14, 24), (36, 87, 245), (W // 2, 700)))
+    grid_overlay(im, t, alpha=6)
+    d = ImageDraw.Draw(im)
+    rrect(d, (40, 150, W - 40, 330), 44, (30, 41, 59))
+    d.ellipse((70, 180, 170, 280), fill=(51, 65, 85))
+    d.text((200, 182), s.get("chat_title", "Yuk guruhi"), font=font(56, "Bold"), fill=WHITE)
+    d.text((200, 258), "yozmoqda…" if lt % 1.2 < 0.6 else "onlayn", font=font(32, "Medium", False), fill=(148, 163, 184))
+    f = font(64, "SemiBold", False)
+    y = 420
+    for m in s["msgs"]:
+        at = item_at(s, m)
+        p = ease_out((lt - at) / 0.25)
+        if p <= 0:
+            continue
+        side, text = m["side"], m["text"]
+        bw = min(f.getlength(text) + 100, 960)
+        x0 = 50 if side == "in" else W - 50 - bw
+        by = y + (1 - p) * 40
+        fill = (51, 65, 85) if side == "in" else (36, 87, 245)
+        bub = Image.new("RGBA", (int(bw) + 10, 170), (0, 0, 0, 0))
+        bd = ImageDraw.Draw(bub)
+        rrect(bd, (0, 0, bw, 150), 50, fill)
+        bd.text((50, 38), text, font=f, fill=WHITE)
+        paste_center(im, bub, x0 + bub.width / 2, by + 85, alpha=p)
+        y += 200
+    st = s.get("stamp")
+    if st:
+        at = item_at(s, {"at": st["at"]})
+        if lt >= at:
+            lay = tl("st", [st["text"]], st.get("size", 130), fill=st.get("color", RED))
+            pop(im, lay, W / 2, 1130, lt, at, shake=10, t=t)
+
+
+def sc_trip(im, s, t, lt, dur):
+    phone_scene(im, s, t, lt, dur, screen_trip(clamp((lt - 0.4) / max(0.5, dur - 1.0))))
+
+
+def sc_checks(im, s, t, lt, dur):
+    im.alpha_composite(flat_bg((14, 34, 110), (6, 12, 34), (36, 87, 245), (W // 2, 900)))
+    grid_overlay(im, t, alpha=12)
+    pop(im, tl("ck", s["title"], s.get("size", 84), colors=s.get("colors")), W / 2, 260, lt, 0.0)
+    for i, name in enumerate(s["items"]):
+        at = item_at(s, {"at": s["ats"][i]})
+        p = ease_out((lt - at) / 0.35)
+        if p <= 0:
+            continue
+        card = Image.new("RGBA", (900, 160), (0, 0, 0, 0))
+        cd = ImageDraw.Draw(card)
+        rrect(cd, (0, 0, 900, 160), 38, WHITE)
+        cd.ellipse((30, 35, 120, 125), fill=GREEN)
+        cd.line([(52, 82), (70, 100), (100, 62)], fill=WHITE, width=10)
+        cd.text((150, 44), name, font=font(48, "Black"), fill=SLATE)
+        paste_center(im, card, W / 2 + (1 - p) * 500, 520 + i * 190, alpha=p)
+
+
 SCENES = {
     "road": sc_road, "big": sc_big, "costs": sc_costs, "turn": sc_turn, "feed": sc_app_feed,
     "bid": sc_app_bid, "calls": sc_app_calls, "balance": sc_app_balance, "quote": sc_quote,
-    "calendar": sc_calendar, "verified": sc_verified, "steps": sc_steps, "cta": sc_cta,
+    "chat": sc_chat, "trip": sc_trip, "checks": sc_checks, "calendar": sc_calendar, "verified": sc_verified, "steps": sc_steps, "cta": sc_cta,
 }
 
 

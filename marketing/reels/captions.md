@@ -53,3 +53,19 @@ Ishonchli yuk, shaffof hisob. 👉 Havola — profilda.
 To‘lovni necha kun kutgansan? Izohda yoz 👇
 
 #cargonic #yuktashish #haydovchi #fura #tolov #logistika #yukmashina #halolmehnat #uzbekistan
+
+## Reel 4 — Telegram / tanish orqali yuk
+
+Telegramdan yuk topish — tez. Lekin keyin-chi? 🤔
+
+📉 "Yuk ketib qoldi" — 2 kun kutasan
+📉 "Bunchasi yo'q, kamroq beraman" — narx o'zgaradi
+📉 "Yuk kam keldi!" — isbot yo'q, kim to'g'ri?
+
+Cargonic'da yuk va narx kartada yozilgan, ortganda va topshirganda rasm olinadi, yo'lingni zavod xaritada ko'radi, har bir bosqich tarixda qoladi. 🚛📍
+
+Tanish ham yaxshi. Lekin isbot — ilovada. 👉 Havola profilda.
+
+Telegramda qanday muammoga duch kelgansan? Izohda yoz 👇
+
+#cargonic #haydovchi #fura #telegram #yuktashish #logistika #yukmashina #uzbekistan
