@@ -69,3 +69,24 @@ Tanish ham yaxshi. Lekin isbot — ilovada. 👉 Havola profilda.
 Telegramda qanday muammoga duch kelgansan? Izohda yoz 👇
 
 #cargonic #haydovchi #fura #telegram #yuktashish #logistika #yukmashina #uzbekistan
+
+## Reel 5 — Har km ga foyda yoki zarar? (ta'limiy)
+
+Yuk haqi 6 800 000 so'm. Bu foydami? 🧮 Misol hisob: Toshkent — Samarqand, 300 km yuk bilan + 300 km bo'sh qaytish = 600 km.
+
+⛽ Solyarka: 210 l × 15 000 = 3 150 000
+🛢 Moy: 100 so'm/km
+🛞 Shina: 400 so'm/km
+🔧 Kutilmagan ta'mir zahirasi: 250 so'm/km
+➡️ Jami xarajat: 3 600 000 so'm, ya'ni har km — 6 000 so'm.
+
+Qoldi 3 200 000 so'm (ovqat, yo'l to'lovi, soliq hali chiqmagan).
+
+❗ Qoida: narxni faqat yuk bilan yurgan 300 km ga emas, BUTUN 600 km ga hisobla. Yuk haqi 3 600 000 dan past bo'lsa — zararda ishlaysan.
+Qaytishda yuk topsang — daromad ikki baravar. 🚛
+
+Raqamlar misol: o'z mashinangning sarfi va narxlarini qo'yib hisobla. Narxni o'zing taklif qil 👉 Cargonic, havola profilda.
+
+Sening mashinang 100 km ga necha litr yeydi? Izohda yoz 👇
+
+#cargonic #haydovchi #fura #solyarka #yuktashish #hisob #logistika #yukmashina #uzbekistan

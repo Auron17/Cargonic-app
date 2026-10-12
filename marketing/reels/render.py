@@ -780,7 +780,7 @@ def sc_route(im, s, t, lt, dur):
     for i in range(0, 101):
         x = 90 + i * 9
         u = i / 100
-        y = 760 - (math.sin(u * 6.28 * 1.5) * 110 + math.sin(u * 6.28 * 4.0) * 40 + 40)
+        y = 650 - (math.sin(u * 6.28 * 1.5) * 110 + math.sin(u * 6.28 * 4.0) * 40 + 40)
         pts.append((x, y))
     draw_to = int(len(pts) * ease_out(lt / max(1.0, dur - 0.8)))
     d = ImageDraw.Draw(im)
@@ -791,16 +791,14 @@ def sc_route(im, s, t, lt, dur):
             d.line([pts[i - 1], pts[i]], fill=col, width=12)
         hx, hy = pts[min(draw_to, len(pts)) - 1]
         d.ellipse((hx - 18, hy - 18, hx + 18, hy + 18), fill=WHITE)
-    d.text((90, 830), "Toshkent", font=font(40, "Bold"), fill=WHITE)
     fs = font(40, "Bold")
-    d.text((W - 90 - fs.getlength("Samarqand") * 0 - fs.getlength("Toshkent"), 830), "Toshkent", font=fs, fill=WHITE)
-    d.text((W / 2 - fs.getlength("Samarqand") / 2, 830), "Samarqand", font=fs, fill=WHITE)
-    for (txt, col, x) in [("300 km · YUK BILAN", ORANGE, W * 0.27), ("300 km · BO‘SH", (148, 163, 184), W * 0.73)]:
-        pop(im, tl("seg", [txt], 52, fill=col), x, 960, lt, 0.9 if col == ORANGE else 1.8)
-    tot = int(clamp((lt - 2.0) / 1.0) * 600)
-    if lt > 2.0:
-        pop(im, tl("tot", ["Jami: 600 km"], 120, fill=WHITE), W / 2, 1160, lt, 2.0)
-    pop(im, tl("hint", ["baland-past yo‘l"], 46, fill=(148, 163, 184), weight="SemiBold"), W / 2, 640, lt, 0.4)
+    d.text((90, 900), "Toshkent", font=fs, fill=WHITE)
+    d.text((W - 90 - fs.getlength("Toshkent"), 900), "Toshkent", font=fs, fill=WHITE)
+    d.text((W / 2 - fs.getlength("Samarqand") / 2, 900), "Samarqand", font=fs, fill=WHITE)
+    for (txt, col, x, key) in [("300 km · YUK BILAN", ORANGE, W * 0.27, "seg1_at"), ("300 km · BO‘SH", (148, 163, 184), W * 0.73, "seg2_at")]:
+        pop(im, tl("seg", [txt], 52, fill=col), x, 1010, lt, item_at(s, {"at": s[key]}))
+    pop(im, tl("tot", ["Jami: 600 km"], 120, fill=WHITE), W / 2, 1220, lt, item_at(s, {"at": s["tot_at"]}))
+    pop(im, tl("hint", ["baland-past yo‘l"], 46, fill=(148, 163, 184), weight="SemiBold"), W / 2, 440, lt, 0.4)
 
 
 def sc_ledger(im, s, t, lt, dur):
@@ -1026,6 +1024,9 @@ def render(reel_id, audio, out):
             draw_caption(im, sc, t)
         # progress bar on top
         d = ImageDraw.Draw(im)
+        if reel.get("disclaimer"):
+            fd = font(30, "SemiBold", False)
+            d.text((W / 2 - fd.getlength(reel["disclaimer"]) / 2, 40), reel["disclaimer"], font=fd, fill=(255, 255, 255, 170))
         d.rectangle((0, 0, int(W * t / total), 10), fill=ORANGE)
         # fade-in from black
         if t < 0.25:

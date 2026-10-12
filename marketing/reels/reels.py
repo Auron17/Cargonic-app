@@ -5,6 +5,7 @@ ORANGE = (249, 115, 22)
 YELLOW = (255, 214, 10)
 WHITE = (255, 255, 255)
 RED = (248, 113, 113)
+SLATE = (15, 23, 42)
 
 
 def som(v):
@@ -109,6 +110,45 @@ REELS = {
              "captions": ["Tanish ham yaxshi.", "Lekin isbot — ilovada."]},
             {"kind": "cta", "lines": ["Tanish + isbot", "= xavfsiz reys"], "colors": [WHITE, YELLOW],
              "button": "YUKLAB OL", "impact": True, "captions": ["Cargonic’ni yuklab ol."]},
+        ],
+    },
+
+    # 5 — Foydali ma'lumot: har km ga xarajat va foyda hisobi
+    "km-hisob": {
+        "disclaimer": "Misol hisob · narxlar o‘zgarishi mumkin",
+        "scenes": [
+            {"kind": "big", "blue": True, "lines": ["6 800 000", "SO‘M"], "size": 190, "colors": [WHITE, YELLOW],
+             "shake": 0, "y": 640, "sub": ["Foydami? Hisoblaymiz"],
+             "captions": ["Yuk haqi —", "olti million sakkiz yuz ming so‘m.", "Bu foydami?", "Hisoblab ko‘ramiz."]},
+            {"kind": "route", "title": ["Toshkent → Samarqand", "→ Toshkent"], "colors": [WHITE, (148, 163, 184)],
+             "seg1_at": (1, 0.0), "seg2_at": (1, 0.55), "tot_at": (2, 0.0),
+             "captions": ["Toshkent — Samarqand.", "Uch yuz kilometr yuk bilan, uch yuz kilometr bo‘sh qaytish.", "Jami — olti yuz kilometr."]},
+            {"kind": "ledger", "title": ["1. SOLYARKA"], "colors": [YELLOW],
+             "rows": [{"label": "YUK BILAN · 300 km", "sub": "40 l / 100 km (baland-past)", "amount": "120 l", "at": (2, 0.0), "color": SLATE},
+                      {"label": "BO‘SH · 300 km", "sub": "30 l / 100 km", "amount": "90 l", "at": (3, 0.0), "color": SLATE},
+                      {"label": "210 l × 15 000", "sub": "1 litr solyarka — misol", "amount": "3 150 000", "at": (5, 0.0), "hot": True}],
+             "note": ["Tekis yo‘lga qaraganda +675 000 so‘m"], "note_at": (5, 0.5),
+             "captions": ["Birinchi —", "solyarka.", "Baland-past yo‘lda yuklangan mashinaga yuz kilometrga qirq litr,",
+                          "bo‘sh qaytishda o‘ttiz litr.", "Jami ikki yuz o‘n litr.",
+                          "Litri o‘n besh ming bo‘lsa — uch million bir yuz ellik ming so‘m."]},
+            {"kind": "ledger", "title": ["2–4. XARAJATLAR"], "colors": [YELLOW], "size": 70,
+             "rows": [{"label": "MOY", "sub": "100 so‘m × 600 km", "amount": "60 000", "at": (2, 0.0)},
+                      {"label": "SHINA", "sub": "400 so‘m × 600 km", "amount": "240 000", "at": (3, 0.0)},
+                      {"label": "KUTILMAGAN TA‘MIR", "sub": "zahira: 250 so‘m × 600 km", "amount": "150 000", "at": (6, 0.0)}],
+             "captions": ["Ikkinchi —", "moy:", "kilometriga yuz so‘m.", "Uchinchi — shina:", "to‘rt yuz so‘m.",
+                          "To‘rtinchi —", "kutilmagan ta‘mir uchun zahira:", "ikki yuz ellik so‘m."]},
+            {"kind": "total", "km_at": (1, 0.0), "impact": True,
+             "captions": ["Jami xarajat — uch million olti yuz ming.", "Ya‘ni har kilometr — olti ming so‘m."]},
+            {"kind": "verdict", "win_at": (0, 0.8), "warn_at": (1, 0.5), "impact": True,
+             "captions": ["Qoldi — uch million ikki yuz ming so‘m.", "Foydadasan. Lekin ovqat, yo‘l to‘lovi va soliq hali bundan chiqadi."]},
+            {"kind": "rule", "loss_at": (2, 0.55),
+             "captions": ["Eng muhim qoida:", "narxni yuk bilan yurgan uch yuz kilometrga emas, BUTUN olti yuz kilometrga hisobla.",
+                          "Yuk haqi uch million olti yuz mingdan past bo‘lsa — zararda ishlaysan."]},
+            {"kind": "big", "blue": True, "lines": ["QAYTISHDA YUK", "= 2x DAROMAD"], "size": 104, "colors": [WHITE, (110, 231, 183)],
+             "shake": 0, "y": 700, "impact": True,
+             "captions": ["Qaytishda yuk topsang — xarajat ozgina oshadi, daromad ikki baravar bo‘ladi."]},
+            {"kind": "cta", "lines": ["O‘z km narxingni bil,", "taklifni o‘zing ber"], "size": 76, "colors": [WHITE, YELLOW],
+             "button": "YUKLAB OL", "captions": ["O‘z kilometr narxingni bil.", "Cargonic’da narxni o‘zing taklif qilasan."]},
         ],
     },
 }
