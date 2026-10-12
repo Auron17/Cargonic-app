@@ -90,3 +90,22 @@ Raqamlar misol: o'z mashinangning sarfi va narxlarini qo'yib hisobla. Narxni o'z
 Sening mashinang 100 km ga necha litr yeydi? Izohda yoz 👇
 
 #cargonic #haydovchi #fura #solyarka #yuktashish #hisob #logistika #yukmashina #uzbekistan
+
+## Reel 6 — Bo'sh qaytish qancha pulga tushadi?
+
+Bo'sh qaytish bepul emas! 💸 Misol hisob: Toshkent — Samarqand, 300 km bo'sh qaytish.
+
+⛽ Solyarka: 90 l × 15 000 = 1 350 000
+🛢🛞🔧 Moy, shina, ta'mir zahirasi: 225 000
+➡️ Jami: 1 575 000 so'm — daromad esa 0.
+
+Oyiga 8 marta bo'sh qaytsang — 12 600 000 so'm yo'qotish.
+
+Qaytishda 3 000 000 so'mlik yuk topsang: qo'shimcha solyarka 450 000, sof foyda 2 550 000. ✅
+Arzonroq yuk ham bo'sh qaytishdan yaxshi. 🚛
+
+Raqamlar misol: o'z sarfing va narxlaringni qo'yib hisobla. Qaytishda yuk top 👉 Cargonic, havola profilda.
+
+Oyiga necha marta bo'sh qaytasan? Izohda yoz 👇
+
+#cargonic #haydovchi #fura #bosh #qaytish #yuktashish #logistika #yukmashina #uzbekistan

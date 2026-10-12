@@ -6,6 +6,7 @@ YELLOW = (255, 214, 10)
 WHITE = (255, 255, 255)
 RED = (248, 113, 113)
 SLATE = (15, 23, 42)
+GREEN = (16, 185, 129)
 
 
 def som(v):
@@ -149,6 +150,36 @@ REELS = {
              "captions": ["Qaytishda yuk topsang — xarajat ozgina oshadi, daromad ikki baravar bo‘ladi."]},
             {"kind": "cta", "lines": ["O‘z km narxingni bil,", "taklifni o‘zing ber"], "size": 76, "colors": [WHITE, YELLOW],
              "button": "YUKLAB OL", "captions": ["O‘z kilometr narxingni bil.", "Cargonic’da narxni o‘zing taklif qilasan."]},
+        ],
+    },
+
+    # 6 — Bo'sh qaytish qancha turadi
+    "bosh-qaytish-narxi": {
+        "disclaimer": "Misol hisob · narxlar o‘zgarishi mumkin",
+        "scenes": [
+            {"kind": "big", "lines": ["BO‘SH QAYTISH", "BEPUL EMAS"], "size": 130, "colors": [WHITE, RED], "truck_ghost": True,
+             "y": 640, "impact": True,
+             "captions": ["Bo‘sh qaytish — bu bepul emas.", "Toshkentdan Samarqandga yuk olib bording,", "uch yuz kilometr bo‘sh qaytasan."]},
+            {"kind": "ledger", "title": ["BO‘SH 300 KM"], "colors": [YELLOW],
+             "rows": [{"label": "SOLYARKA", "sub": "90 l × 15 000 so‘m", "amount": "1 350 000", "at": (0, 0.0)},
+                      {"label": "MOY + SHINA + TA‘MIR", "sub": "(100 + 400 + 250) × 300 km", "amount": "225 000", "at": (2, 0.0)},
+                      {"label": "JAMI", "sub": "bo‘sh qaytish xarajati", "amount": "1 575 000", "at": (3, 0.0), "hot": True}],
+             "note": ["Buning evaziga daromad: 0 so‘m"], "note_at": (4, 0.0),
+             "captions": ["Solyarka — bir million uch yuz ellik ming.", "Moy, shina, ta‘mir —", "yana ikki yuz yigirma besh ming.",
+                          "Jami — bir million besh yuz yetmish besh ming so‘m.", "Buning evaziga — nol."]},
+            {"kind": "big", "lines": ["OYIGA 8 MARTA", "−12 600 000"], "size": 130, "colors": [WHITE, RED], "y": 640,
+             "sub": ["so‘m yo‘qotish"], "impact": True,
+             "captions": ["Oyiga sakkiz marta bo‘sh qaytsang —", "o‘n ikki million olti yuz ming so‘m yo‘qotasan."]},
+            {"kind": "ledger", "title": ["QAYTISHDA YUK"], "colors": [YELLOW], "tint": (16, 185, 129),
+             "rows": [{"label": "YUK HAQI", "sub": "qaytishdagi arzonroq yuk", "amount": "+3 000 000", "at": (0, 0.5), "color": GREEN},
+                      {"label": "QO‘SHIMCHA SOLYARKA", "sub": "yuk bilan +30 l × 15 000", "amount": "−450 000", "at": (1, 0.0)},
+                      {"label": "SOF FOYDA", "sub": "bo‘sh qaytishga nisbatan", "amount": "+2 550 000", "at": (2, 0.0), "hot": True, "color": GREEN}],
+             "captions": ["Endi qaytishda uch million so‘mlik yuk topsang:", "qo‘shimcha xarajat — faqat to‘rt yuz ellik ming.",
+                          "Sof foyda — ikki million besh yuz ellik ming."]},
+            {"kind": "big", "blue": True, "lines": ["ARZON YUK HAM", "BO‘SHDAN YAXSHI"], "size": 110, "colors": [WHITE, (110, 231, 183)],
+             "shake": 0, "y": 700, "impact": True, "captions": ["Arzonroq yuk ham bo‘sh qaytishdan yaxshi."]},
+            {"kind": "cta", "lines": ["Qaytishda yuk top —", "Cargonic’da"], "size": 84, "colors": [WHITE, YELLOW],
+             "button": "YUKLAB OL", "captions": ["Qaytishda yuk top — Cargonic’da."]},
         ],
     },
 }
