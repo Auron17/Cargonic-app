@@ -765,7 +765,7 @@ def sc_checks(im, s, t, lt, dur):
         rrect(cd, (0, 0, 900, 160), 38, WHITE)
         cd.ellipse((30, 35, 120, 125), fill=GREEN)
         cd.line([(52, 82), (70, 100), (100, 62)], fill=WHITE, width=10)
-        cd.text((150, 44), name, font=font(48, "Black"), fill=SLATE)
+        cd.text((150, 54 if s.get("fs") else 44), name, font=font(s.get("fs", 48), "Black"), fill=SLATE)
         paste_center(im, card, W / 2 + (1 - p) * 500, 520 + i * 190, alpha=p)
 
 
@@ -874,10 +874,42 @@ def sc_rule(im, s, t, lt, dur):
     pop(im, tl("zr", ["3 600 000 dan past", "= ZARAR"], 104, colors=[WHITE, RED]), W / 2, 1130, lt, at, shake=14, t=t)
 
 
+
+def sc_step(im, s, t, lt, dur):
+    edu_bg(im, t, tint=s.get("tint", (36, 87, 245)))
+    d = ImageDraw.Draw(im)
+    n = s["n"]
+    for i in range(6):
+        cx = W / 2 + (i - 2.5) * 70
+        d.ellipse((cx - 14, 170 - 14, cx + 14, 170 + 14), fill=ORANGE if i < n else (51, 65, 85))
+    p = ease_back(lt / 0.5)
+    r = int(150 * clamp(p, 0, 1.15))
+    if r > 4:
+        d.ellipse((W / 2 - r, 470 - r, W / 2 + r, 470 + r), fill=ORANGE)
+        fn = font(int(r * 1.5), "Black")
+        d.text((W / 2 - fn.getlength(str(n)) / 2, 470 - r * 0.95), str(n), font=fn, fill=WHITE)
+    pop(im, tl("stp", s["title"], 84, colors=s.get("colors")), W / 2, 760, lt, 0.25)
+    if s.get("sub"):
+        pop(im, tl("stsub", [s["sub"]], 52, fill=(203, 213, 225), weight="Bold"), W / 2, 900, lt, 0.4)
+    for i, (left, right) in enumerate(s.get("pills", [])):
+        at = 0.6 + i * 0.3
+        pp = ease_out((lt - at) / 0.3)
+        if pp <= 0:
+            continue
+        card = Image.new("RGBA", (880, 110), (0, 0, 0, 0))
+        cd = ImageDraw.Draw(card)
+        rrect(cd, (0, 0, 880, 110), 34, WHITE)
+        cd.text((36, 28), left, font=font(42, "Bold"), fill=SLATE)
+        if right:
+            fr = font(40, "Black")
+            cd.text((844 - fr.getlength(right), 30), right, font=fr, fill=BLUE)
+        paste_center(im, card, W / 2 + (1 - pp) * 500, 1040 + i * 135, alpha=pp)
+
+
 SCENES = {
     "road": sc_road, "big": sc_big, "costs": sc_costs, "turn": sc_turn, "feed": sc_app_feed,
     "bid": sc_app_bid, "calls": sc_app_calls, "balance": sc_app_balance, "quote": sc_quote,
-    "route": sc_route, "ledger": sc_ledger, "total": sc_total, "verdict": sc_verdict, "rule": sc_rule, "chat": sc_chat, "trip": sc_trip, "checks": sc_checks, "calendar": sc_calendar, "verified": sc_verified, "steps": sc_steps, "cta": sc_cta,
+    "step": sc_step, "route": sc_route, "ledger": sc_ledger, "total": sc_total, "verdict": sc_verdict, "rule": sc_rule, "chat": sc_chat, "trip": sc_trip, "checks": sc_checks, "calendar": sc_calendar, "verified": sc_verified, "steps": sc_steps, "cta": sc_cta,
 }
 
 
