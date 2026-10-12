@@ -408,22 +408,25 @@ def screen_bid(typed, sent=0.0):
     shade = Image.new("RGBA", (SW, SH), (2, 6, 23, 150))
     scr.alpha_composite(shade)
     d = ImageDraw.Draw(scr)
-    top = 560
+    top = 520
     rrect(d, (0, top, SW, SH + 40), 40, WHITE)
     rrect(d, (SW / 2 - 40, top + 16, SW / 2 + 40, top + 24), 4, (203, 213, 225))
     d.text((40, top + 50), "Taklif berish", font=font(44, "Bold"), fill=SLATE)
-    d.text((40, top + 130), "Samarqand → Toshkent · 20 t", font=font(26, "Medium", False), fill=MUTED)
-    d.text((40, top + 200), "Taklifingiz narxi (so‘mda)", font=font(26, "SemiBold", False), fill=SLATE)
-    rrect(d, (40, top + 246, SW - 40, top + 346), 22, (248, 250, 252), outline=BLUE, width=4)
-    full = "7 200 000"
+    d.text((40, top + 120), "Samarqand → Toshkent · 20 t", font=font(26, "Medium", False), fill=MUTED)
+    d.text((40, top + 180), "Taklifingiz narxi (so‘mda)", font=font(26, "SemiBold", False), fill=SLATE)
+    rrect(d, (40, top + 222, SW - 40, top + 316), 22, (248, 250, 252), outline=BLUE, width=4)
+    full = "4 500 000"
     shown = full[:int(len(full) * clamp(typed))]
-    d.text((70, top + 270), shown + ("|" if typed < 1 else ""), font=font(46, "Black"), fill=SLATE)
-    d.text((40, top + 380), "Platforma komissiyasi taxminan ko‘rsatiladi", font=font(22, "Medium", False), fill=MUTED)
+    d.text((70, top + 244), shown + ("|" if typed < 1 else ""), font=font(46, "Black"), fill=SLATE)
+    d.text((40, top + 340), "Izoh (ixtiyoriy)", font=font(26, "SemiBold", False), fill=SLATE)
+    rrect(d, (40, top + 380, SW - 40, top + 456), 22, (248, 250, 252), outline=(203, 213, 225), width=3)
+    d.text((64, top + 400), "Ertaga 08:00 da yetib boraman", font=font(26, "Medium", False), fill=MUTED)
     col = mix(ORANGE, GREEN, clamp(sent))
-    rrect(d, (40, top + 450, SW - 40, top + 550), 26, col)
+    rrect(d, (40, top + 490, SW - 40, top + 590), 26, col)
     lbl = "Taklif yuborildi" if sent > 0.5 else "Taklifni yuborish"
     fb = font(34, "Bold")
-    d.text((SW / 2 - fb.getlength(lbl) / 2, top + 478), lbl, font=fb, fill=WHITE)
+    d.text((SW / 2 - fb.getlength(lbl) / 2, top + 518), lbl, font=fb, fill=WHITE)
+    d.text((40, top + 614), "Platforma komissiyasi taxminan ko‘rsatiladi", font=font(22, "Medium", False), fill=MUTED)
     return scr
 
 
@@ -544,7 +547,7 @@ def sc_big(im, s, t, lt, dur):
         shake=s.get("shake", 18), t=t)
     if s.get("sub"):
         pop(im, tl("sub", s["sub"], 64, fill=(226, 232, 240), weight="Bold"), W / 2, s.get("y", 700) + 120 + 95 * len(lines),
-            lt, 0.35)
+            lt, item_at(s, {"at": s["sub_at"]}) if s.get("sub_at") else 0.35)
 
 
 def sc_costs(im, s, t, lt, dur):

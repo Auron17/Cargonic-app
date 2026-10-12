@@ -109,3 +109,19 @@ Raqamlar misol: o'z sarfing va narxlaringni qo'yib hisobla. Qaytishda yuk top �
 Oyiga necha marta bo'sh qaytasan? Izohda yoz 👇
 
 #cargonic #haydovchi #fura #bosh #qaytish #yuktashish #logistika #yukmashina #uzbekistan
+
+## Reel 7 — Taklif narxini qanday qo'yish?
+
+Yuk uchun narx taklif qilasan. Qancha yozish kerak? 🤔 4 qadam (misol hisob):
+
+1️⃣ O'z km narxingni bil: 6 000 so'm/km (bo'sh qaytish ichida)
+2️⃣ Butun yo'lni hisobla: 600 km × 6 000 = 3 600 000
+3️⃣ Foyda qo'sh: masalan 25% = +900 000
+✅ Taklif: 4 500 000 so'm. Shundan past yozma.
+4️⃣ Izohga yetib borish vaqtini yoz, komissiyani ham unutma.
+
+Raqamlar va foyda foizi misol: o'zingnikini qo'yib hisobla. Cargonic'da narxni o'zing qo'yasan 👉 havola profilda.
+
+Sen odatda necha foiz foyda qo'shasan? Izohda yoz 👇
+
+#cargonic #haydovchi #fura #narx #yuktashish #logistika #yukmashina #hisob #uzbekistan
