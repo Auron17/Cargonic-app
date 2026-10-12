@@ -766,10 +766,117 @@ def sc_checks(im, s, t, lt, dur):
         paste_center(im, card, W / 2 + (1 - p) * 500, 520 + i * 190, alpha=p)
 
 
+
+def edu_bg(im, t, tint=(36, 87, 245)):
+    im.alpha_composite(flat_bg((10, 22, 50), (5, 10, 24), tint, (W // 2, 760)))
+    grid_overlay(im, t, alpha=9)
+
+
+def sc_route(im, s, t, lt, dur):
+    edu_bg(im, t)
+    pop(im, tl("rt", s["title"], 78, colors=s.get("colors")), W / 2, 250, lt, 0.0)
+    # elevation profile: Toshkent -> Samarqand -> Toshkent
+    pts = []
+    for i in range(0, 101):
+        x = 90 + i * 9
+        u = i / 100
+        y = 760 - (math.sin(u * 6.28 * 1.5) * 110 + math.sin(u * 6.28 * 4.0) * 40 + 40)
+        pts.append((x, y))
+    draw_to = int(len(pts) * ease_out(lt / max(1.0, dur - 0.8)))
+    d = ImageDraw.Draw(im)
+    if draw_to > 1:
+        half = len(pts) // 2
+        for i in range(1, min(draw_to, len(pts))):
+            col = ORANGE if i <= half else (100, 116, 139)
+            d.line([pts[i - 1], pts[i]], fill=col, width=12)
+        hx, hy = pts[min(draw_to, len(pts)) - 1]
+        d.ellipse((hx - 18, hy - 18, hx + 18, hy + 18), fill=WHITE)
+    d.text((90, 830), "Toshkent", font=font(40, "Bold"), fill=WHITE)
+    fs = font(40, "Bold")
+    d.text((W - 90 - fs.getlength("Samarqand") * 0 - fs.getlength("Toshkent"), 830), "Toshkent", font=fs, fill=WHITE)
+    d.text((W / 2 - fs.getlength("Samarqand") / 2, 830), "Samarqand", font=fs, fill=WHITE)
+    for (txt, col, x) in [("300 km · YUK BILAN", ORANGE, W * 0.27), ("300 km · BO‘SH", (148, 163, 184), W * 0.73)]:
+        pop(im, tl("seg", [txt], 52, fill=col), x, 960, lt, 0.9 if col == ORANGE else 1.8)
+    tot = int(clamp((lt - 2.0) / 1.0) * 600)
+    if lt > 2.0:
+        pop(im, tl("tot", ["Jami: 600 km"], 120, fill=WHITE), W / 2, 1160, lt, 2.0)
+    pop(im, tl("hint", ["baland-past yo‘l"], 46, fill=(148, 163, 184), weight="SemiBold"), W / 2, 640, lt, 0.4)
+
+
+def sc_ledger(im, s, t, lt, dur):
+    edu_bg(im, t, tint=s.get("tint", (36, 87, 245)))
+    pop(im, tl("lt", s["title"], 84, colors=s.get("colors")), W / 2, 250, lt, 0.0)
+    y = 430
+    for r in s["rows"]:
+        at = item_at(s, r)
+        p = ease_out((lt - at) / 0.3)
+        if p <= 0:
+            y += 230
+            continue
+        card = Image.new("RGBA", (960, 200), (0, 0, 0, 0))
+        cd = ImageDraw.Draw(card)
+        hot = r.get("hot")
+        rrect(cd, (0, 0, 960, 200), 40, (255, 255, 255, 245) if not hot else (255, 237, 213, 250))
+        cd.text((40, 26), r["label"], font=font(46, "Black"), fill=SLATE)
+        cd.text((40, 100), r["sub"], font=font(34, "Medium", False), fill=MUTED)
+        fa = font(56, "Black")
+        cd.text((920 - fa.getlength(r["amount"]), 62), r["amount"], font=fa, fill=r.get("color", RED))
+        paste_center(im, card, W / 2 + (1 - p) * 700, y + 100, alpha=p)
+        y += 230
+    if s.get("note"):
+        pop(im, tl("nt", s["note"], 50, fill=(252, 211, 77), weight="Bold"), W / 2, y + 90, lt, item_at(s, {"at": s["note_at"]}))
+
+
+def sc_total(im, s, t, lt, dur):
+    im.alpha_composite(flat_bg((30, 8, 12), (6, 4, 8), (170, 30, 30), (W // 2, 760)))
+    grid_overlay(im, t, alpha=8)
+    pop(im, tl("tt", ["JAMI XARAJAT"], 90, fill=(252, 165, 165)), W / 2, 420, lt, 0.0)
+    cnt = clamp(lt / 0.8)
+    val = f"{int(3_600_000 * ease_out(cnt)):,}".replace(",", " ")
+    paste_center(im, text_layer([val], 190, fill=WHITE), W / 2, 700)
+    pop(im, tl("so", ["so‘m"], 90, fill=WHITE, weight="Bold"), W / 2, 880, lt, 0.2)
+    at = item_at(s, {"at": s["km_at"]})
+    pop(im, tl("km", ["= 6 000 so‘m / km"], 110, fill=YELLOW), W / 2, 1130, lt, at, shake=10, t=t)
+
+
+def sc_verdict(im, s, t, lt, dur):
+    edu_bg(im, t, tint=(16, 185, 129))
+    d = ImageDraw.Draw(im)
+    pop(im, tl("vd", ["Foydadamisan?"], 96), W / 2, 250, lt, 0.0)
+    inc_w = int(900 * ease_out((lt - 0.3) / 0.6))
+    exp_w = int(900 * 3_600_000 / 6_800_000 * ease_out((lt - 0.9) / 0.6))
+    d.text((90, 420), "Daromad", font=font(44, "Bold"), fill=WHITE)
+    d.text((W - 90 - font(44, "Black").getlength("6 800 000"), 420), "6 800 000", font=font(44, "Black"), fill=WHITE)
+    rrect(d, (90, 490, 90 + max(inc_w, 1), 580), 30, GREEN)
+    d.text((90, 640), "Xarajat", font=font(44, "Bold"), fill=WHITE)
+    d.text((W - 90 - font(44, "Black").getlength("3 600 000"), 640), "3 600 000", font=font(44, "Black"), fill=WHITE)
+    rrect(d, (90, 710, 90 + max(exp_w, 1), 800), 30, RED)
+    at = item_at(s, {"at": s["win_at"]})
+    pop(im, tl("win", ["FOYDA", "3 200 000 so‘m"], 120, colors=[(110, 231, 183), WHITE]), W / 2, 1020, lt, at, shake=8, t=t)
+    pop(im, tl("wn", ["ovqat, yo‘l to‘lovi va soliq hali chiqmagan"], 40, fill=(148, 163, 184), weight="SemiBold"),
+        W / 2, 1290, lt, item_at(s, {"at": s["warn_at"]}))
+
+
+def sc_rule(im, s, t, lt, dur):
+    edu_bg(im, t, tint=(249, 115, 22))
+    pop(im, tl("rl", ["ENG MUHIM QOIDA"], 80, fill=YELLOW), W / 2, 250, lt, 0.0)
+    card = Image.new("RGBA", (960, 520), (0, 0, 0, 0))
+    cd = ImageDraw.Draw(card)
+    rrect(cd, (0, 0, 960, 520), 50, (255, 255, 255, 248))
+    cd.text((60, 50), "Narxni hisobla:", font=font(48, "Bold"), fill=MUTED)
+    cd.text((60, 130), "300 km  yuk bilan", font=font(64, "Black"), fill=(150, 160, 175))
+    cd.line((60, 150, 560, 150), fill=RED, width=10)
+    cd.text((60, 250), "600 km  BUTUN yo‘l", font=font(70, "Black"), fill=GREEN)
+    cd.text((60, 400), "= har km 6 000 so‘m xarajat", font=font(46, "Bold"), fill=SLATE)
+    paste_center(im, card, W / 2, 640, scale=0.8 + 0.2 * ease_back(lt / 0.5), alpha=clamp(lt / 0.25))
+    at = item_at(s, {"at": s["loss_at"]})
+    pop(im, tl("zr", ["3 600 000 dan past", "= ZARAR"], 104, colors=[WHITE, RED]), W / 2, 1130, lt, at, shake=14, t=t)
+
+
 SCENES = {
     "road": sc_road, "big": sc_big, "costs": sc_costs, "turn": sc_turn, "feed": sc_app_feed,
     "bid": sc_app_bid, "calls": sc_app_calls, "balance": sc_app_balance, "quote": sc_quote,
-    "chat": sc_chat, "trip": sc_trip, "checks": sc_checks, "calendar": sc_calendar, "verified": sc_verified, "steps": sc_steps, "cta": sc_cta,
+    "route": sc_route, "ledger": sc_ledger, "total": sc_total, "verdict": sc_verdict, "rule": sc_rule, "chat": sc_chat, "trip": sc_trip, "checks": sc_checks, "calendar": sc_calendar, "verified": sc_verified, "steps": sc_steps, "cta": sc_cta,
 }
 
 
