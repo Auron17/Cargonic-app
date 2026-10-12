@@ -26,7 +26,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "uz.cargonic.driver",
       "appleTeamId": "MVT69R83S5",
-      "buildNumber": "1",
+      "buildNumber": "3",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "entitlements": {
+        "aps-environment": "production"
+      },
       "config": {
         "usesNonExemptEncryption": false
       },
@@ -49,7 +53,7 @@
     },
     "android": {
       "package": "uz.cargonic.driver",
-      "versionCode": 9,
+      "versionCode": 13,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a1626"

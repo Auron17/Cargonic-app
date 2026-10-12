@@ -21,7 +21,8 @@
     },
     "production": {
       "channel": "production",
-      "autoIncrement": true,
+      "distribution": "store",
+      "autoIncrement": false,
       "android": {
         "buildType": "app-bundle"
       },
