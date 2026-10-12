@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -22,6 +22,9 @@ import { useCopy } from '../../src/i18n';
 import { colors } from '../../src/theme';
 import { BODY_TYPE_SPECS, checkCapacity, checkVolume } from '../../src/vehicles/bodyTypeSpecs';
 import { applyPlateInput, compactPlate, formatUzPlate, plateProblem } from '../../src/utils/uzPlate';
+import { extractsOf, VEHICLE_OWNED_DOCS, type PendingDoc } from '../../src/onboarding/pendingDocs';
+import { loadPending, savePending } from '../../src/onboarding/pendingDocsStorage';
+import { vehicleFromDocs, type VehicleFromDocs } from '../../src/onboarding/vehicleFromDocs';
 
 export default function OnboardingVehicleScreen() {
   const uz = useCopy();
@@ -66,12 +69,38 @@ export default function OnboardingVehicleScreen() {
   };
 
   const applyPreset = (capacity: number, volume?: number) => {
-    setCapacityTons(String(capacity));
+    if (!capacityLocked) setCapacityTons(String(capacity));
     setVolumeM3(volume != null ? String(volume) : '');
     setErrors((prev) => ({ ...prev, capacityTons: '', volumeM3: '' }));
   };
   const [serverError, setServerError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pending, setPending] = useState<PendingDoc[]>([]);
+  const [fromDocs, setFromDocs] = useState<VehicleFromDocs | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const list = await loadPending();
+      if (cancelled) return;
+      setPending(list);
+      const extracted = vehicleFromDocs(extractsOf(list));
+      setFromDocs(extracted);
+      if (existingVehicle) return;
+      if (extracted.plateNumber) setPlateNumber(formatUzPlate(extracted.plateNumber));
+      if (extracted.capacityTons != null) setCapacityTons(String(extracted.capacityTons));
+      if (extracted.licenseCardNumber) setLicenseCardNumber(extracted.licenseCardNumber);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // existingVehicle is from profile on first render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const plateLocked = !existingVehicle && !!fromDocs?.plateNumber;
+  const capacityLocked = !existingVehicle && fromDocs?.capacityTons != null && !fromDocs.tractorUnit;
+  const licenseLocked = !existingVehicle && !!fromDocs?.licenseCardNumber;
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -138,6 +167,18 @@ export default function OnboardingVehicleScreen() {
         await carrierApi.createVehicle(payload);
       }
 
+      const vehicleDocs = pending.filter((p) => (VEHICLE_OWNED_DOCS as readonly string[]).includes(p.docType));
+      for (const p of vehicleDocs) {
+        try {
+          await carrierApi.uploadDocument({ docType: p.docType, fileKey: p.fileKey });
+        } catch (attachErr) {
+          console.error('Pending vehicle doc attach', p.docType, attachErr);
+        }
+      }
+      const leftover = pending.filter((p) => !(VEHICLE_OWNED_DOCS as readonly string[]).includes(p.docType));
+      await savePending(leftover);
+      setPending(leftover);
+
       await refreshProfile();
       if (profile?.verificationStatus === 'APPROVED') {
         router.replace('/(tabs)/profile');
@@ -189,11 +230,13 @@ export default function OnboardingVehicleScreen() {
       <View style={styles.header}>
         <View style={styles.stepBadge}>
           <Text style={styles.stepBadgeText}>
-            {uz.onboarding.stepOf.replace('{{current}}', '2').replace('{{total}}', '3')}
+            {uz.onboarding.stepOf.replace('{{current}}', '3').replace('{{total}}', '3')}
           </Text>
         </View>
         <Text style={styles.title}>{uz.onboarding.vehicleTitle}</Text>
-        <Text style={styles.lead}>{uz.onboarding.vehicleLead}</Text>
+        <Text style={styles.lead}>
+          {fromDocs?.plateNumber ? uz.onboarding.vehicleFromDocsLead : uz.onboarding.vehicleLead}
+        </Text>
       </View>
 
       <ErrorBanner message={serverError} onDismiss={() => setServerError(null)} />
@@ -203,6 +246,7 @@ export default function OnboardingVehicleScreen() {
         label={uz.onboarding.plateNumber}
         placeholder={uz.onboarding.plateNumberPlaceholder}
         value={plateNumber}
+        editable={!plateLocked}
         onChangeText={(text) => {
           const next = applyPlateInput(text);
           setPlateNumber(next);
@@ -218,7 +262,7 @@ export default function OnboardingVehicleScreen() {
         autoCorrect={false}
         autoComplete="off"
         maxLength={11}
-        hint={uz.onboarding.plateHint}
+        hint={plateLocked ? uz.onboarding.plateFromDoc : uz.onboarding.plateHint}
       />
 
       {/* Body Type */}
@@ -265,13 +309,20 @@ export default function OnboardingVehicleScreen() {
             label={uz.onboarding.capacityTons}
             placeholder="20"
             value={capacityTons}
+            editable={!capacityLocked}
             onChangeText={(text) => {
               setCapacityTons(text);
               if (errors.capacityTons) setErrors((prev) => ({ ...prev, capacityTons: '' }));
             }}
             error={errors.capacityTons}
             keyboardType="decimal-pad"
-            hint={rangeText(uz.vehicleSize.capacityRange, spec.capacity)}
+            hint={
+              fromDocs?.tractorUnit
+                ? uz.onboarding.capacityTractorHint
+                : capacityLocked
+                  ? uz.onboarding.capacityFromDoc
+                  : rangeText(uz.vehicleSize.capacityRange, spec.capacity)
+            }
           />
         </View>
 
@@ -302,13 +353,14 @@ export default function OnboardingVehicleScreen() {
         label={uz.onboarding.licenseCardNumber}
         placeholder={uz.onboarding.licenseCardPlaceholder}
         value={licenseCardNumber}
+        editable={!licenseLocked}
         onChangeText={(text) => {
           setLicenseCardNumber(text);
           if (errors.licenseCardNumber) setErrors((prev) => ({ ...prev, licenseCardNumber: '' }));
         }}
         error={errors.licenseCardNumber}
         autoCapitalize="characters"
-        hint={uz.onboarding.licenseCardHint}
+        hint={licenseLocked ? uz.onboarding.plateFromDoc : uz.onboarding.licenseCardHint}
       />
     </Screen>
   );

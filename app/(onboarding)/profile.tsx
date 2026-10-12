@@ -116,7 +116,7 @@ export default function OnboardingProfileScreen() {
       if (profile?.verificationStatus === 'APPROVED') {
         router.replace('/(tabs)/profile');
       } else {
-        router.push('/(onboarding)/vehicle');
+        router.push('/(onboarding)/documents');
       }
     } catch (err: unknown) {
       const apiErr = err as { message?: string };

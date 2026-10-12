@@ -7,7 +7,7 @@ export default function OnboardingIndex() {
     return <Redirect href="/(onboarding)/profile" />;
   }
   if (!profile.vehicle) {
-    return <Redirect href="/(onboarding)/vehicle" />;
+    return <Redirect href="/(onboarding)/documents" />;
   }
   return <Redirect href="/(onboarding)/status" />;
 }

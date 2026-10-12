@@ -93,6 +93,14 @@
         }
       ],
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Hujjat va yuk rasmlarini olish uchun kamera ruxsati kerak.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "android": {

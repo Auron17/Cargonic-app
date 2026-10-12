@@ -60,8 +60,7 @@ export function registrationProgress(profile: ProfileDto | null | undefined): Re
 
   let nextHref: RegistrationHref;
   if (!hasProfile) nextHref = '/(onboarding)/profile';
-  else if (!hasVehicle) nextHref = '/(onboarding)/vehicle';
-  else if (!hasDocuments) nextHref = '/(onboarding)/documents';
+  else if (!hasVehicle || !hasDocuments) nextHref = '/(onboarding)/documents';
   else nextHref = '/(onboarding)/status';
 
   return {

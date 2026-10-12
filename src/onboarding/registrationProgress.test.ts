@@ -38,8 +38,8 @@ describe('registrationProgress', () => {
     expect(p.nextHref).toBe('/(onboarding)/profile');
   });
 
-  it('sends to vehicle, then documents', () => {
-    expect(registrationProgress(profile()).nextHref).toBe('/(onboarding)/vehicle');
+  it('sends to documents after profile, then vehicle only after a truck exists', () => {
+    expect(registrationProgress(profile()).nextHref).toBe('/(onboarding)/documents');
     const withVehicle = registrationProgress(profile({ vehicle: vehicle(), documents: docs(['PASSPORT']) }));
     expect(withVehicle.nextHref).toBe('/(onboarding)/documents');
     expect(withVehicle.doneCount).toBe(2);

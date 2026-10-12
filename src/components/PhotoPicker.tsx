@@ -18,6 +18,8 @@ import { useCopy } from '../i18n';
 import { colors } from '../theme';
 import { AuthImage } from './AuthImage';
 
+export type PhotoPickerMode = 'any' | 'camera' | 'framed';
+
 interface PhotoPickerProps {
   label: string;
   hint?: string;
@@ -25,6 +27,9 @@ interface PhotoPickerProps {
   onUploaded: (fileKey: string) => void;
   required?: boolean;
   style?: ViewStyle;
+  /** framed = faqat kamera + hujjat ramkasi; camera = faqat kamera; any = kamera yoki galereya */
+  mode?: PhotoPickerMode;
+  showLabel?: boolean;
 }
 
 export function PhotoPicker({
@@ -34,11 +39,14 @@ export function PhotoPicker({
   onUploaded,
   required = false,
   style,
+  mode = 'any',
+  showLabel = true,
 }: PhotoPickerProps) {
   const uz = useCopy();
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentFileKey, setCurrentFileKey] = useState<string | null>(value || null);
   const [error, setError] = useState<string | null>(null);
+  const [framedOpen, setFramedOpen] = useState(false);
 
   const processAndUpload = async (localUri: string) => {
     setIsProcessing(true);
@@ -125,6 +133,14 @@ export function PhotoPicker({
   };
 
   const showPickOptions = () => {
+    if (mode === 'framed') {
+      setFramedOpen(true);
+      return;
+    }
+    if (mode === 'camera') {
+      void handlePickCamera();
+      return;
+    }
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -145,13 +161,20 @@ export function PhotoPicker({
     }
   };
 
+  const handleFramedCaptured = async (uri: string) => {
+    setFramedOpen(false);
+    await processAndUpload(uri);
+  };
+
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.headerRow}>
-        <Text style={styles.label}>
-          {label} {required ? <Text style={styles.requiredStar}>*</Text> : null}
-        </Text>
-      </View>
+      {showLabel && label ? (
+        <View style={styles.headerRow}>
+          <Text style={styles.label}>
+            {label} {required ? <Text style={styles.requiredStar}>*</Text> : null}
+          </Text>
+        </View>
+      ) : null}
 
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
 
@@ -199,16 +222,42 @@ export function PhotoPicker({
           ) : (
             <View style={styles.uploadPrompt}>
               <Ionicons name="camera-outline" size={34} color={colors.primary} style={styles.cameraIcon} />
-              <Text style={styles.uploadTitle}>{uz.common.uploadPhoto}</Text>
-              <Text style={styles.uploadSub}>Kameradan yoki galereyadan</Text>
+              <Text style={styles.uploadTitle}>
+                {mode === 'framed' || mode === 'camera' ? uz.documentCamera.capture : uz.common.uploadPhoto}
+              </Text>
+              <Text style={styles.uploadSub}>
+                {mode === 'framed'
+                  ? uz.documentCamera.hint
+                  : mode === 'camera'
+                    ? uz.common.camera
+                    : uz.common.cameraOrGallery}
+              </Text>
             </View>
           )}
         </Pressable>
       )}
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+      {framedOpen ? <LazyDocumentCamera
+        visible
+        title={label || uz.documentCamera.capture}
+        onCancel={() => setFramedOpen(false)}
+        onCaptured={(uri) => void handleFramedCaptured(uri)}
+      /> : null}
     </View>
   );
+}
+
+/** expo-camera login/trip barrelida yuklanmasin — faqat ramkali rejim ochilganda. */
+function LazyDocumentCamera(props: {
+  visible: boolean;
+  title: string;
+  onCancel: () => void;
+  onCaptured: (uri: string) => void;
+}) {
+  const { DocumentCamera } = require('./DocumentCamera') as typeof import('./DocumentCamera');
+  return <DocumentCamera {...props} />;
 }
 
 const styles = StyleSheet.create({

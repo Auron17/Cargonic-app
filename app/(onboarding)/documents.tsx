@@ -23,6 +23,15 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useCopy } from '../../src/i18n';
 import { colors } from '../../src/theme';
+import { isFramedDocType } from '../../src/onboarding/documentFrame';
+import {
+  canOpenVehicle,
+  upsertPending,
+  VEHICLE_OWNED_DOCS,
+  type PendingDoc,
+} from '../../src/onboarding/pendingDocs';
+import { clearPending, loadPending, savePending } from '../../src/onboarding/pendingDocsStorage';
+import { extractFromCheck } from '../../src/onboarding/vehicleFromDocs';
 
 interface DocConfig {
   docType: DocType;
@@ -58,6 +67,7 @@ export default function OnboardingDocumentsScreen() {
   const [review, setReview] = useState<{ docType: DocType; fileKey: string; check: AiCheckDto } | null>(null);
   // "Qayta olish"da PhotoPicker'ni eski holatiga qaytarish uchun
   const [pickerResets, setPickerResets] = useState<Partial<Record<DocType, number>>>({});
+  const [pending, setPending] = useState<PendingDoc[]>([]);
 
   const profileId = profile?.id;
   const fallbackDocs = profile?.documents;
@@ -67,9 +77,10 @@ export default function OnboardingDocumentsScreen() {
     (async () => {
       try {
         setLoading(true);
-        const fresh = await carrierApi.getProfile();
+        const [fresh, stored] = await Promise.all([carrierApi.getProfile(), loadPending()]);
         if (!cancelled) {
           setDocuments(fresh.documents ?? []);
+          setPending(stored);
         }
       } catch {
         if (!cancelled && fallbackDocs) {
@@ -100,7 +111,7 @@ export default function OnboardingDocumentsScreen() {
   // Check required docs count
   const requiredConfigs = DOCUMENT_CONFIGS.filter((c) => c.required);
   const uploadedRequiredCount = requiredConfigs.filter(
-    (c) => !!documentsMap[c.docType]
+    (c) => !!documentsMap[c.docType] || pending.some((p) => p.docType === c.docType)
   ).length;
   const allRequiredUploaded = uploadedRequiredCount === requiredConfigs.length;
 
@@ -125,6 +136,41 @@ export default function OnboardingDocumentsScreen() {
     }
   };
 
+  const rememberPending = async (docType: DocType, fileKey: string, check: AiCheckDto | null) => {
+    const next = upsertPending(pending, {
+      docType,
+      fileKey,
+      extracted: extractFromCheck(check),
+    });
+    setPending(next);
+    await savePending(next);
+  };
+
+  const commitDocument = async (docType: DocType, fileKey: string, check: AiCheckDto | null) => {
+    await rememberPending(docType, fileKey, check);
+    const needsVehicle = (VEHICLE_OWNED_DOCS as readonly string[]).includes(docType);
+    if (needsVehicle && !profile?.vehicle) {
+      return;
+    }
+    await attachDocument(docType, fileKey);
+    const name = check?.extracted?.fullName?.trim();
+    if (docType === 'DRIVER_LICENSE' && name && profile) {
+      try {
+        await carrierApi.updateProfile({
+          fullName: name,
+          legalType: profile.legalType,
+          legalName: profile.legalName,
+          stir: profile.stir,
+          licenseNumber: profile.licenseNumber,
+          homeRegion: profile.homeRegion,
+        });
+        await refreshProfile();
+      } catch {
+        // Ism yangilanmasa ham hujjat saqlanadi
+      }
+    }
+  };
+
   /** Rasm yuklangach: avval AI tekshiradi, muammo bo'lsa haydovchidan so'raydi, aks holda darhol biriktiradi */
   const handleDocumentUpload = async (docType: DocType, fileKey: string) => {
     setCheckingDocType(docType);
@@ -141,7 +187,7 @@ export default function OnboardingDocumentsScreen() {
       setReview({ docType, fileKey, check });
       return;
     }
-    await attachDocument(docType, fileKey);
+    await commitDocument(docType, fileKey, check);
   };
 
   const retake = () => {
@@ -154,12 +200,21 @@ export default function OnboardingDocumentsScreen() {
 
   const uploadAnyway = () => {
     if (!review) return;
-    const { docType, fileKey } = review;
+    const { docType, fileKey, check } = review;
     setReview(null);
-    void attachDocument(docType, fileKey);
+    void commitDocument(docType, fileKey, check);
   };
 
   const handleFinish = async () => {
+    if (!profile?.vehicle) {
+      if (!canOpenVehicle(pending)) {
+        Alert.alert(uz.onboarding.docsIncompleteTitle, uz.onboarding.vehicleNeedDocs);
+        return;
+      }
+      router.push('/(onboarding)/vehicle');
+      return;
+    }
+
     if (!allRequiredUploaded) {
       Alert.alert(
         uz.onboarding.docsIncompleteTitle,
@@ -168,6 +223,7 @@ export default function OnboardingDocumentsScreen() {
       return;
     }
 
+    await clearPending();
     await refreshProfile();
     if (profile?.verificationStatus === 'APPROVED') {
       router.replace('/(tabs)/profile');
@@ -176,23 +232,23 @@ export default function OnboardingDocumentsScreen() {
     }
   };
 
+  const hasVehicle = !!profile?.vehicle;
+  const bottomTitle = !hasVehicle
+    ? uz.onboarding.goToVehicle
+    : profile?.verificationStatus === 'APPROVED'
+      ? uz.common.save
+      : uz.onboarding.sendForReview;
+  const bottomDisabled = !hasVehicle ? !canOpenVehicle(pending) : !allRequiredUploaded;
+
   return (
     <Screen
       scrollable
       bottomAction={
         <PrimaryButton
-          title={
-            profile?.verificationStatus === 'APPROVED'
-              ? uz.common.save
-              : uz.onboarding.sendForReview
-          }
+          title={bottomTitle}
           onPress={handleFinish}
-          disabled={!allRequiredUploaded}
-          accessibilityLabel={
-            profile?.verificationStatus === 'APPROVED'
-              ? uz.common.save
-              : uz.onboarding.sendForReview
-          }
+          disabled={bottomDisabled}
+          accessibilityLabel={bottomTitle}
         />
       }
     >
@@ -214,7 +270,7 @@ export default function OnboardingDocumentsScreen() {
       <View style={styles.header}>
         <View style={styles.stepBadge}>
           <Text style={styles.stepBadgeText}>
-            {uz.onboarding.stepOf.replace('{{current}}', '3').replace('{{total}}', '3')}
+            {uz.onboarding.stepOf.replace('{{current}}', '2').replace('{{total}}', '3')}
           </Text>
         </View>
         <Text style={styles.title}>{uz.onboarding.documentsTitle}</Text>
@@ -246,9 +302,12 @@ export default function OnboardingDocumentsScreen() {
       {/* Document Items */}
       {DOCUMENT_CONFIGS.map((config) => {
         const doc = documentsMap[config.docType];
+        const pendingDoc = pending.find((p) => p.docType === config.docType);
         const isSavingThis = savingDocType === config.docType;
         const isCheckingThis = checkingDocType === config.docType;
         const check = aiChecks[config.docType];
+        const needsVehicleFirst = !hasVehicle && config.docType === 'VEHICLE_PHOTO';
+        const framed = isFramedDocType(config.docType);
 
         return (
           <View key={config.docType} style={styles.docCard}>
@@ -263,6 +322,12 @@ export default function OnboardingDocumentsScreen() {
 
               {doc ? (
                 <StatusBadge kind="verification" status={doc.status} />
+              ) : pendingDoc ? (
+                <View style={[styles.unloadedBadge, styles.pendingBadge]}>
+                  <Text style={[styles.unloadedText, styles.pendingText]}>
+                    {uz.aiCheck.okLine}
+                  </Text>
+                </View>
               ) : (
                 <View style={styles.unloadedBadge}>
                   <Text style={styles.unloadedText}>
@@ -286,7 +351,7 @@ export default function OnboardingDocumentsScreen() {
               </View>
             ) : null}
 
-            {!isCheckingThis && check && check.verdict !== 'SKIPPED' && doc?.fileKey === check.fileKey ? (
+            {!isCheckingThis && check && check.verdict !== 'SKIPPED' && (doc?.fileKey === check.fileKey || pendingDoc?.fileKey === check.fileKey) ? (
               <AiCheckLine check={check} />
             ) : null}
 
@@ -297,13 +362,19 @@ export default function OnboardingDocumentsScreen() {
               </View>
             ) : null}
 
-            <PhotoPicker
-              key={`${config.docType}-${pickerResets[config.docType] ?? 0}`}
-              label=""
-              value={doc?.fileKey}
-              onUploaded={(fileKey) => handleDocumentUpload(config.docType, fileKey)}
-              required={config.required}
-            />
+            {needsVehicleFirst ? (
+              <Text style={styles.docHint}>{uz.onboarding.waitForVehiclePhoto}</Text>
+            ) : (
+              <PhotoPicker
+                key={`${config.docType}-${pickerResets[config.docType] ?? 0}`}
+                label={config.title}
+                value={doc?.fileKey || pendingDoc?.fileKey}
+                onUploaded={(fileKey) => handleDocumentUpload(config.docType, fileKey)}
+                required={config.required}
+                mode={framed ? 'framed' : 'any'}
+                showLabel={false}
+              />
+            )}
           </View>
         );
       })}
@@ -480,6 +551,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6b7280',
     fontWeight: '600',
+  },
+  pendingBadge: {
+    backgroundColor: '#dcfce7',
+  },
+  pendingText: {
+    color: '#166534',
   },
   rejectReasonBox: {
     backgroundColor: '#fee2e2',

@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { getCopy, useCopy } from '../i18n';
+import { getCopy } from '../i18n/copy';
+import { useCopy } from '../i18n/useCopy';
 import { radii } from '../theme';
 
 export type StatusKind = 'verification' | 'load' | 'trip' | 'bid' | 'user';

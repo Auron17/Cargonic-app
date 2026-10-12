@@ -692,6 +692,11 @@ export interface AiCheckDto {
     documentNumber?: string
     expiryDate?: string
     plateNumber?: string
+    categories?: { category: string; validUntil?: string | null }[]
+    grossWeightKg?: number
+    unladenWeightKg?: number
+    manufactureYear?: number
+    tractorUnit?: boolean
   }
   checkedAt?: string
 }
