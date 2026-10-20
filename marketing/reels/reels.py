@@ -272,4 +272,33 @@ REELS = {
              "button": "YUKLAB OL", "impact": True, "captions": ["Tejagan pul — sening foydang."]},
         ],
     },
+
+    # 10 — Pul: aylanma foyda emas
+    "pul": {
+        "disclaimer": "Misol hisob · narxlar o‘zgarishi mumkin",
+        "no_fade": True,
+        "scenes": [
+            {"kind": "counter", "label": "OYLIK AYLANMA", "value": 54_400_000, "question": "Qanchasi seniki?",
+             "captions": ["Oyiga ellik to‘rt million aylanma.", "Cho‘ntakda qancha qoladi?"]},
+            {"kind": "ledger", "title": ["8 REYS"], "colors": [YELLOW],
+             "rows": [{"label": "DAROMAD", "sub": "8 × 6 800 000", "amount": "54 400 000", "at": (1, 0.0), "color": GREEN},
+                      {"label": "XARAJAT", "sub": "8 × 3 600 000", "amount": "−28 800 000", "at": (2, 0.0)}],
+             "note": ["solyarka · moy · shina · ta’mir"], "note_at": (3, 0.0),
+             "captions": ["Sakkiz reys.", "Har biri — olti million sakkiz yuz ming.",
+                          "Lekin har reysga uch million olti yuz ming xarajat ketadi:", "solyarka, moy, shina, ta’mir."]},
+            {"kind": "verdict", "title": "Cho‘ntakda qancha?", "inc_label": "Aylanma", "inc": 54_400_000, "exp": 28_800_000,
+             "win": ["QOLADI", "25 600 000 so‘m"], "warn": "ovqat va yo‘l to‘lovi hali chiqmagan",
+             "win_at": (1, 0.1), "warn_at": (2, 0.0), "impact": True,
+             "captions": ["Oyiga xarajat — yigirma sakkiz million sakkiz yuz ming.", "Qoladi — yigirma besh million olti yuz ming.",
+                          "Hali ovqat va yo‘l to‘lovi chiqmagan."]},
+            {"kind": "big", "blue": True, "lines": ["AYLANMA —", "FOYDA EMAS"], "size": 140, "colors": [WHITE, YELLOW],
+             "shake": 0, "y": 640, "sub": ["Har reysni yozib bor"], "sub_at": (1, 0.0), "impact": True,
+             "captions": ["Aylanma — bu foyda emas.", "Har reysni yozib bor:", "qancha oldim, qancha ketdi."]},
+            {"kind": "wallet", "title": ["Balans: haq, komissiya,", "sof haq — bir joyda"], "colors": [WHITE, YELLOW],
+             "hl_ats": [(0, 0.55), (0, 0.75)],
+             "captions": ["Cargonic’da Balans bo‘limida shu oyning kelishilgan haqi, komissiya va sof haq ko‘rinib turadi."]},
+            {"kind": "cta", "lines": ["Pulingning", "hisobini bil"], "size": 96, "colors": [WHITE, YELLOW],
+             "button": "YUKLAB OL", "captions": ["Pulingning hisobini bil."]},
+        ],
+    },
 }

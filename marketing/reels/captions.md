@@ -160,3 +160,20 @@ Tejagan pul — sening foyding. 👉 Havola profilda.
 Qaysi usulni ishlatasan? Izohda yoz 👇
 
 #cargonic #haydovchi #fura #solyarka #tejash #yuktashish #logistika #yukmashina #uzbekistan
+
+## Reel 10 — Aylanma foyda emas (pul)
+
+Oyiga 54 million aylanma — cho'ntakda qancha qoladi? 💸 Misol hisob:
+
+🚛 8 reys × 6 800 000 = 54 400 000 aylanma
+⛽ Xarajat: 8 × 3 600 000 = 28 800 000 (solyarka, moy, shina, ta'mir)
+✅ Qoladi: 25 600 000 so'm — ovqat va yo'l to'lovi hali chiqmagan.
+
+Aylanma — bu foyda emas. Har reysni yozib bor: qancha oldim, qancha ketdi. 📒
+Cargonic'da Balans bo'limida shu oyning kelishilgan haqi, komissiya va sof haq ko'rinib turadi.
+
+Raqamlar misol: o'z hisobingni qo'yib ko'r. 👉 Havola profilda.
+
+Sen oyiga qancha xarajat qilasan? Izohda yoz 👇
+
+#cargonic #haydovchi #fura #pul #daromad #yuktashish #logistika #yukmashina #uzbekistan

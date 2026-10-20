@@ -843,18 +843,22 @@ def sc_total(im, s, t, lt, dur):
 def sc_verdict(im, s, t, lt, dur):
     edu_bg(im, t, tint=(16, 185, 129))
     d = ImageDraw.Draw(im)
-    pop(im, tl("vd", ["Foydadamisan?"], 96), W / 2, 250, lt, 0.0)
+    inc, exp = s.get("inc", 6_800_000), s.get("exp", 3_600_000)
+    fmt = lambda v: f"{v:,}".replace(",", " ")
+    pop(im, tl("vd", [s.get("title", "Foydadamisan?")], 96), W / 2, 250, lt, 0.0)
     inc_w = int(900 * ease_out((lt - 0.3) / 0.6))
-    exp_w = int(900 * 3_600_000 / 6_800_000 * ease_out((lt - 0.9) / 0.6))
-    d.text((90, 420), "Daromad", font=font(44, "Bold"), fill=WHITE)
-    d.text((W - 90 - font(44, "Black").getlength("6 800 000"), 420), "6 800 000", font=font(44, "Black"), fill=WHITE)
+    exp_w = int(900 * exp / inc * ease_out((lt - 0.9) / 0.6))
+    fa = font(44, "Black")
+    d.text((90, 420), s.get("inc_label", "Daromad"), font=font(44, "Bold"), fill=WHITE)
+    d.text((W - 90 - fa.getlength(fmt(inc)), 420), fmt(inc), font=fa, fill=WHITE)
     rrect(d, (90, 490, 90 + max(inc_w, 1), 580), 30, GREEN)
     d.text((90, 640), "Xarajat", font=font(44, "Bold"), fill=WHITE)
-    d.text((W - 90 - font(44, "Black").getlength("3 600 000"), 640), "3 600 000", font=font(44, "Black"), fill=WHITE)
+    d.text((W - 90 - fa.getlength(fmt(exp)), 640), fmt(exp), font=fa, fill=WHITE)
     rrect(d, (90, 710, 90 + max(exp_w, 1), 800), 30, RED)
     at = item_at(s, {"at": s["win_at"]})
-    pop(im, tl("win", ["FOYDA", "3 200 000 so‘m"], 120, colors=[(110, 231, 183), WHITE]), W / 2, 1020, lt, at, shake=8, t=t)
-    pop(im, tl("wn", ["ovqat, yo‘l to‘lovi va soliq hali chiqmagan"], 40, fill=(148, 163, 184), weight="SemiBold"),
+    pop(im, tl("win", s.get("win", ["FOYDA", "3 200 000 so‘m"]), 120, colors=[(110, 231, 183), WHITE]), W / 2, 1020, lt, at,
+        shake=8, t=t)
+    pop(im, tl("wn", [s.get("warn", "ovqat, yo‘l to‘lovi va soliq hali chiqmagan")], 40, fill=(148, 163, 184), weight="SemiBold"),
         W / 2, 1290, lt, item_at(s, {"at": s["warn_at"]}))
 
 
@@ -906,10 +910,54 @@ def sc_step(im, s, t, lt, dur):
         paste_center(im, card, W / 2 + (1 - pp) * 500, 1040 + i * 135, alpha=pp)
 
 
+
+def sc_counter(im, s, t, lt, dur):
+    """Hook visible from frame 0: label + counting number + question."""
+    edu_bg(im, t, tint=s.get("tint", (36, 87, 245)))
+    paste_center(im, tl("cl", [s["label"]], 70, fill=(203, 213, 225), weight="Bold"), W / 2, 470)
+    num = f"{s['value']:,}".replace(",", " ")
+    paste_center(im, tl("cn", [num], 150, fill=WHITE), W / 2, 640, scale=1 + 0.05 * abs(math.sin(lt * 4)))
+    paste_center(im, tl("cs", ["SO‘M"], 120, fill=YELLOW), W / 2, 800)
+    paste_center(im, tl("cq", [s["question"]], 92, fill=YELLOW), W / 2, 1050, scale=1 + 0.03 * math.sin(lt * 4))
+
+
+def screen_wallet(hl):
+    """Balance tab as in the app: earned this month + commission + net (amounts hidden)."""
+    scr = Image.new("RGBA", (SW, SH), APP_BG)
+    d = ImageDraw.Draw(scr)
+    rrect(d, (24, 210, SW - 24, 560), 32, BLUE)
+    d.text((56, 240), "Shu oy kelishilgan haq", font=font(28, "Medium", False), fill=(219, 228, 255))
+    d.text((56, 290), "54 400 000 so‘m", font=font(58, "Black"), fill=WHITE)
+    d.line((56, 400, SW - 56, 400), fill=(90, 130, 250), width=2)
+    for i, lbl in enumerate(["Komissiya", "Sof haq"]):
+        x = 56 + i * 270
+        on = hl > i
+        if on:
+            rrect(d, (x - 14, 420, x + 240, 540), 20, (255, 255, 255, 60))
+        d.text((x, 432), lbl, font=font(28, "SemiBold", False), fill=WHITE if on else (219, 228, 255))
+        rrect(d, (x, 482, x + 190, 516), 12, (120, 155, 250))
+    for i in range(4):
+        y = 600 + i * 128
+        rrect(d, (24, y, SW - 24, y + 112), 24, WHITE)
+        rrect(d, (52, y + 26, 360, y + 50), 10, (226, 232, 240))
+        rrect(d, (52, y + 66, 240, y + 84), 8, (241, 245, 249))
+        rrect(d, (SW - 220, y + 40, SW - 52, y + 72), 12, (209, 250, 229))
+    app_header(d, "Balans")
+    return scr
+
+
+def sc_wallet(im, s, t, lt, dur):
+    hl = 0
+    for i, at in enumerate(s.get("hl_ats", [])):
+        if lt >= item_at(s, {"at": at}):
+            hl = i + 1
+    phone_scene(im, s, t, lt, dur, screen_wallet(hl))
+
+
 SCENES = {
     "road": sc_road, "big": sc_big, "costs": sc_costs, "turn": sc_turn, "feed": sc_app_feed,
     "bid": sc_app_bid, "calls": sc_app_calls, "balance": sc_app_balance, "quote": sc_quote,
-    "step": sc_step, "route": sc_route, "ledger": sc_ledger, "total": sc_total, "verdict": sc_verdict, "rule": sc_rule, "chat": sc_chat, "trip": sc_trip, "checks": sc_checks, "calendar": sc_calendar, "verified": sc_verified, "steps": sc_steps, "cta": sc_cta,
+    "counter": sc_counter, "wallet": sc_wallet, "step": sc_step, "route": sc_route, "ledger": sc_ledger, "total": sc_total, "verdict": sc_verdict, "rule": sc_rule, "chat": sc_chat, "trip": sc_trip, "checks": sc_checks, "calendar": sc_calendar, "verified": sc_verified, "steps": sc_steps, "cta": sc_cta,
 }
 
 
@@ -1064,7 +1112,7 @@ def render(reel_id, audio, out):
             d.text((W / 2 - fd.getlength(reel["disclaimer"]) / 2, 40), reel["disclaimer"], font=fd, fill=(255, 255, 255, 170))
         d.rectangle((0, 0, int(W * t / total), 10), fill=ORANGE)
         # fade-in from black
-        if t < 0.25:
+        if t < 0.25 and not reel.get("no_fade"):
             im.alpha_composite(Image.new("RGBA", (W, H), (0, 0, 0, int(255 * (1 - t / 0.25)))))
         proc.stdin.write(im.convert("RGB").tobytes())
         if fi % 90 == 0:
