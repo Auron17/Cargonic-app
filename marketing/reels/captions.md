@@ -177,3 +177,24 @@ Raqamlar misol: o'z hisobingni qo'yib ko'r. 👉 Havola profilda.
 Sen oyiga qancha xarajat qilasan? Izohda yoz 👇
 
 #cargonic #haydovchi #fura #pul #daromad #yuktashish #logistika #yukmashina #uzbekistan
+
+## Reel 11 — Yuk beruvchi: takliflarni solishtiring (pul)
+
+Bitta reysda 700 000 so'm tejash mumkinmi? 💰
+
+Odatda mashina tanish yoki vositachi orqali topiladi — bitta narx aytiladi, boshqasini bilmaysiz.
+
+Cargonic'da yukni joylaysiz, haydovchilar narx taklif qiladi. Misol:
+🚛 7 200 000
+🚛 6 800 000
+✅ 6 500 000
+Farq — 700 000 so'm.
+
+📍 Mashina qayerdaligini xaritada ko'rasiz — qo'ng'iroqlarga vaqt ketmaydi.
+🏭 Yuk beruvchi uchun — 0 so'm.
+
+Raqamlar misol. Takliflarni solishtiring, pulni tejang 👉 Kabinet havolasi profilda.
+
+Siz bitta reys uchun odatda nechta narx so'raysiz? Izohda yozing 👇
+
+#cargonic #yukberuvchi #zavod #logistika #yuktashish #fura #biznes #uzbekistan

@@ -954,10 +954,49 @@ def sc_wallet(im, s, t, lt, dur):
     phone_scene(im, s, t, lt, dur, screen_wallet(hl))
 
 
+
+def sc_track(im, s, t, lt, dur):
+    """Stylised map: route with a moving truck marker (no real map data)."""
+    edu_bg(im, t)
+    pop(im, tl("tk", s["title"], 80, colors=s.get("colors")), W / 2, 250, lt, 0.0)
+    d = ImageDraw.Draw(im)
+    rrect(d, (70, 420, W - 70, 1260), 50, (15, 30, 70), outline=(60, 90, 160), width=4)
+    for gx in range(110, W - 70, 80):
+        d.line((gx, 440, gx, 1240), fill=(30, 50, 100), width=2)
+    for gy in range(460, 1260, 80):
+        d.line((90, gy, W - 90, gy), fill=(30, 50, 100), width=2)
+    pts = [(200, 1120), (330, 980), (470, 1000), (600, 820), (760, 760), (880, 560)]
+    d.line(pts, fill=(100, 116, 139), width=14, joint="curve")
+    prog = clamp(lt / max(1.0, dur - 0.3))
+    segs = [math.dist(a, b) for a, b in zip(pts, pts[1:])]
+    total, run = sum(segs), prog * sum(segs)
+    done, cur = [pts[0]], pts[0]
+    for (a, b), L in zip(zip(pts, pts[1:]), segs):
+        if run >= L:
+            done.append(b); run -= L; cur = b
+        else:
+            cur = (a[0] + (b[0] - a[0]) * run / L, a[1] + (b[1] - a[1]) * run / L)
+            done.append(cur); break
+    d.line(done, fill=ORANGE, width=14, joint="curve")
+    for (x, y), name in [(pts[0], s.get("from", "Zavod")), (pts[-1], s.get("to", "Mijoz"))]:
+        d.ellipse((x - 22, y - 22, x + 22, y + 22), fill=WHITE)
+        fn = font(40, "Bold")
+        d.text((x - fn.getlength(name) / 2, y + 34), name, font=fn, fill=WHITE)
+    r = 30 + 6 * math.sin(lt * 6)
+    d.ellipse((cur[0] - r - 16, cur[1] - r - 16, cur[0] + r + 16, cur[1] + r + 16), fill=(249, 115, 22, 90))
+    d.ellipse((cur[0] - r, cur[1] - r, cur[0] + r, cur[1] + r), fill=ORANGE, outline=WHITE, width=6)
+    chip = s.get("chip", "Yo‘lda")
+    fc = font(40, "Bold")
+    cw = fc.getlength(chip) + 60
+    cx, cy = min(max(cur[0], 90 + cw / 2), W - 90 - cw / 2), cur[1] - 110
+    rrect(d, (cx - cw / 2, cy - 36, cx + cw / 2, cy + 36), 36, WHITE)
+    d.text((cx - fc.getlength(chip) / 2, cy - 24), chip, font=fc, fill=SLATE)
+
+
 SCENES = {
     "road": sc_road, "big": sc_big, "costs": sc_costs, "turn": sc_turn, "feed": sc_app_feed,
     "bid": sc_app_bid, "calls": sc_app_calls, "balance": sc_app_balance, "quote": sc_quote,
-    "counter": sc_counter, "wallet": sc_wallet, "step": sc_step, "route": sc_route, "ledger": sc_ledger, "total": sc_total, "verdict": sc_verdict, "rule": sc_rule, "chat": sc_chat, "trip": sc_trip, "checks": sc_checks, "calendar": sc_calendar, "verified": sc_verified, "steps": sc_steps, "cta": sc_cta,
+    "track": sc_track, "counter": sc_counter, "wallet": sc_wallet, "step": sc_step, "route": sc_route, "ledger": sc_ledger, "total": sc_total, "verdict": sc_verdict, "rule": sc_rule, "chat": sc_chat, "trip": sc_trip, "checks": sc_checks, "calendar": sc_calendar, "verified": sc_verified, "steps": sc_steps, "cta": sc_cta,
 }
 
 
